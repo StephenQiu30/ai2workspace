@@ -1,0 +1,64 @@
+schemaVersion: 1
+id: example-development
+name: 示例研发空间
+profile: development
+sources:
+  - id: knowledge
+    binding: knowledge-root
+    kind: knowledge
+    include: ['**/*.md']
+    exclude: []
+    writePolicy: task-scoped
+  - id: engineering-rules
+    binding: service-root
+    kind: instruction
+    projectId: service
+    include: [AGENTS.md, PROJECT.md, DESIGN.md]
+    exclude: []
+    writePolicy: task-scoped
+projects:
+  - id: service
+    binding: service-root
+    inputExclude:
+      - '**/*.tsbuildinfo'
+      - '**/node_modules/**'
+      - '**/.git/**'
+      - '**/.next/**'
+      - '**/.source/**'
+      - '**/dist/**'
+      - '**/.test-build/**'
+      - '**/test-results/**'
+      - '**/playwright-report/**'
+      - '**/.local/**'
+      - '**/workspace.local.yaml'
+checks:
+  - id: service-types
+    projectId: service
+    cwd: .
+    argv: [pnpm, types:check]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
+  - id: service-tests
+    projectId: service
+    cwd: .
+    argv: [pnpm, test]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []

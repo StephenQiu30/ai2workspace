@@ -1,0 +1,13 @@
+schemaVersion: 1
+id: example-space
+name: 示例知识空间
+profile: generic
+sources:
+  - id: knowledge
+    binding: knowledge-root
+    kind: knowledge
+    include: ['**/*.md']
+    exclude: []
+    writePolicy: read-only
+projects: []
+checks: []

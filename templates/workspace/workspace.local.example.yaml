@@ -1,0 +1,5 @@
+schemaVersion: 1
+bindings:
+  knowledge-root: /absolute/path/to/knowledge
+autoScan: false
+dataDir: .local
