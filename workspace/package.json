@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "next build --webpack",
-    "dev": "next dev",
-    "start": "serve out",
+    "dev": "next dev --port 3122",
+    "start": "serve out --listen 3122",
     "types:check": "next typegen && tsc --noEmit",
     "lint": "eslint"
   },

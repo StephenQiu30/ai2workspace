@@ -6,6 +6,8 @@
 
 项目与产品标识统一为 `ai2workspace`。测试代码采用独立 `tests/` 目录，不与业务源码混放；具体归属及 Go 可见性边界见工程规范和 `PROJECT.md`。
 
+工具接入直接使用官方 CLI 与配置文件，不新增 `scripts/` 目录或独立编排脚本。
+
 - 当前已实现知识库文档网站；知识库网站工程只放在 `workspace/`，知识正文只放在 `workspace/content/`，不得复制两份。业务工程分别位于 `frontend/`（Next.js）与 `backend/`（Go 微服务），完整选型与实施前提见根目录 [PROJECT.md](./PROJECT.md)，已初始化技术基线，业务功能仍待需求定义。
 - 业务前端采用 Next.js + TypeScript + React + Tailwind CSS + shadcn/ui（Radix 版本）+ Prettier + ESLint + Axios + Umi OpenAPI。业务接口从 Go DTO 与 Swaggo 注释生成 Swagger，再生成前端类型和调用代码；禁止手动维护 Swagger / OpenAPI 文件及生成的调用代码。各 Go 服务独立维护依赖、数据所有权和部署边界。
 - 基于 Fumadocs 官方脚手架和组件，自动发现 Markdown/MDX、生成导航及搜索；不添加逐页路由、硬编码文档清单、自定义解析器或旧版 Core/CLI/空间管理封装。

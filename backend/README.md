@@ -8,13 +8,13 @@ Go 服务按 `services/<服务名>/` 独立维护 module、入口、测试和镜
 make generate
 make check
 make build
-HTTP_ADDR=127.0.0.1:1152 SWAGGER_ENABLED=true make run
+HTTP_ADDR=127.0.0.1:3123 SWAGGER_ENABLED=true make run
 ```
 
 `generate` 固定使用 Swaggo 1.16.6，从 Go DTO 与注释生成文档。默认 `SERVICE=ai2workspace`；未来新增真实服务时按实际名称选择，不复制一套通用封装。
 
-- 健康检查：`http://127.0.0.1:1152/api/ai2workspace/v1/health`
-- 接口文档：`http://127.0.0.1:1152/swagger/ai2workspace/index.html`
+- 健康检查：`http://127.0.0.1:3123/api/ai2workspace/v1/health`
+- 接口文档：`http://127.0.0.1:3123/swagger/ai2workspace/index.html`
 - 配置与独立检查：[服务 README](./services/ai2workspace/README.md)
 
 ## 容器联调
@@ -26,6 +26,6 @@ docker compose up --build -d
 docker compose ps
 ```
 
-默认入口 `http://127.0.0.1:1150`，由 `AI2WORKSPACE_PORT` 配置。Traefik 使用只读文件配置与 Compose DNS 转发真实服务，不需要访问 Docker socket。`/api/ai2workspace/` 和 `/swagger/ai2workspace/` 转发到 Go，其他路径转发到前端。Swagger 默认仅在这个本地联调组合中开启，独立 Go 服务默认关闭。
+固定入口 `http://127.0.0.1:3121`，Go 服务也可通过 `http://127.0.0.1:3123` 直接访问。本机和容器使用同一端口分配；后续 Go 服务从 3124 依次分配，见 [PROJECT.md](../PROJECT.md#7-开发检查与部署)。Traefik 使用只读文件配置与 Compose DNS 转发真实服务，不需要访问 Docker socket。`/api/ai2workspace/` 和 `/swagger/ai2workspace/` 转发到 Go，其他路径转发到前端。Swagger 默认仅在这个本地联调组合中开启，独立 Go 服务默认关闭。
 
 镜像构建从 Go 源码生成 Swagger，再生成前端调用代码。镜像仅包含运行产物，测试与知识库不进入镜像。生产部署、认证、持久化与高可用仍需单独设计。

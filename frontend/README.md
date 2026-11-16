@@ -6,15 +6,16 @@
 
 ```sh
 pnpm install --frozen-lockfile
-API_ORIGIN=http://127.0.0.1:1152 pnpm dev --port 1151 --hostname 127.0.0.1
+pnpm openapi2ts
+API_ORIGIN=http://127.0.0.1:3123 pnpm dev --hostname 127.0.0.1
 ```
 
-先按 [后端说明](../backend/README.md) 启动 Go 服务，浏览器访问 `http://127.0.0.1:1151`。本地开发的 `/api/` 通过 Next.js rewrites 转发到 `API_ORIGIN`；容器组合由 Traefik 提供统一入口。
+先按 [后端说明](../backend/README.md) 在 `backend/` 执行 `make generate` 并启动 Go 服务，再运行上述前端命令，浏览器访问 `http://127.0.0.1:3121`。本地开发的 `/api/` 通过 Next.js rewrites 转发到 `API_ORIGIN`；容器组合由 Traefik 提供统一入口。
 
 ## 生成、检查与构建
 
 ```sh
-pnpm api:generate
+pnpm openapi2ts
 pnpm format:check
 pnpm lint
 pnpm types:check
@@ -22,7 +23,16 @@ pnpm test
 pnpm build
 ```
 
-默认先执行 `make -C ../backend generate`，然后由固定版本 `@umijs/openapi@1.14.1` 生成 `src/services/generated/`。仅有前端源码时，通过 `OPENAPI_SCHEMA_PATH` 指定与目标后端版本对应的本地 Swagger 产物，无需运行后端进程或安装 Go。生成代码忽略提交，禁止手改；没有文档产物时命令失败，不使用过期类型静默回退。
+按 [Umi OpenAPI 官方独立接入方式](https://github.com/chenshuai2144/openapi2typescript#usage)，根配置为 `openapi2ts.config.ts`，`package.json` 使用 `"openapi2ts": "openapi2ts"`，由官方 CLI 自动读取配置并生成 `src/services/generated/`。生成代码忽略提交，禁止手改。
+
+默认读取本仓库 Go 服务生成的本地 Swagger 产物，文档生成由后端自行负责。也可以显式指定 Swagger JSON 地址或版本对应的绝对文件路径：
+
+```sh
+OPENAPI_SCHEMA_PATH=http://127.0.0.1:3123/swagger/ai2workspace/doc.json pnpm openapi2ts
+OPENAPI_SCHEMA_PATH=/absolute/path/to/swagger.json pnpm openapi2ts
+```
+
+CLI 读取进程环境变量，独立于 Next.js 的 `.env` 加载。只有前端源码时，使用已发布的接口文档即可生成，无需安装 Go。接口生成与 dev、build、类型检查分开；首次使用或接口更新时先生成，再检查类型和构建。Docker 构建通过官方 CLI 使用 schema 阶段的产物完成生成。项目没有自建脚本目录。
 
 `src/lib/request/transport.ts` 是唯一通用 Axios 适配入口；`server.ts` 使用 `server-only` 保护内部配置。服务端通过调用选项传入地址，浏览器通过同源路径请求，不修改全局 Axios 配置。当前接口无认证需求，未实现用户会话转发。
 

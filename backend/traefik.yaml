@@ -11,8 +11,8 @@ http:
     ai2workspace:
       loadBalancer:
         servers:
-          - url: http://ai2workspace:8080
+          - url: http://ai2workspace:3123
     frontend:
       loadBalancer:
         servers:
-          - url: http://frontend:3000
+          - url: http://frontend:3121

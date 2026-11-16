@@ -6,8 +6,7 @@
 
 ```sh
 pnpm install --frozen-lockfile
-BASE_URL=http://127.0.0.1:1151 pnpm test
-# 容器组合改用 BASE_URL=http://127.0.0.1:1150
+pnpm test
 ```
 
 桌面和移动端分别运行相同验收。错误恢复场景通过浏览器路由中断模拟网络故障，其余接口与服务端渲染连接真实 Go 服务。测试报告位于忽略提交的 `test-results/`，不进入业务镜像。

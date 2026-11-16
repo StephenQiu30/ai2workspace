@@ -15,7 +15,7 @@ func TestLoadDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTPAddr != ":8080" || cfg.HTTPTimeout != 5*time.Second || cfg.SwaggerEnabled {
+	if cfg.HTTPAddr != ":3123" || cfg.HTTPTimeout != 5*time.Second || cfg.SwaggerEnabled {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 }
@@ -36,7 +36,7 @@ func TestLoadRejectsInvalidConfiguration(t *testing.T) {
 }
 
 func TestLoadOverrides(t *testing.T) {
-	t.Setenv("HTTP_ADDR", "127.0.0.1:1152")
+	t.Setenv("HTTP_ADDR", "127.0.0.1:3124")
 	t.Setenv("HTTP_TIMEOUT", "2s")
 	t.Setenv("SHUTDOWN_TIMEOUT", "3s")
 	t.Setenv("SWAGGER_ENABLED", "true")
@@ -44,7 +44,7 @@ func TestLoadOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTPAddr != "127.0.0.1:1152" || cfg.HTTPTimeout != 2*time.Second || cfg.ShutdownTimeout != 3*time.Second || !cfg.SwaggerEnabled {
+	if cfg.HTTPAddr != "127.0.0.1:3124" || cfg.HTTPTimeout != 2*time.Second || cfg.ShutdownTimeout != 3*time.Second || !cfg.SwaggerEnabled {
 		t.Fatalf("configuration overrides not applied: %+v", cfg)
 	}
 }

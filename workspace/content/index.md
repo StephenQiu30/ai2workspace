@@ -23,7 +23,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-访问 http://localhost:3000/docs/ 。使用目录浏览文档，或通过搜索查找标题和正文。
+访问 http://localhost:3122/docs/ 。使用目录浏览文档，或通过搜索查找标题和正文。
 
 ## 编写文档
 
@@ -54,10 +54,10 @@ description: 简短介绍
 pnpm lint
 pnpm types:check
 pnpm build
-pnpm start -l 1140
+pnpm start
 ```
 
-访问 http://localhost:1140/docs/ ，检查文档链接、中文搜索和移动端目录。选择空闲端口，不停止其他项目进程。
+访问 http://localhost:3122/docs/ ，检查文档链接、中文搜索和移动端目录。开发与静态预览共用 3122，启动前先停止本项目占用该端口的实例，不停止其他项目进程。
 
 ## 部署
 

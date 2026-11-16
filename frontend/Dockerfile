@@ -14,16 +14,16 @@ COPY frontend/ ./
 COPY --from=schema /app/internal/apidocs/swagger.json /contracts/swagger.json
 ENV OPENAPI_SCHEMA_PATH=/contracts/swagger.json
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+RUN pnpm openapi2ts && pnpm build
 
 FROM node:24.19.0-alpine
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
+ENV PORT=3121
 WORKDIR /app
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 USER node
-EXPOSE 3000
+EXPOSE 3121
 CMD ["node", "server.js"]

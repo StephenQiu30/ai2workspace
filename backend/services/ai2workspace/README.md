@@ -8,12 +8,12 @@
 GOWORK=off go vet ./...
 GOWORK=off go test -race -coverpkg=./internal/... ./tests/...
 GOWORK=off go build -o server ./cmd/server
-HTTP_ADDR=127.0.0.1:1152 SWAGGER_ENABLED=true ./server
+HTTP_ADDR=127.0.0.1:3123 SWAGGER_ENABLED=true ./server
 ```
 
 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `HTTP_ADDR` | `:8080` | 监听地址，必须是有效的 host:port |
+| `HTTP_ADDR` | `:3123` | 监听地址，必须是有效的 host:port |
 | `HTTP_TIMEOUT` | `5s` | 读取、写入及空闲超时，必须为正数 |
 | `SHUTDOWN_TIMEOUT` | `10s` | 优雅退出等待时间，必须为正数 |
 | `SWAGGER_ENABLED` | `false` | 开启 `/swagger/ai2workspace/` 文档与 JSON |

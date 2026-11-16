@@ -50,7 +50,7 @@ description: ai2workspace 官方前端脚手架、Go 服务基线、接口生成
 
 ## Task T-02：官方 Next.js 前端与生成调用
 
-**Files:** 官方脚手架创建 `frontend/`；修改 `package.json`、`next.config.ts`、`eslint.config.mjs`、`.prettierrc.json`、`.prettierignore`、`src/app/page.tsx`、`layout.tsx`；创建 `openapi2ts.config.ts`、`scripts/generate_api.ts`、`src/lib/request/transport.ts`、`server.ts`、`src/features/service_status/service_status.tsx`、`tests/request.test.ts`，由 CLI 引入必要 UI 组件。
+**Files:** 官方脚手架创建 `frontend/`；修改 `package.json`、`next.config.ts`、`eslint.config.mjs`、`.prettierrc.json`、`.prettierignore`、`src/app/page.tsx`、`layout.tsx`；创建官方 `openapi2ts.config.ts` 配置、`src/lib/request/transport.ts`、`server.ts`、`src/features/service_status/service_status.tsx`、`tests/request.test.ts`，由 CLI 引入必要 UI 组件。
 
 **Interfaces:** 通用 `request<T>(url, options): Promise<T>` 使用 Axios；`getServerRequestOptions()` 返回本次调用的服务端选项；生成器根据当前 Swagger 生成健康检查方法；页面服务端读取初始状态，浏览器可重新检查。
 
@@ -85,7 +85,7 @@ description: ai2workspace 官方前端脚手架、Go 服务基线、接口生成
 | --- | --- | --- |
 | T-01 | Go 1.26.5；Gin 1.12.0；Swaggo 1.16.6。测试先因实现不存在失败，补齐后 `make check` 与 `make build` 通过 | 配置校验、健康响应、关闭 Swagger、路径 / 方法覆盖及 operationId 校验；无数据库依赖 |
 | T-02 | 官方 create-next-app 16.4.6、shadcn CLI 4.23.0 Radix；Node 24.19.0、pnpm 12.4.2。格式、lint、类型检查、4 项 Axios 测试与生产构建通过 | 未运行后端进程也能构建；独立构建可使用已发布文档产物 |
-| 生成链路 | Go DTO / 注释 → Swagger → Umi OpenAPI 1.14.1 → Axios。重复生成的文档与客户端哈希一致；空接口文档输入明确失败 | 没有手写 Swagger 或调用函数，生成物忽略提交 |
+| 生成链路 | Go DTO / 注释 → Swagger → Umi OpenAPI 1.14.1 → Axios。重复生成的文档与客户端哈希一致 | 没有手写 Swagger 或调用函数，生成物忽略提交 |
 | T-03 原生联调 | 本机前端 1151、Go 1152，桌面与移动共 6 项契约 / UI 检查通过 | 健康检查连接真实 Go，浏览器中断场景使用路由中断模拟 |
 | T-03 容器联调 | 两个服务镜像构建与 Compose 校验、启动通过；统一入口 1150；6 项桌面 / 移动检查通过，包含键盘刷新 | Traefik 使用文件配置与服务 DNS，无 Docker socket；本地容器联调，不是生产发布 |
 | 实际故障恢复 | 实际停止 Go 容器后，SSR 返回可重试错误且不暴露内部地址；恢复容器后页面再次显示连接正常 | 受控本地容器故障，不涉及真实业务数据 |
@@ -94,4 +94,6 @@ description: ai2workspace 官方前端脚手架、Go 服务基线、接口生成
 
 初始化时的工程选择：先创建一个名为 `ai2workspace` 的无持久化服务基线，保留多 module 微服务组织；不虚构业务域。Traefik 使用现成文件 provider，避免引入 Docker socket 权限。前端继续采用官方工具，额外代码仅包括生成配置、必要请求适配和连接页面。
 
-本机临时 1151 / 1152 预览在验收后停止，保留 1150 容器统一入口。初始化验收时，新增和修改文件尚未提交或推送；后续提交状态以 Git 历史和远端为准。业务 PRD、认证、数据模型、生产发布及实际业务服务拆分仍待后续任务。
+后续接入修正：根据用户要求采用 [Umi OpenAPI 官方独立 CLI](https://github.com/chenshuai2144/openapi2typescript#usage)，配置文件与 `package.json` 直接对接 `openapi2ts`，删除自建生成脚本；Go 文档准备、前端生成、开发和构建分别执行。`schemaPath` 支持 Swagger JSON URL 或绝对文件路径，保留从文档生成客户端的唯一来源。已从空输出目录分别通过本地产物和在线 Swagger JSON 全新生成，输出哈希一致；格式、lint、类型检查、4 项 Axios 测试与前端生产构建通过。
+
+初始化阶段使用的临时 1151 / 1152 预览已停止，当时使用的 1150 容器入口已由后续端口规范取代。当前固定端口为前端 / 网关 3121、知识库 3122、首个 Go 服务 3123；后续服务从 3124 顺延，详见根 `PROJECT.md`。初始化验收时，新增和修改文件尚未提交或推送；后续提交状态以 Git 历史和远端为准。业务 PRD、认证、数据模型、生产发布及实际业务服务拆分仍待后续任务。

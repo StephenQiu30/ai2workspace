@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm api:generate && next dev",
-    "build": "pnpm api:generate && next build --webpack",
-    "start": "next start",
-    "api:generate": "tsx scripts/generate_api.ts",
+    "dev": "next dev --port 3121",
+    "build": "next build --webpack",
+    "start": "next start --port 3121",
+    "openapi2ts": "openapi2ts",
     "lint": "eslint .",
-    "types:check": "pnpm api:generate && next typegen && tsc --noEmit",
+    "types:check": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "tsx --test tests/*.test.ts"

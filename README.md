@@ -16,7 +16,7 @@ cd backend
 docker compose up --build -d
 ```
 
-默认访问 http://127.0.0.1:1150 ，Swagger 位于 `/swagger/ai2workspace/index.html`。模块 README 记录独立启动、配置、生成与检查命令。
+默认访问 http://127.0.0.1:3121 ，Swagger 位于 `/swagger/ai2workspace/index.html`。模块 README 记录独立启动、配置、生成与检查命令。
 
 知识库独立运行：
 
@@ -26,4 +26,4 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-本地访问 http://localhost:3000/docs/ 。完整的[知识库使用说明](./workspace/content/index.md)由 workspace 承载。
+本地访问 http://localhost:3122/docs/ 。完整的[知识库使用说明](./workspace/content/index.md)由 workspace 承载。

@@ -9,7 +9,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-默认访问 http://localhost:3000/docs/ 。执行 `pnpm build` 生成 `out/`，`pnpm start -l 1140` 预览静态产物。
+默认访问 http://localhost:3122/docs/ 。执行 `pnpm build` 生成 `out/`，`pnpm start` 预览静态产物。
 
 完整的使用、编写、检查与部署方法见 [知识库使用说明](./content/index.md)。
 

@@ -11,5 +11,5 @@ RUN apk add --no-cache ca-certificates && addgroup -S ai2workspace && adduser -S
 WORKDIR /app
 COPY --from=build /out/server ./server
 USER ai2workspace
-EXPOSE 8080
+EXPOSE 3123
 ENTRYPOINT ["./server"]

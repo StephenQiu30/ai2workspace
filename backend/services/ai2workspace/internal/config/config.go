@@ -19,7 +19,7 @@ type Config struct {
 
 // Load reads environment variables and rejects invalid startup configuration.
 func Load() (Config, error) {
-	cfg := Config{HTTPAddr: value("HTTP_ADDR", ":8080")}
+	cfg := Config{HTTPAddr: value("HTTP_ADDR", ":3123")}
 	_, port, err := net.SplitHostPort(cfg.HTTPAddr)
 	if err != nil {
 		return Config{}, fmt.Errorf("HTTP_ADDR must be host:port: %w", err)
