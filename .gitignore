@@ -17,12 +17,3 @@ next-env.d.ts
 *.log
 *.pem
 .DS_Store
-workspace.local.yaml
-.test-build/
-.superpowers/
-# 自用空间的本机登记和真实任务合同保留在本地。
-/spaces/self/catalog.json
-/spaces/self/tasks/
-
-# 私有工程绑定，不随共享角色和规则发布。
-/code/projects.local.json

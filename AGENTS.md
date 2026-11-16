@@ -1,16 +1,13 @@
-# 项目 Workspace 协作入口
+@/Users/stephenqiu/.codex/RTK.md
 
-当前服务作为项目内 Workspace 模块存在，不先建设通用服务。目录、角色、规则与实际交付保持同一来源。
+# 项目协作入口
 
-使用中文，先说明结果，再给必要证据与限制。开始前核对项目目录、Git 根目录、分支与工作区；保留用户和并行任务的已有修改。
+使用中文，先说明结果，再给必要证据与限制。开始前核对项目目录、Git 根目录、分支与工作区，保留用户和并行任务已有修改。
 
-- Harness 角色、必需检查和输出校验见 [执行约定](./harness/README.md)、[角色](./harness/roles.json)和[策略](./harness/policy.json)。
-- 服务职责、文档归属和模块依赖见 [职责约定](./src/content/architecture/03-职责与文档归属.md)。
-- 资料兼容规则见 [generic profile](./src/content/guides/profiles/generic.md)，本服务工程规则见 [development profile](./src/content/guides/profiles/development.md)。空间的 profile 决定适用规则，普通资料无需研发文档链。
-- 运行与检查见 [PROJECT.md](./PROJECT.md)，视觉基线见 [DESIGN.md](./DESIGN.md)，知识编写见 [编写规范](./src/content/guides/authoring/05-知识编写规范.md)。根规范保留唯一来源，不复制正文。
-- 任务合同、CLI 和证据语义见 [设计 7.5—7.9](./src/content/architecture/02-知识治理与Harness设计.md#75-任务合同与上下文快照)；实际操作见 [项目 Skill](.agents/skills/ai2workspace/SKILL.md)。CLI 不授予新权限；导出上下文后须实际读取。
-- CLI 已登记任务以 TaskState 为状态权威；[BACKLOG.md](./BACKLOG.md)维护尚未纳入 CLI 的迁移事项和人工验收缺口，不重复手工维护同一任务。
-- 公开事实、观察、建议和待确认分开记录。保留原始需求原文、来源、稳定 ID 与确认结论；评审通过不等于实现、验收或发布完成。
-- 不读取、复制或提交无关凭据、私有环境文件、运行数据及生成物；破坏性操作和真实业务数据变更须有明确授权，不擅自重置、清理或覆盖。
-- 未经明确要求，不提交、推送、建远程分支或 PR、合并、打标签或发布。获授权提交时仅含任务范围，标题用 `type(scope): 中文说明`（type 为 test/docs/impl/feat/refactor/chore，scope 为明确小写英文领域）。
-- 完成前核对改动、执行适用检查及交互浏览器验收，说明关键文件、结果、限制与提交状态；未执行、失败、跳过和阻塞如实记录。
+- 当前产品是知识库文档网站；网站工程只放在 `workspace/`，正文只放在 `workspace/content/`，不得复制两份。
+- 基于 Fumadocs 官方脚手架和组件，自动发现 Markdown/MDX、生成导航及搜索；不添加逐页路由、硬编码文档清单、自定义解析器或旧版 Core/CLI/空间管理封装。
+- 使用、编写与部署见 [知识库使用说明](./workspace/content/index.md)，Fumadocs 入口见 [workspace/AGENTS.md](./workspace/AGENTS.md)。界面使用官方 Spacious 布局及配套样式，主题变量与字体对齐官网；TypeScript 遵循 Google TypeScript 规范并保持 strict。
+- 知识编写保留必要来源，区分需求、建议与实际证据。新增知识通过 frontmatter 声明标题，目录按需用 Fumadocs meta.json 组织。
+- 不读取、复制或提交无关凭据、私有环境文件、运行数据及生成物；`workspace/.local/` 仅保存忽略提交的本机资料，不得接入公开文档源。
+- 未经明确要求，不提交、推送、建远程分支或 PR、合并、打标签或发布。获授权提交时仅含任务范围，标题用 `type(scope): 中文说明`。
+- 完成前核对改动，执行 lint、类型、生产构建和适用的交互浏览器验收；未执行、失败及阻塞如实记录。
