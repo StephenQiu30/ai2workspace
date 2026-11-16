@@ -1,0 +1,18 @@
+http:
+  routers:
+    api:
+      rule: PathPrefix(`/api/ai2workspace/`) || PathPrefix(`/swagger/ai2workspace/`)
+      priority: 100
+      service: ai2workspace
+    frontend:
+      rule: PathPrefix(`/`)
+      service: frontend
+  services:
+    ai2workspace:
+      loadBalancer:
+        servers:
+          - url: http://ai2workspace:8080
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://frontend:3000

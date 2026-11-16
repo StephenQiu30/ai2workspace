@@ -1,0 +1,39 @@
+name: ai2workspace
+
+services:
+  gateway:
+    image: traefik:v3.6.0
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yaml
+      - --api.dashboard=false
+    ports:
+      - "127.0.0.1:${AI2WORKSPACE_PORT:-1150}:80"
+    volumes:
+      - ./traefik.yaml:/etc/traefik/dynamic.yaml:ro
+    depends_on:
+      - frontend
+      - ai2workspace
+
+  ai2workspace:
+    build:
+      context: ..
+      dockerfile: backend/services/ai2workspace/Dockerfile
+    environment:
+      HTTP_ADDR: :8080
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/api/ai2workspace/v1/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    environment:
+      API_ORIGIN: http://ai2workspace:8080
+    depends_on:
+      ai2workspace:
+        condition: service_healthy

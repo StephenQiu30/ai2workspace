@@ -1,0 +1,97 @@
+---
+title: 前后端工程初始化计划与验证
+description: ai2workspace 官方前端脚手架、Go 服务基线、接口生成与独立测试的实施记录。
+---
+
+# 前后端工程初始化 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+**Goal:** 初始化可独立构建的 Next.js 前端和 Go 服务，贯通健康检查、Swagger、生成客户端与真实请求。
+
+**Architecture:** 首个 `backend/services/ai2workspace/` 是无持久化的服务基线，仅提供健康检查，不定义业务域或数据库。前端使用官方 Next.js 与 shadcn CLI，消费从 Go 源码生成的客户端；Traefik 负责本地容器联调入口。测试目录独立于业务源码。
+
+**Tech Stack:** Go、Gin、Swaggo、Next.js、React、TypeScript、Tailwind CSS、shadcn/ui Radix、Axios、Umi OpenAPI、Prettier、ESLint、Docker Compose、Traefik。
+
+**Spec:** 根 `PROJECT.md`、[工程规范](../../../standards/project-design.md#工程规范与目录设计)，以及用户本轮“按照 PROJECT.md 开始初始化 frontend 和 backend”的明确实施指令。
+
+**PLAN-ID:** `PLAN-ai2workspace-initialization`。
+
+## Global Constraints
+
+- 统一使用 `ai2workspace`；Go 使用 Google Go，手写 TypeScript 使用 Google TS 与 strict，保留已登记的框架例外。
+- 前端由官方 `create-next-app` 初始化；shadcn 明确使用 Radix，组件通过官方 CLI 引入。
+- Swagger 与前端调用代码仅由固定版本工具生成，生成文件忽略提交。
+- Go 测试放在本服务 `tests/`，前端测试放在 `frontend/tests/`，跨模块测试放在根 `tests/`。
+- 当前实施只建立技术基线；数据库、认证、业务服务拆分和生产高可用仍待真实业务设计。
+- 用户已授权开始实施，当前会话直接推进；本轮没有提交、推送或部署授权。
+
+## Review Focus
+
+- 后端不可用时，前端仍能显示可恢复的错误状态，刷新不会泄露内部地址。
+- 服务端请求选项不得共享用户凭据；通用 Axios 适配器不导入服务端环境。
+- 生成代码由当前 Go 文档产物重建，浏览器调用不依赖 Umi 运行时。
+- 配置的地址、网关前缀与 Swagger 路径一致，缺少必需配置时明确失败。
+- 测试、生成物与运行记录不进入业务源码或镜像，服务可在 `GOWORK=off` 下构建。
+
+---
+
+## Task T-01：独立 Go 服务与 Swagger
+
+**Files:** 创建 `backend/go.work`、`backend/Makefile`、`backend/services/ai2workspace/go.mod`、`cmd/server/main.go`、`internal/config/config.go`、`internal/health/handler.go`、`internal/server/server.go`、`tests/unit/config/config_test.go`、`tests/integration/server_test.go`、服务 `Dockerfile` 与 README。
+
+**Interfaces:** `GET /api/ai2workspace/v1/health` 返回 HTTP 200 与 `{service: "ai2workspace", status: "ok"}`；`server.New(swaggerEnabled bool) *gin.Engine` 提供路由；`config.Load() (Config, error)` 读取并校验环境；`internal/apidocs/` 由 Swaggo 生成。
+
+- [x] 写配置失败、健康响应、未知路径、Swagger 可用与路由覆盖测试，运行并确认实现缺失时失败。
+- [x] 实现最小 Gin 服务、配置校验、超时及优雅退出，使用 Go 工具管理 module 和 workspace。
+- [x] 固定 Swaggo 版本生成文档，执行格式检查、vet、独立构建、测试及竞态检查。
+
+**Expected:** 所有定义的路由与配置测试通过，Swagger 能从源码重建，服务无需数据库即可启动。
+
+## Task T-02：官方 Next.js 前端与生成调用
+
+**Files:** 官方脚手架创建 `frontend/`；修改 `package.json`、`next.config.ts`、`eslint.config.mjs`、`.prettierrc.json`、`.prettierignore`、`src/app/page.tsx`、`layout.tsx`；创建 `openapi2ts.config.ts`、`scripts/generate_api.ts`、`src/lib/request/transport.ts`、`server.ts`、`src/features/service_status/service_status.tsx`、`tests/request.test.ts`，由 CLI 引入必要 UI 组件。
+
+**Interfaces:** 通用 `request<T>(url, options): Promise<T>` 使用 Axios；`getServerRequestOptions()` 返回本次调用的服务端选项；生成器根据当前 Swagger 生成健康检查方法；页面服务端读取初始状态，浏览器可重新检查。
+
+- [x] 使用 `create-next-app` 初始化 TS、App Router、Tailwind 与 ESLint，记录实际版本。
+- [x] 使用 shadcn CLI 初始化 Radix 并引入实际使用的组件；配置 Prettier、Google TS 适用规则和独立测试。
+- [x] 写 Axios 响应体、错误、取消与请求选项隔离测试并观察失败，再实现适配器。
+- [x] 使用 `@umijs/openapi` 生成调用代码，完成服务端初始请求与浏览器刷新，验证后端不可用时的页面状态。
+- [x] 执行格式、lint、类型、测试和生产构建；构建不要求运行 Go 服务。
+
+**Expected:** 前端正常构建，生成调用只依赖 Axios 适配器，错误可恢复，SSR 配置不进入客户端。
+
+## Task T-03：联调、交接与文档
+
+**Files:** 创建 `backend/compose.yaml`、`backend/README.md`、`frontend/Dockerfile`、`.dockerignore`、各模块 `.env.example`、根 `tests/package.json`、`tests/playwright.config.ts`、`tests/contracts/health.spec.ts`、`tests/e2e/service_status.spec.ts`；更新根 `.gitignore`、`.editorconfig`、`AGENTS.md`、`PROJECT.md`、`README.md` 与本计划。
+
+**Interfaces:** Traefik 转发 `/api/ai2workspace/` 与 Swagger 到 Go，其他业务页面到 Next.js；服务名与网关地址从环境配置获取；Playwright 从外部访问真实入口。
+
+- [x] 建立独立镜像与 Compose 配置，前端构建时先生成客户端，后端构建时先生成 Swagger。
+- [x] 执行真实前后端契约及刷新测试，包括后端断开与恢复；验证桌面、移动端、键盘及控制台。
+- [x] 检查 Docker 配置与镜像构建，记录容器联调的实际结果；不将未完成的生产部署写为完成。
+- [x] 更新实际启动命令、版本、已实施范围和剩余业务决定，执行知识库检查。
+
+**Expected:** 模块能独立启动和构建，真实调用和容器入口可验证，文档反映实际结果。
+
+## 自检与执行记录
+
+自检：三个任务依次覆盖服务、生成调用和联调，接口由 T-01 提供、T-02 消费、T-03 从外部验证；不加入尚无业务需求的存储和认证实现。配置错误、服务故障、路径一致性、调用隔离和独立构建分别由对应测试覆盖。
+
+执行方式为当前会话直接实施，并采用 `superpowers:requesting-code-review` 完成一次独立只读复核。下列记录只描述本次技术初始化，不代表业务验收或生产发布。
+
+| 任务 / 检查 | 实际操作与结果 | 边界 |
+| --- | --- | --- |
+| T-01 | Go 1.26.5；Gin 1.12.0；Swaggo 1.16.6。测试先因实现不存在失败，补齐后 `make check` 与 `make build` 通过 | 配置校验、健康响应、关闭 Swagger、路径 / 方法覆盖及 operationId 校验；无数据库依赖 |
+| T-02 | 官方 create-next-app 16.4.6、shadcn CLI 4.23.0 Radix；Node 24.19.0、pnpm 12.4.2。格式、lint、类型检查、4 项 Axios 测试与生产构建通过 | 未运行后端进程也能构建；独立构建可使用已发布文档产物 |
+| 生成链路 | Go DTO / 注释 → Swagger → Umi OpenAPI 1.14.1 → Axios。重复生成的文档与客户端哈希一致；空接口文档输入明确失败 | 没有手写 Swagger 或调用函数，生成物忽略提交 |
+| T-03 原生联调 | 本机前端 1151、Go 1152，桌面与移动共 6 项契约 / UI 检查通过 | 健康检查连接真实 Go，浏览器中断场景使用路由中断模拟 |
+| T-03 容器联调 | 两个服务镜像构建与 Compose 校验、启动通过；统一入口 1150；6 项桌面 / 移动检查通过，包含键盘刷新 | Traefik 使用文件配置与服务 DNS，无 Docker socket；本地容器联调，不是生产发布 |
+| 实际故障恢复 | 实际停止 Go 容器后，SSR 返回可重试错误且不暴露内部地址；恢复容器后页面再次显示连接正常 | 受控本地容器故障，不涉及真实业务数据 |
+| 页面与 Swagger | 桌面 1440×1000、移动 390×844 无页面横向溢出；Swagger UI 实际 Execute 返回 200 和正确服务标识，无控制台错误 | 页面只展示工程连接状态 |
+| 复核 | 无 Critical / Important；已补强复核指出的方法覆盖及操作 ID 唯一性检查，Go 检查再次通过 | 未将认证、存储、生产高可用或 OpenTelemetry 导出视为已经实现 |
+
+初始化时的工程选择：先创建一个名为 `ai2workspace` 的无持久化服务基线，保留多 module 微服务组织；不虚构业务域。Traefik 使用现成文件 provider，避免引入 Docker socket 权限。前端继续采用官方工具，额外代码仅包括生成配置、必要请求适配和连接页面。
+
+本机临时 1151 / 1152 预览在验收后停止，保留 1150 容器统一入口。初始化验收时，新增和修改文件尚未提交或推送；后续提交状态以 Git 历史和远端为准。业务 PRD、认证、数据模型、生产发布及实际业务服务拆分仍待后续任务。

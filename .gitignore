@@ -17,3 +17,6 @@ next-env.d.ts
 *.log
 *.pem
 .DS_Store
+backend/services/*/internal/apidocs/
+backend/services/*/server
+frontend/src/services/generated/
