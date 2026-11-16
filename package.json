@@ -13,14 +13,17 @@
     "build:core": "pnpm --filter @ai2workspace/core build",
     "build:cli": "pnpm --filter @ai2workspace/core build && pnpm --filter @ai2workspace/cli build",
     "build": "pnpm build:cli && pnpm --filter @ai2workspace/web build",
-    "test": "pnpm build:core && pnpm --filter @ai2workspace/core test && pnpm --filter @ai2workspace/cli test && pnpm --filter @ai2workspace/web test",
+    "test": "pnpm check:workspace && node --test scripts/check-workspace.test.mjs && pnpm build:core && pnpm --filter @ai2workspace/core test && pnpm --filter @ai2workspace/cli test && pnpm --filter @ai2workspace/web test",
     "test:e2e": "pnpm --filter @ai2workspace/web test:e2e",
     "types:check": "pnpm build:core && pnpm --filter @ai2workspace/core types:check && pnpm --filter @ai2workspace/cli types:check && pnpm --filter @ai2workspace/web types:check",
-    "lint": "eslint packages/core/src packages/core/test apps/cli/src apps/cli/test tools --config eslint.core.mjs && pnpm --filter @ai2workspace/web lint",
+    "lint": "eslint packages/core/src packages/core/test apps/cli/src apps/cli/test scripts --config eslint.core.mjs && pnpm --filter @ai2workspace/web lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "cli": "node apps/cli/dist/index.js",
-    "setup:local": "node tools/setup.mjs && pnpm build:cli"
+    "setup:local": "node scripts/setup.mjs && pnpm build:cli",
+    "check:workspace": "node scripts/check-workspace.mjs",
+    "setup:migrate-layout": "pnpm build:cli && node scripts/setup.mjs --migrate-layout",
+    "test:bundle": "pnpm --filter @ai2workspace/web test:bundle"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

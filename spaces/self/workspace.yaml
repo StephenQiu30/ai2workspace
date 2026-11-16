@@ -13,13 +13,20 @@ sources:
     binding: service-root
     kind: instruction
     projectId: service
-    include: [AGENTS.md, PROJECT.md, DESIGN.md]
+    include:
+      [
+        AGENTS.md,
+        PROJECT.md,
+        DESIGN.md,
+        harness/README.md,
+        harness/standards.md,
+      ]
     exclude: []
     writePolicy: task-scoped
   - id: templates
     binding: templates-root
     kind: reference
-    include: ['knowledge/*.md', 'workspace/README.md', 'harness/README.md']
+    include: ['knowledge/*.md', 'workspace/README.md', 'tasks/README.md']
     exclude: []
     writePolicy: read-only
 projects:
@@ -37,7 +44,23 @@ projects:
       - '**/playwright-report/**'
       - '**/.local/**'
       - '**/workspace.local.yaml'
+harness:
+  projectId: service
+  policyPath: harness/policy.json
 checks:
+  - id: repository-alignment
+    projectId: service
+    cwd: .
+    argv: [pnpm, check:workspace]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
   - id: service-types
     projectId: service
     cwd: .
@@ -57,6 +80,86 @@ checks:
     projectId: service
     cwd: .
     argv: [pnpm, test]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
+
+  - id: service-lint
+    projectId: service
+    cwd: .
+    argv: [pnpm, lint]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
+
+  - id: service-format
+    projectId: service
+    cwd: .
+    argv: [pnpm, format:check]
+    timeoutMs: 120000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
+
+  - id: service-build
+    projectId: service
+    cwd: .
+    argv: [pnpm, build]
+    timeoutMs: 180000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI]
+      privateRefs: []
+    artifacts: []
+
+  - id: service-browser
+    projectId: service
+    cwd: .
+    argv: [pnpm, test:e2e]
+    timeoutMs: 240000
+    required: true
+    tools:
+      - id: node
+        argv: [node, --version]
+      - id: pnpm
+        argv: [pnpm, --version]
+    environment:
+      publicNames: [NODE_ENV, CI, WORKSPACE_TEST_PORT]
+      privateRefs: []
+    artifacts: []
+
+  - id: service-bundle
+    projectId: service
+    cwd: .
+    argv: [pnpm, test:bundle]
     timeoutMs: 120000
     required: true
     tools:

@@ -57,6 +57,11 @@ export async function updateWorkspaceDefinition(
   const root = await realpath(workspaceDir);
   const target = path.join(root, 'workspace.yaml');
   const previous = await regularFile(target);
+  // A stale editor is already known to conflict, even when a background read
+  // currently owns the space lock. Recheck under the lock before writing.
+  if (hash(previous) !== expectedHash) {
+    fail('revision_conflict', '配置已被其他操作更新，请刷新后重试', 5);
+  }
   const local = localSchema.safeParse(
     parse(await regularFile(path.join(root, 'workspace.local.yaml'))),
   );

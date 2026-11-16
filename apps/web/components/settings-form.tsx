@@ -8,21 +8,17 @@ import {
   FieldLabel,
   FieldDescription,
 } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 export function SettingsForm({
   space = '',
   definition,
   revision = '',
-  creating = false,
 }: {
   space?: string;
   definition: string;
   revision?: string;
-  creating?: boolean;
 }) {
-  const [spaceValue, setSpaceValue] = useState(space);
   const [definitionValue, setDefinitionValue] = useState(definition);
   const [state, action, pending] = useActionState(saveDefinition, {
     message: '',
@@ -31,21 +27,13 @@ export function SettingsForm({
   return (
     <form action={action} className="flex flex-col gap-6">
       <input type="hidden" name="revision" value={revision} />
-      <input type="hidden" name="create" value={String(creating)} />
+      <input type="hidden" name="space" value={space} />
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="space-key">空间目录标识</FieldLabel>
-          <Input
-            id="space-key"
-            name="space"
-            value={spaceValue}
-            onChange={(event) => setSpaceValue(event.target.value)}
-            readOnly={!creating}
-            required
-            pattern="[a-z0-9][a-z0-9-]{0,63}"
-          />
+          <p className="text-sm font-medium">当前项目</p>
+          <p className="text-sm text-muted-foreground">{space}</p>
           <FieldDescription>
-            从已登记的本机空间目录加载；不能输入任意文件系统路径。
+            编辑当前项目的 Workspace 配置；项目身份保持不变。
           </FieldDescription>
         </Field>
         <Field>

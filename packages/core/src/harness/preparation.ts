@@ -33,6 +33,7 @@ import {
   listFiles,
   excluded,
 } from '../knowledge/scan.js';
+import { loadHarnessPolicy, contractPolicyIssues } from './policy.js';
 const exec = promisify(execFile);
 export async function fingerprint(
   workspace: ResolvedWorkspace,
@@ -146,6 +147,16 @@ export async function contextDrift(
   manifest: SnapshotManifest,
 ): Promise<Issue[]> {
   const issues: Issue[] = [];
+  const policy = await loadHarnessPolicy(workspace);
+  issues.push(...contractPolicyIssues(workspace, contract, policy));
+  if (manifest.policyHash !== policy.hash) {
+    issues.push({
+      code: 'harness_policy_changed',
+      severity: 'error',
+      message:
+        'Harness policy or role ownership changed; explicit baseline review required',
+    });
+  }
   if (
     manifest.contractHash !== digest(contract) ||
     manifest.profileHash !==
@@ -261,6 +272,44 @@ export async function prepareTask(
       fail('terminal_task', 'Terminal task cannot be prepared', 3);
     }
     const contract = await store.readContract(taskId, state.contractRevision);
+    const policy = await loadHarnessPolicy(workspace);
+    const policyIssues = contractPolicyIssues(workspace, contract, policy);
+    if (policyIssues.length) {
+      await store.writeTask(
+        {
+          ...state,
+          revision: state.revision + 1,
+          condition: 'blocked',
+          issues: policyIssues,
+        },
+        state.revision,
+      );
+      return { ready: false, issues: policyIssues };
+    }
+    if (
+      state.snapshotId &&
+      !policy.hash &&
+      (await readManifest(store, state.snapshotId)).policyHash
+    ) {
+      const issues: Issue[] = [
+        {
+          code: 'harness_policy_removed',
+          severity: 'error',
+          message:
+            'A prepared policy task cannot drop its Harness policy during rebaseline',
+        },
+      ];
+      await store.writeTask(
+        {
+          ...state,
+          revision: state.revision + 1,
+          condition: 'blocked',
+          issues,
+        },
+        state.revision,
+      );
+      return { ready: false, snapshotId: state.snapshotId, issues };
+    }
     if (state.snapshotId && !options.rebaseline) {
       const issues = await contextDrift(
         workspace,
@@ -548,6 +597,17 @@ export async function prepareTask(
       projectBaselines,
       missingOptional,
       originId,
+      ...(policy.hash ? { policyHash: policy.hash } : {}),
+      ...(policy.hash && policy.policy && policy.roles && policy.projectId
+        ? {
+            policySnapshot: {
+              hash: policy.hash,
+              projectId: policy.projectId,
+              policy: policy.policy,
+              roles: policy.roles,
+            },
+          }
+        : {}),
     };
     const snapshotId = 'snap_' + digest(manifest);
     await atomicJson(
@@ -622,6 +682,9 @@ export async function exportContext(
         .map(documentKey),
     },
     gaps: manifest.missingOptional,
+    ...(manifest.policySnapshot
+      ? { policySnapshot: manifest.policySnapshot }
+      : {}),
   };
 }
 

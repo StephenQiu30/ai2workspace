@@ -8,6 +8,9 @@ const config = {
     '/*': [
       '../../spaces/**',
       '../../knowledge/**',
+      '../../src/content/**',
+      '../../harness/**',
+      '../../code/**',
       '../../**/.local/**',
       '**/workspace.local.yaml',
       '**/.env',

@@ -33,6 +33,7 @@ export interface WorkspaceDefinition {
   sources: SourceDefinition[];
   projects: ProjectDefinition[];
   checks: CheckDefinition[];
+  harness?: { projectId: string; policyPath: string };
 }
 export interface LocalBindings {
   schemaVersion: 1;

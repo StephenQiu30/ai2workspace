@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "projects": [
+    {
+      "id": "service",
+      "binding": "service-root",
+      "responsibility": "Workspace 工具本身；实际登记以目标 workspace.yaml 为准"
+    }
+  ]
+}

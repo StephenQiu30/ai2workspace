@@ -1,6 +1,7 @@
 import type { Issue } from '../shared/types.js';
 import type { DocumentKey } from '../knowledge/types.js';
 import type { SnapshotDocument } from '../context/types.js';
+import type { PolicySnapshot } from './policy.js';
 
 export type Condition = 'clear' | 'blocked' | 'failed' | 'needs_rebaseline';
 export type Phase =
@@ -25,6 +26,7 @@ export interface TaskInput {
     )[];
   };
   projectIds: string[];
+  roleIds?: string[];
   inputs: (DocumentKey & {
     section?: string;
     purpose: string;
@@ -93,6 +95,8 @@ export interface SnapshotManifest {
   projectBaselines: Record<string, Fingerprint>;
   missingOptional: Issue[];
   originId: string;
+  policyHash?: string;
+  policySnapshot?: PolicySnapshot;
 }
 export interface TaskOrigin {
   schemaVersion: 1;
@@ -126,6 +130,7 @@ export interface ContextBundle {
   attachments: SnapshotManifest['attachments'];
   groups: { rules: string[]; confirmed: string[]; candidates: string[] };
   gaps: Issue[];
+  policySnapshot?: PolicySnapshot;
 }
 export interface ToolProof {
   id: string;

@@ -1,15 +1,17 @@
 # ai2workspace 迁移待办
 
+当前定位已按用户最新要求收窄为项目内 Workspace 模块，先前通用服务目标仅为历史。完整计划见 harness/tasks/acceptance-plan.json；本轮 repository-alignment 的实时状态仅查询 CLI。
+
 CLI 已登记任务以 TaskState、合同修订和封存证据为权威。本表只维护尚未纳入 CLI 的迁移事项、历史交付和人工验收缺口；自动汇总尚未交付，不同步手填同一任务的实时状态。
 
 | ID        | 事项                             | 状态               | 证据或下一步                                                                                                                                |
 | --------- | -------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| WS-001    | 参考 Glowloom 初始化工作区与规范 | 历史已完成         | [初始化计划](./docs/archive/initialization/01-工作区初始化计划.md)；当时本机质量检查与 5 项浏览器验收通过，不代表新布局验收                 |
-| REQ-001   | 确认通用服务目标与首阶段范围     | 已确认             | ai2workspace；[原始需求](./docs/product/requirements/02-通用工作区需求.md)保留 Q1—Q11、12 项确认和原始截图来源                              |
-| WS-002    | 第一版方案与最小闭环设计         | 文档已完成         | [主设计](./docs/architecture/02-知识治理与Harness设计.md)；上轮文档检查证据保留在 Plan，不能充当实现验收                                    |
-| MVP-001   | Core、CLI 及检查交接闭环         | 实现及自动检查通过 | [实施计划](./docs/development/02-最小闭环实施计划.md)；Core51、CLI15、Web4单测与11浏览器通过；自用任务以TaskState为准，真实会话另列         |
+| WS-001    | 参考 Glowloom 初始化工作区与规范 | 历史已完成         | [初始化计划](./src/content/archive/initialization/01-工作区初始化计划.md)；当时本机质量检查与 5 项浏览器验收通过，不代表新布局验收          |
+| REQ-001   | 确认通用服务目标与首阶段范围     | 已确认             | ai2workspace；[原始需求](./src/content/product/requirements/02-通用工作区需求.md)保留 Q1—Q11、12 项确认和原始截图来源                       |
+| WS-002    | 第一版方案与最小闭环设计         | 文档已完成         | [主设计](./src/content/architecture/02-知识治理与Harness设计.md)；上轮文档检查证据保留在 Plan，不能充当实现验收                             |
+| MVP-001   | Core、CLI 及检查交接闭环         | 实现及自动检查通过 | [实施计划](./src/content/development/02-最小闭环实施计划.md)；Core51、CLI15、Web4单测与11浏览器通过；自用任务以TaskState为准，真实会话另列  |
 | MIG-001   | 名称、布局与通用知识规则迁移     | 已落实             | ai2workspace 本机目录、public GitHub/origin、包/页面名及知识布局已迁移；28旧ID保留，新操作指南新增operations-02；当前聊天旧路径仅为兼容链接 |
 | AC-AW-012 | 真实跨 Codex 会话接续            | 待真实执行         | 必须由使用者在新的 Codex 会话核对现场并接续；子代理或 CLI 独立进程不能替代                                                                  |
 | QA-001    | 既有浏览器回归搜索弹窗超时       | 已修复及回归       | 官方搜索对话框预加载，冷加载首次点击回归通过；本轮11/11浏览器通过，历史失败仍保留                                                           |
 
-职责与目录重构的静态实施记录见 [本轮验证](./docs/development/03-职责重构实施与验证.md)。已登记任务 responsibility-refactor 以 CLI TaskState 为准，不在本表复制实时状态。
+职责与目录重构的静态实施记录见 [本轮验证](./src/content/development/03-职责重构实施与验证.md)。已登记任务 responsibility-refactor 以 CLI TaskState 为准，不在本表复制实时状态。

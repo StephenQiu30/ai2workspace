@@ -11,6 +11,9 @@ const buildRoot = path.join(appRoot, '.next');
 const runtimeRoots = [
   path.resolve(appRoot, '../../spaces'),
   path.resolve(appRoot, '../../knowledge'),
+  path.resolve(appRoot, '../../src/content'),
+  path.resolve(appRoot, '../../harness'),
+  path.resolve(appRoot, '../../code'),
 ];
 if (process.env.AI2WORKSPACE_SPACES_DIR) {
   runtimeRoots.push(path.resolve(process.env.AI2WORKSPACE_SPACES_DIR));

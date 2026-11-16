@@ -1,0 +1,22 @@
+[
+  {
+    "id": "template-design",
+    "path": "knowledge/design.md"
+  },
+  {
+    "id": "template-user-story",
+    "path": "knowledge/user-story.md"
+  },
+  {
+    "id": "template-test-scenario",
+    "path": "knowledge/test-scenario.md"
+  },
+  {
+    "id": "template-workspace-guide",
+    "path": "workspace/README.md"
+  },
+  {
+    "id": "template-harness-guide",
+    "path": "tasks/README.md"
+  }
+]

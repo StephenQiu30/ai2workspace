@@ -1,6 +1,6 @@
-# ai2workspace Web
+# 项目 Workspace Web
 
-本机多空间知识阅读、空间声明编辑和治理结果展示。采用官方 Fumadocs UI、内容树、搜索与 Markdown/LLM 接口，沿用 shadcn Base Nova / Neutral 主题。普通 Markdown 在服务端安全渲染；正文中的 JavaScript、MDX 表达式和原始 HTML 不会执行。
+当前项目内的文档阅读、任务交接和 Workspace 配置模块。采用官方 Fumadocs 与既定 shadcn 主题，遵守 Vercel 界面规范；不建设通用空间平台。
 
 ## 运行
 
@@ -15,13 +15,13 @@ pnpm --filter @ai2workspace/web build
 pnpm --filter @ai2workspace/web start
 ```
 
-默认入口为 http://127.0.0.1:1140/；`/read/ID` 保留自用空间的稳定地址，`/spaces` 选择空间。Web 只扫描已登记的知识来源，不执行声明中的工程检查。任务创建、检查、交接和恢复使用 CLI。
+默认入口为 http://127.0.0.1:1140/；`/read/ID` 保留自用空间的稳定地址，`/spaces/self` 查看当前项目任务与交接。Web 只扫描已登记的知识来源，不执行声明中的工程检查。任务创建、检查、交接和恢复使用 CLI。
 
 ## 空间与知识
 
 空间登记目录由服务启动环境 `AI2WORKSPACE_SPACES_DIR` 指定，默认仓库 `spaces/`。仅枚举其中包含 `workspace.yaml` 的普通子目录；网页不能输入任意本机路径。每个空间目录维护共享声明、私有 `workspace.local.yaml` 绑定及 Core 目录身份。
 
-网页可创建和编辑共享 YAML 声明，保存前使用 Core 合同校验。已有空间 ID 不可变，保存受空间执行锁和配置修订检查保护。新空间生成空的私有绑定文件，使用者在本机配置目录路径。网页不展示私有绑定或原始进程输出。并发创建由登记目录的 `.registry-create.lock` 保护；异常退出遗留锁保留 pid/host，须在本机确认持有进程已结束后显式处理，不因时间自动清理。
+网页编辑当前项目的共享 YAML 声明，保存前使用 Core 合同校验。空间 ID 不可变，保存受执行锁和修订检查保护。私有绑定由本机配置，不发送到浏览器。当前版本不提供通用空间创建流程；旧 /spaces 和 /spaces/new 地址分别回到当前项目与其配置，旧资料阅读地址保留兼容。
 
 原始资料保留在绑定目录。Core 扫描并保存不可变知识修订；页面、目录、相对链接、搜索、Markdown 与 LLM 输出使用同一修订。旧修订地址保留；来源失联时展示上次完整索引并标明陈旧，恢复后可点击“读取最新知识”。文本接口通过 `X-Knowledge-Revision` 和 `X-Knowledge-Stale` 声明修订与陈旧状态。
 

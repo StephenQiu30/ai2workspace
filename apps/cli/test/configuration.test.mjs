@@ -99,3 +99,20 @@ test('configuration edits obey the running space execution lock', async (t) => {
   });
   assert.equal(await readFile(join(dir, 'workspace.yaml'), 'utf8'), text);
 });
+
+test('stale configuration remains a revision conflict while a background read holds the lock', async (t) => {
+  const { dir, text } = await fixture(t);
+  const store = await core.openSpaceStore(await core.resolveWorkspace(dir));
+  await store.withLock(async () => {
+    await assert.rejects(
+      core.updateWorkspaceDefinition(
+        dir,
+        JSON.stringify(valid),
+        '0'.repeat(64),
+      ),
+      (error) =>
+        error.issues.some((issue) => issue.code === 'revision_conflict'),
+    );
+  });
+  assert.equal(await readFile(join(dir, 'workspace.yaml'), 'utf8'), text);
+});

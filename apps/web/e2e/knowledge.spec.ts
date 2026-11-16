@@ -51,8 +51,8 @@ test('冷加载后搜索第一次点击即可打开官方对话框', async ({ pa
 
 test('空间配置、治理和根规范通过绑定呈现', async ({ page }) => {
   await page.goto('/spaces');
-  await expect(page.getByRole('heading', { name: '知识空间' })).toBeVisible();
-  await page.getByRole('link', { name: '治理与交接' }).first().click();
+  await expect(page).toHaveURL(/\/spaces\/self/);
+  await expect(page.getByRole('link', { name: '创建空间声明' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '治理问题' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '任务与交接' })).toBeVisible();
   await page.getByRole('link', { name: '编辑空间声明' }).click();
@@ -185,45 +185,63 @@ test('知识变化和来源失联仍可读取固定旧修订', async ({ page, re
   }
 });
 
-test('声明创建、编辑、校验和并发冲突不执行工程命令', async ({ page }) => {
+test('项目模块入口不创建通用空间，配置保存和并发冲突不执行工程命令', async ({
+  page,
+}) => {
   test.skip(!!process.env.WORKSPACE_TEST_URL, '外部服务不修改配置');
   const { readFile, writeFile, access } = await import('node:fs/promises');
   const path = await import('node:path');
   const registry = process.env.AI2WORKSPACE_TEST_REGISTRY!;
   const marker = path.join(registry, 'must-not-run');
-  const definition = `schemaVersion: 1\nid: web-created\nname: 网页配置测试\nprofile: development\nsources:\n  - id: notes\n    binding: notes\n    kind: knowledge\n    include: ['**/*.md']\n    exclude: []\n    writePolicy: read-only\nprojects:\n  - id: app\n    binding: notes\n    inputExclude: []\nchecks:\n  - id: never-run\n    projectId: app\n    cwd: .\n    argv: [${JSON.stringify(process.execPath)}, '-e', ${JSON.stringify(`require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'unexpected')`)}]\n    timeoutMs: 1000\n    required: true\n`;
-  await page.goto('/spaces/new');
-  await page.getByRole('textbox', { name: '空间目录标识' }).fill('web-created');
-  const editor = page.getByRole('textbox', { name: /workspace.yaml/ });
-  await editor.fill(
-    definition.replace('profile: development', 'profile: invalid'),
-  );
-  await page.getByRole('button', { name: '保存声明' }).click();
-  await expect(page.getByRole('status')).toContainText('未保存');
-  await expect(page.getByRole('textbox', { name: '空间目录标识' })).toHaveValue(
-    'web-created',
-  );
-  await expect(editor).toHaveValue(
-    definition.replace('profile: development', 'profile: invalid'),
-  );
-  await editor.fill(definition);
-  await page.getByRole('button', { name: '保存声明' }).click();
-  await expect(page.getByRole('status')).toContainText('已保存');
-  const config = path.join(registry, 'web-created', 'workspace.yaml');
-  expect(await readFile(config, 'utf8')).toContain('never-run');
-  await page.goto('/spaces/web-created/settings');
-  await editor.fill(definition.replace('网页配置测试', '更新后的声明'));
-  await page.getByRole('button', { name: '保存声明' }).click();
-  await expect(page.getByRole('status')).toContainText('已保存');
-  expect(await readFile(config, 'utf8')).toContain('更新后的声明');
-  await page.reload();
-  const external = definition.replace('网页配置测试', '外部修改');
-  await writeFile(config, external);
-  await editor.fill(definition.replace('网页配置测试', '试图覆盖'));
-  await page.getByRole('button', { name: '保存声明' }).click();
-  await expect(page.getByRole('status')).toContainText('配置已被其他操作更新');
-  expect(await readFile(config, 'utf8')).toBe(external);
-  await expect(access(marker)).rejects.toThrow();
+  const config = path.join(registry, 'self', 'workspace.yaml');
+  const original = await readFile(config, 'utf8');
+  try {
+    await page.goto('/spaces/new');
+    await expect(page).toHaveURL(/\/spaces\/self\/settings/);
+    await expect(
+      page.getByRole('textbox', { name: '空间目录标识' }),
+    ).toHaveCount(0);
+    const editor = page.getByRole('textbox', { name: /workspace.yaml/ });
+    await editor.fill(original.replace('profile: generic', 'profile: invalid'));
+    await page.getByRole('button', { name: '保存声明' }).click();
+    await expect(page.getByRole('status')).toContainText('未保存');
+    expect(await readFile(config, 'utf8')).toBe(original);
+    const command =
+      "require('node:fs').writeFileSync(" +
+      JSON.stringify(marker) +
+      ", 'unexpected')";
+    const updated = original
+      .replace('ai2workspace 自用', '当前项目配置测试')
+      .replace(
+        'projects: []',
+        'projects:\n  - id: app\n    binding: notes\n    inputExclude: []',
+      )
+      .replace(
+        'checks: []',
+        'checks:\n  - id: never-run\n    projectId: app\n    cwd: .\n    argv: [' +
+          JSON.stringify(process.execPath) +
+          ', "-e", ' +
+          JSON.stringify(command) +
+          ']\n    required: true',
+      );
+    await editor.fill(updated);
+    await page.getByRole('button', { name: '保存声明' }).click();
+    await expect(page.getByRole('status')).toContainText('已保存');
+    expect(await readFile(config, 'utf8')).toBe(updated);
+    await page.reload();
+    await expect(editor).toHaveValue(updated);
+    const external = original.replace('ai2workspace 自用', '外部修改');
+    await writeFile(config, external);
+    await editor.fill(original);
+    await page.getByRole('button', { name: '保存声明' }).click();
+    await expect(page.getByRole('status')).toContainText(
+      '配置已被其他操作更新',
+    );
+    expect(await readFile(config, 'utf8')).toBe(external);
+    await expect(access(marker)).rejects.toThrow();
+  } finally {
+    await writeFile(config, original);
+  }
 });
 
 test('语义无效声明被拒绝且已有破损配置可以修复', async ({ page }) => {
@@ -313,7 +331,7 @@ test('固定知识修订也固定图片字节，来源失联仍可读取旧图',
   }
 });
 
-test('重复空间身份拒绝创建并阻止已存在的重复登记读取', async ({
+test('遗留空间重复身份不会污染当前项目，重复登记读取仍被阻止', async ({
   page,
   request,
 }) => {
@@ -327,13 +345,10 @@ test('重复空间身份拒绝创建并阻止已存在的重复登记读取', as
     'utf8',
   );
   await page.goto('/spaces/new');
-  await page
-    .getByRole('textbox', { name: '空间目录标识' })
-    .fill('duplicate-new');
-  await page.getByRole('textbox', { name: /workspace.yaml/ }).fill(original);
-  await page.getByRole('button', { name: '保存声明' }).click();
-  await expect(page.getByRole('status')).toContainText('空间 ID 已被登记');
-  await expect(page.getByRole('status')).not.toContainText(registry);
+  await expect(page).toHaveURL(/\/spaces\/self\/settings/);
+  await expect(page.getByRole('textbox', { name: '空间目录标识' })).toHaveCount(
+    0,
+  );
   await expect(access(path.join(registry, 'duplicate-new'))).rejects.toThrow();
   const collision = path.join(registry, 'duplicate-existing');
   await mkdir(collision);
@@ -352,9 +367,10 @@ test('重复空间身份拒绝创建并阻止已存在的重复登记读取', as
       ).status(),
     ).toBe(404);
     await page.goto('/spaces');
+    await expect(page).toHaveURL(/\/spaces\/self/);
     await expect(
-      page.getByText('空间 ID 重复，读取已阻止，请在本机修复登记'),
-    ).toHaveCount(2);
+      page.getByRole('heading', { name: '任务与交接' }),
+    ).toBeVisible();
   } finally {
     await rm(collision, { recursive: true });
   }

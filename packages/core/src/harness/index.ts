@@ -1,4 +1,5 @@
 export * from './types.js';
+export { loadHarnessPolicy, policySchema, rolesSchema } from './policy.js';
 export { prepareTask, exportContext } from './preparation.js';
 export { runCheck } from './checks.js';
 export {

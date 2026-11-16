@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "roles": [
+    {
+      "id": "owner",
+      "name": "业务负责人",
+      "ownedPaths": [],
+      "deliverables": ["目标、优先级、范围取舍与业务接受结论"],
+      "reviewRoles": ["pm"]
+    },
+    {
+      "id": "pm",
+      "name": "产品设计",
+      "ownedPaths": ["src/content/product/"],
+      "deliverables": ["需求来源、场景、范围、业务规则和可观察验收"],
+      "reviewRoles": ["owner", "qa"]
+    },
+    {
+      "id": "uiue",
+      "name": "视觉与体验设计",
+      "ownedPaths": ["DESIGN.md", "src/content/design/"],
+      "deliverables": ["流程、交互、视觉、状态与版本化设计稿"],
+      "reviewRoles": ["pm", "fe", "qa"],
+      "checkIds": [
+        "service-lint",
+        "service-format",
+        "service-build",
+        "service-browser",
+        "service-bundle"
+      ]
+    },
+    {
+      "id": "rd",
+      "name": "技术负责人",
+      "ownedPaths": [
+        "AGENTS.md",
+        "PROJECT.md",
+        "README.md",
+        "package.json",
+        ".gitignore",
+        "code/",
+        "harness/",
+        "scripts/",
+        ".agents/skills/",
+        "packages/core/",
+        "apps/cli/",
+        "src/content/architecture/",
+        "spaces/self/workspace.yaml"
+      ],
+      "deliverables": ["工程地图、模块边界、接口、数据与关键技术决策"],
+      "reviewRoles": ["be", "fe", "qa"]
+    },
+    {
+      "id": "fe",
+      "name": "前端研发",
+      "ownedPaths": ["apps/web/"],
+      "deliverables": ["前端实现、状态覆盖、自测与设计偏差"],
+      "reviewRoles": ["uiue", "qa"],
+      "checkIds": [
+        "service-lint",
+        "service-format",
+        "service-build",
+        "service-browser",
+        "service-bundle"
+      ]
+    },
+    {
+      "id": "be",
+      "name": "后端研发",
+      "ownedPaths": ["packages/core/", "apps/cli/"],
+      "deliverables": ["服务行为、接口与数据实现、兼容、自测"],
+      "reviewRoles": ["rd", "qa"]
+    },
+    {
+      "id": "qa",
+      "name": "质量验证",
+      "ownedPaths": [
+        "packages/core/test/",
+        "apps/cli/test/",
+        "apps/web/e2e/",
+        "apps/web/tests/",
+        "scripts/"
+      ],
+      "deliverables": ["验收覆盖、实际执行、缺陷、证据及剩余风险"],
+      "reviewRoles": ["pm", "rd"]
+    },
+    {
+      "id": "op",
+      "name": "运维",
+      "ownedPaths": [
+        "scripts/",
+        "public/media/",
+        "src/content/guides/operations/"
+      ],
+      "deliverables": ["环境、配置、发布、监控与回滚"],
+      "reviewRoles": ["rd", "qa"]
+    },
+    {
+      "id": "pom",
+      "name": "项目与交付管理",
+      "ownedPaths": [
+        "BACKLOG.md",
+        "src/content/00-文档索引.md",
+        "src/content/meta.json",
+        "src/content/document-ids.json",
+        "src/content/development/",
+        "src/content/guides/",
+        "src/content/archive/",
+        "harness/tasks/",
+        "docs/",
+        "templates/",
+        "tools/"
+      ],
+      "deliverables": ["计划、依赖、阻塞、基线影响和跨角色交接"],
+      "reviewRoles": ["pm", "qa", "rd"]
+    }
+  ]
+}

@@ -28,6 +28,7 @@ export const workspaceSchema = z.strictObject({
   id,
   name: z.string().min(1),
   profile: z.enum(['generic', 'development']),
+  harness: z.strictObject({ projectId: id, policyPath: rel }).optional(),
   sources: z
     .array(
       z.strictObject({
@@ -158,6 +159,12 @@ export function validateWorkspaceDefinition(
     fail('invalid_config', parsed.error.message);
   }
   const definition = parsed.data;
+  if (
+    definition.harness &&
+    !definition.projects.some((p) => p.id === definition.harness!.projectId)
+  ) {
+    fail('unknown_project', 'Harness policy names an unknown project');
+  }
   for (const group of [
     definition.sources,
     definition.projects,

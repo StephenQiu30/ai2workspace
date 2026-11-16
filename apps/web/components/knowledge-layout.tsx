@@ -24,9 +24,9 @@ export async function KnowledgeLayout({
       tree={source.getPageTree()}
       {...baseOptions()}
       links={[
-        { text: '空间', url: '/spaces' },
-        { text: '治理与交接', url: `/spaces/${space}` },
-        { text: '配置', url: `/spaces/${space}/settings` },
+        { text: '项目文档', url: '/read' },
+        { text: '任务与交接', url: `/spaces/${space}` },
+        { text: 'Workspace 配置', url: `/spaces/${space}/settings` },
       ]}
     >
       {children}

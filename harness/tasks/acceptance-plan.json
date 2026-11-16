@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "scope": "当前项目内 Workspace 模块；未绑定语言与通用平台能力不纳入首期",
+  "designDocumentId": "workspace-delivery-design",
+  "stateAuthority": "CLI TaskState and sealed evidence; this file defines acceptance only",
+  "acceptance": [
+    {
+      "id": "AC-01",
+      "scenario": "一个业务项目关联前后端两个工程",
+      "expected": "身份、职责及本机位置明确，任务能选择适用工程",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "共享登记、本机绑定与任务记录"
+    },
+    {
+      "id": "AC-02",
+      "scenario": "输入原话、参考资料、AI 推断及确认",
+      "expected": "分类与来源可辨识，推断不自动成为规则",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "原始内容、整理内容及确认记录"
+    },
+    {
+      "id": "AC-03",
+      "scenario": "分别准备小任务与跨工程任务",
+      "expected": "必需信息完整，专项产物按适用性增加",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "两类交付包及适用性判断"
+    },
+    {
+      "id": "AC-04",
+      "scenario": "为 TS、Go、Java、Python 配置合规及违规样例",
+      "expected": "对应规则能发现预期问题，覆盖缺口明确",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "固定规则、工具配置、样例及原始运行"
+    },
+    {
+      "id": "AC-05",
+      "scenario": "缺少关键需求、冲突设计或无法访问工程时请求执行",
+      "expected": "相关工作不能就绪，具体缺口可见",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "请求、阻断事件和页面观察"
+    },
+    {
+      "id": "AC-06",
+      "scenario": "用真实 Codex 执行一个受控任务",
+      "expected": "上下文、运行、产物和宿主能力实际关联",
+      "evidenceKinds": ["automatic", "real-codex"],
+      "requiredEvidence": "真实运行、能力验证及产物差异"
+    },
+    {
+      "id": "AC-07",
+      "scenario": "执行者填写“测试通过”但未运行检查",
+      "expected": "不能满足必需检查，也不能完成",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "自述、服务证据列表及拒绝结果"
+    },
+    {
+      "id": "AC-08",
+      "scenario": "检查失败、工具缺失、超时、报告缺失或 gofmt 输出非空",
+      "expected": "分别正确分类，均不能误报通过",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "原始输出、解析结果和验收缺口"
+    },
+    {
+      "id": "AC-09",
+      "scenario": "检查后改变代码、设计、规则或工具配置",
+      "expected": "受影响证据失去当前验收资格，要求重验",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "前后内容身份及重验决策"
+    },
+    {
+      "id": "AC-10",
+      "scenario": "导入错误产物版本或来源不可核验的外部报告",
+      "expected": "标明来源限制，不满足对应必需证据",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "报告元数据、核验和拒绝结果"
+    },
+    {
+      "id": "AC-11",
+      "scenario": "执行者删除必需检查或降低标准后申请完成",
+      "expected": "识别约定变化，不能直接完成",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "修订差异、确认缺口与状态事件"
+    },
+    {
+      "id": "AC-12",
+      "scenario": "已有违规基线上新增、移动、删除问题",
+      "expected": "新增不被历史债务抵消，难以辨认时复核，整体回归仍执行",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "基线、差异、全量结果及复核"
+    },
+    {
+      "id": "AC-13",
+      "scenario": "责任人接受一个指定差异",
+      "expected": "保留原违规，显示已接受差异及范围，不伪造通过",
+      "evidenceKinds": ["automatic", "human"],
+      "requiredEvidence": "失败结果、例外和最终结论"
+    },
+    {
+      "id": "AC-14",
+      "scenario": "高影响任务缺少独立复核或业务确认",
+      "expected": "阻止完成，补齐后才可接受",
+      "evidenceKinds": ["automatic", "human"],
+      "requiredEvidence": "角色要求、复核来源和业务确认"
+    },
+    {
+      "id": "AC-15",
+      "scenario": "并行任务修改同一接口、需求或共享产物",
+      "expected": "检出冲突，不静默覆盖，依赖任务得到影响判断",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "前后修订、冲突事件和处理记录"
+    },
+    {
+      "id": "AC-16",
+      "scenario": "中断执行、重复发起、外部动作结果未知",
+      "expected": "不误报成功，不无记录重复执行，保留现场并先核实",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "运行标识、中断记录和恢复观察"
+    },
+    {
+      "id": "AC-17",
+      "scenario": "多工程只完成其中一个后申请完成",
+      "expected": "显示未满足工程及产物，不能完成",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "多工程产物清单和逐项结果"
+    },
+    {
+      "id": "AC-18",
+      "scenario": "无历史聊天的接手者从空间入口开始真实任务",
+      "expected": "能找到有效需求、设计、工程和规则，完成约定任务",
+      "evidenceKinds": ["automatic", "real-codex", "human"],
+      "requiredEvidence": "接手过程、缺口、产物及验收"
+    },
+    {
+      "id": "AC-19",
+      "scenario": "完成后需要更新工程或业务基线",
+      "expected": "更新与交付关联；未更新时不能满足必需交付条件",
+      "evidenceKinds": ["automatic"],
+      "requiredEvidence": "基线影响检查与更新差异"
+    },
+    {
+      "id": "AC-20",
+      "scenario": "实际新的 Codex 会话接续一个中断任务",
+      "expected": "实际读取依据，识别漂移，复用有效证据并完成余项",
+      "evidenceKinds": ["automatic", "real-codex", "new-codex-session"],
+      "requiredEvidence": "两个真实会话的执行与交接记录"
+    },
+    {
+      "id": "AC-21",
+      "scenario": "任务只要求实现验收，或另行要求发布",
+      "expected": "分别判断，不误报合并和发布；要求发布时核验实际结果",
+      "evidenceKinds": ["automatic", "human"],
+      "requiredEvidence": "完成约定、验收及必要的外部记录"
+    },
+    {
+      "id": "AC-22",
+      "scenario": "浏览器验收任务准备、失败恢复、验收和交接页面",
+      "expected": "键盘、焦点、表单反馈及状态可用，缺口能指向下一步",
+      "evidenceKinds": ["automatic", "browser"],
+      "requiredEvidence": "浏览器交互记录、观察和问题关闭结果"
+    }
+  ]
+}

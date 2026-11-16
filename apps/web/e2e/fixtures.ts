@@ -40,18 +40,18 @@ export function createTestRegistry() {
   );
   symlinkSync(path.join(root, 'AGENTS.md'), path.join(notes, 'escape.png'));
   for (const [key, binding] of [
-    ['self', path.join(root, 'docs')],
+    ['self', path.join(root, 'src/content')],
     ['second', notes],
   ]) {
     const dir = path.join(registry, key);
     mkdirSync(dir);
     writeFileSync(
       path.join(dir, 'workspace.yaml'),
-      `schemaVersion: 1\nid: ${key}\nname: ${key === 'self' ? 'ai2workspace 自用' : '第二空间'}\nprofile: generic\nsources:\n  - id: knowledge\n    binding: notes\n    kind: knowledge\n    include: ['**/*.md']\n    exclude: []\n    writePolicy: read-only\n${key === 'self' ? "  - id: rules\n    binding: rules\n    kind: instruction\n    include: ['AGENTS.md', 'PROJECT.md', 'DESIGN.md']\n    exclude: []\n    writePolicy: read-only\n  - id: templates\n    binding: templates\n    kind: reference\n    include: ['knowledge/*.md', 'workspace/README.md', 'harness/README.md']\n    exclude: []\n    writePolicy: read-only\n" : ''}projects: []\nchecks: []\n`,
+      `schemaVersion: 1\nid: ${key}\nname: ${key === 'self' ? 'ai2workspace 自用' : '第二空间'}\nprofile: generic\nsources:\n  - id: knowledge\n    binding: notes\n    kind: knowledge\n    include: ['**/*.md']\n    exclude: []\n    writePolicy: read-only\n${key === 'self' ? "  - id: rules\n    binding: rules\n    kind: instruction\n    include: ['AGENTS.md', 'PROJECT.md', 'DESIGN.md']\n    exclude: []\n    writePolicy: read-only\n  - id: templates\n    binding: templates\n    kind: reference\n    include: ['knowledge/*.md', 'workspace/README.md', 'tasks/README.md']\n    exclude: []\n    writePolicy: read-only\n" : ''}projects: []\nchecks: []\n`,
     );
     writeFileSync(
       path.join(dir, 'workspace.local.yaml'),
-      `schemaVersion: 1\nbindings:\n  notes: ${JSON.stringify(binding)}\n  rules: ${JSON.stringify(root)}\n  templates: ${JSON.stringify(path.join(root, 'templates'))}\nautoScan: false\n`,
+      `schemaVersion: 1\nbindings:\n  notes: ${JSON.stringify(binding)}\n  rules: ${JSON.stringify(root)}\n  templates: ${JSON.stringify(path.join(root, 'harness/templates'))}\nautoScan: false\n`,
     );
   }
   return registry;

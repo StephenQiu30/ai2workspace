@@ -11,6 +11,7 @@ import type {
   HandoffNotes,
   Checkpoint,
   ResumeResult,
+  TaskOrigin,
 } from '../harness/types.js';
 import type { Issue } from '../shared/types.js';
 import {
@@ -22,13 +23,20 @@ import {
   relativePath,
   fail,
   maybeJson,
+  readJson,
 } from '../storage/file-store.js';
 import {
   contextDrift,
   candidates,
   verifySnapshotObjects,
+  readManifest,
 } from './preparation.js';
 import { probe } from './checks.js';
+import {
+  loadHarnessPolicy,
+  contractPolicyIssues,
+  outputScopeIssues,
+} from './policy.js';
 const id = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
 const rel = z
   .string()
@@ -65,6 +73,7 @@ export const taskInputSchema = z.strictObject({
       .default([]),
   }),
   projectIds: z.array(id),
+  roleIds: z.array(id).optional(),
   inputs: z.array(
     key.extend({
       section: z.string().optional(),
@@ -152,6 +161,20 @@ export async function createTask(
 ): Promise<TaskState> {
   store.assertSpace(workspace);
   const c = validateContract(workspace, input);
+  const policyIssues = contractPolicyIssues(
+    workspace,
+    c,
+    await loadHarnessPolicy(workspace),
+  );
+  if (policyIssues.length) {
+    fail(
+      policyIssues[0]!.code,
+      policyIssues
+        .map((i) => i.message + (i.path ? ': ' + i.path : ''))
+        .join('; '),
+      3,
+    );
+  }
   return store.withLock(async () => {
     if (await maybeJson(path.join(store.root, 'tasks', c.id, 'state.json'))) {
       fail('task_exists', 'Task already exists', 5);
@@ -187,6 +210,20 @@ export async function reviseTask(
     fail('missing_reason', 'Contract revision requires a reason');
   }
   const c = validateContract(workspace, input.contract);
+  const policyIssues = contractPolicyIssues(
+    workspace,
+    c,
+    await loadHarnessPolicy(workspace),
+  );
+  if (policyIssues.length) {
+    fail(
+      policyIssues[0]!.code,
+      policyIssues
+        .map((i) => i.message + (i.path ? ': ' + i.path : ''))
+        .join('; '),
+      3,
+    );
+  }
   if (c.id !== taskId) {
     fail('task_mismatch', 'Revision task ID differs');
   }
@@ -197,6 +234,26 @@ export async function reviseTask(
     }
     if (['complete', 'cancelled'].includes(state.phase)) {
       fail('terminal_task', 'Cannot revise terminal task', 3);
+    }
+    if (state.originId) {
+      const snapshot = state.snapshotId
+        ? await readManifest(store, state.snapshotId)
+        : undefined;
+      if (workspace.definition.harness || snapshot?.policyHash) {
+        const original = await readJson<TaskOrigin>(
+          path.join(store.root, 'tasks', taskId, 'origin.json'),
+        );
+        if (
+          digest(Object.keys(original.projects).sort()) !==
+          digest([...c.projectIds].sort())
+        ) {
+          fail(
+            'task_projects_fixed',
+            'Prepared policy task projects are fixed; create a new task to change the engineering set',
+            3,
+          );
+        }
+      }
     }
     const revision = state.contractRevision + 1;
     await atomicJson(
@@ -236,6 +293,10 @@ export async function verifyUnlocked(
   const state = await store.readTask(taskId);
   const contract = await store.readContract(taskId, state.contractRevision);
   const issues: Issue[] = [];
+  const policy = await loadHarnessPolicy(workspace);
+  const policyIssues = contractPolicyIssues(workspace, contract, policy);
+  issues.push(...policyIssues);
+  let origin: TaskOrigin | undefined;
   const reusableRunIds: string[] = [];
   const staleRunIds: string[] = [];
   let drift = false;
@@ -255,6 +316,9 @@ export async function verifyUnlocked(
         state.snapshotId,
         state.originId,
       );
+      origin = await readJson<TaskOrigin>(
+        path.join(store.root, 'tasks', taskId, 'origin.json'),
+      );
     } catch {
       integrityFailed = true;
       issues.push({
@@ -271,8 +335,13 @@ export async function verifyUnlocked(
     }
   }
   const current = await candidates(workspace, contract);
+  if (origin && !integrityFailed) {
+    issues.push(
+      ...outputScopeIssues(contract, policy, origin.projects, current),
+    );
+  }
   const validChecks = new Set<string>();
-  let blocked = integrityFailed;
+  let blocked = integrityFailed || policyIssues.length > 0;
   let failed = false;
   for (const checkId of contract.checkIds) {
     const check = workspace.definition.checks.find((c) => c.id === checkId);
