@@ -10,7 +10,7 @@
 
 本文件是仓库工程结构与服务边界的入口。具体业务的需求、PRD、设计和执行记录仍统一保存在 `workspace/content/`，按[项目文档与设计规范](./workspace/content/standards/project-design.md)关联，避免复制同一份定义。
 
-项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务使用明确的业务域名称，不用示例项目的名称描述本服务。名称调整不改变本机检出目录或远程仓库地址。
+项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务按实际业务域命名，服务描述与本项目的职责及实现范围一致。
 
 ## 1. 现状与目标
 
