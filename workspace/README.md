@@ -1,4 +1,4 @@
-# Workspace 知识库
+# ai2workspace 知识库
 
 基于 Fumadocs 官方脚手架的独立静态文档网站，正文唯一位置为 `content/`。页面、导航和搜索从内容自动生成。
 

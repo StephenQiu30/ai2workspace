@@ -7,7 +7,7 @@ description: 需求、PRD、设计与执行计划的职责、关联方式和交�
 
 将“解决什么问题、依据什么设计、如何证明完成”保存在同一知识库。人和 AI 读取同一份资料，通过文档链接、条目 ID 和实际工程路径协作。
 
-本规范采用用户提供的 Workspace 协作截图作为方向参考：需求、设计、实现、验收与交接形成闭环。截图中的 AI2CC 品牌、业务模块和目录示例不是本项目已确认的产品需求。
+本规范采用用户提供的协作截图作为方向参考：需求、设计、实现、验收与交接形成闭环。当前项目与产品标识统一为 `ai2workspace`；参考材料中的品牌、业务模块和目录示例不能作为本项目已确认需求。
 
 ## 四类文档的职责
 
@@ -25,6 +25,8 @@ description: 需求、PRD、设计与执行计划的职责、关联方式和交�
 ## 目录与唯一来源
 
 知识正文位于 `workspace/content/`，网站自动生成导航与搜索。四份模板仅保存在 `templates/`，本规范仅保存在 `standards/project-design.md`；Skills 通过路径读取，不复制模板或规则正文。
+
+根目录 `PROJECT.md` 按用户指定保留为当前仓库的工程结构、服务边界与选型入口；通用设计约定以本规范为准，业务专题材料放在下述知识目录。模块 README 说明实际启动与检查，生成文件归各工程的构建流程管理，各处通过引用关联，不重复维护同一份规则。
 
 PRD 和实施计划的方法优先复用已启用的插件：`pm-execution:create-prd` 负责 PRD 创建与评审，`superpowers:writing-plans` 负责实现计划拆解。本地模板保存项目字段和引用约定，项目 Skill 负责读取上游与落盘适配，不在仓库维护插件方法的副本。
 
@@ -84,15 +86,55 @@ workspace/content/
 - **质量目标**：性能、容量、可用性和成本有业务要求或实测依据时写具体条件；没有依据的数值保持待确认。
 - **交付边界**：列出实现顺序、验证方法及必要的发布条件；文件已写、构建通过或评审通过不能代替产品验收。
 
-当前知识库网站的工程基线：
+## 工程规范与目录设计
+
+本仓库 Go 业务服务以 [Google Go Style Guide](https://google.github.io/styleguide/go/guide) 为规范基线，[Style Decisions](https://google.github.io/styleguide/go/decisions)补充具体决定，[Best Practices](https://google.github.io/styleguide/go/best-practices)作为设计参考；以[官方概述](https://google.github.io/styleguide/go/)说明的优先级处理差异。前端以 [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) 为基线，保持 strict。代码规范、服务边界与框架约定分别记录，不将项目的微服务目录方案声称为 Google 强制规定。
+
+### 目录与依赖
+
+- `backend/services/<服务名>/` 按业务域划分独立服务，每个服务分别维护 Go module、入口、数据所有权、检查与部署。跨服务通过 API 协作，不导入彼此的业务源码或访问对方业务表。
+- 服务内采用 `cmd/server/` 组装入口和 `internal/<业务包>/` 业务实现，按职责拆包。目录命名说明所拥有的能力，不建立集中存放所有业务的 `controllers/`、`services/`、`models/` 或 `utils/`。
+- `frontend/src/app/` 承载框架路由，`features/<业务功能>/` 承载业务界面与状态，`components/ui/` 保存 shadcn 组件，`services/generated/` 保存生成的调用代码。单页私有实现可就近存放；没有实际内容时不预建目录。
+- 测试代码独立组织：Go 服务使用本服务 Go module 下、与 `internal/` 同级的 `tests/`，前端使用 `frontend/tests/`，跨服务契约及端到端测试使用根 `tests/`。业务源码目录不混放测试文件；测试运行数据与报告不进入业务发布产物。
+- 目录树须注明实际存在、计划创建、自动生成及按需添加的部分，并说明关键依赖方向。共享代码以真实复用为依据，不为统一外观新增一层包装。
+
+### Go 代码设计
+
+包名使用简短、明确的小写名称，标识符使用 MixedCaps / mixedCaps；文件可用 `snake_case.go`。本项目测试放在独立 `tests/`，文件以 `*_test.go` 结尾，通过导出行为验证，不为测试额外暴露私有实现。用 `gofmt` 统一格式，导出符号说明用途及必要契约。
+
+优先具体实现；确有需要时由消费方定义小接口。业务函数显式接收所需数据及 `context.Context`，传递请求取消与超时，避免将 HTTP 框架上下文扩散到业务规则。错误补充必要上下文并明确处理；goroutine 明确启动者、结束条件和回收方式。遵循上述 Go 规范中的命名、接口、context 与并发约定，不机械套用层级或工厂模式。
+
+### TypeScript 代码设计
+
+手写文件采用 `snake_case.ts/tsx`；类型与 React 组件用 UpperCamelCase，函数与变量用 lowerCamelCase。优先命名导出，类型使用 `import type`；对象结构优先 interface，联合等类型表达式使用 type。未知输入使用 unknown 并收窄，避免用 any 或无依据断言绕过检查。模块只导出实际被外部使用的能力。
+
+Prettier 处理格式，ESLint 处理代码质量及可自动检查的规范，类型检查保持 strict。格式选项按 Google 风格配置；与框架或工具不能兼容的部分按下表明确登记。工具检查结合设计评审，不以安装某个配置包声称覆盖完整规范。
+
+### 框架与生成代码例外
+
+| 范围 | 允许的具体差异 | 约束与检查 |
+| --- | --- | --- |
+| Next.js 特殊路由、布局及配置入口 | 保留框架文件命名和必要的默认导出 | 只限定到相应入口，手写业务模块继续命名导出 |
+| 工具识别的配置入口 | 保留 `eslint.config.mjs`、`openapi2ts.config.ts` 等约定文件名及配置导出方式 | 按工具实际需要登记，不将例外扩展到普通业务文件 |
+| shadcn CLI 引入的组件及必要配置 | 保留官方文件命名、组件 API 和组合约定 | 这是项目拥有的组件源码，修改仍需类型、质量与交互检查，不整体豁免 |
+| Umi OpenAPI 生成目录 | 生成器产生的命名空间、文件名及兼容写法 | 仅限定 `frontend/src/services/generated/`；通过生成配置约束类型，不手改、不全局关闭规则 |
+| Swaggo 生成目录 | 生成器规定的文件和注册方式 | 仅限定各服务 `internal/apidocs/`；由固定版本生成并参加构建检查 |
+| 现有 Fumadocs 脚手架文件 | 保留官方工程所需命名与配置导出 | 新增业务代码遵循对应规范，既有风格调整随实际变更进行 |
+| 测试目录与工具识别文件 | 测试移至独立 `tests/`；保留 `*_test.go` 及所选执行器要求的测试文件命名 | 这是用户指定的目录选择；Go 测试留在本服务 module 内以遵守 internal 可见性，跨服务仅从外部接口验证 |
+
+新增例外在实际设计中说明文件范围、具体冲突、原因和验证方式，避免扩展到整个工程。Swagger、生成客户端和运行时解析规则的唯一来源保持一致：手工维护 Go DTO、标签与必要注释，通过工具生成文档及客户端；生成文件不进入公开知识源。完整生成流程和目录归属见根 `PROJECT.md`，本页不复制服务配置。
+
+### 检查与验收边界
 
 | 对象 | 采用方式 | 检查边界 |
 | --- | --- | --- |
-| TypeScript | [Google TypeScript 规范](https://google.github.io/styleguide/tsguide.html)，保持 strict | 类型与 ESLint 检查，加上职责、命名和类型设计复核；不能宣称工具覆盖整份规范 |
-| Next.js / Fumadocs | 使用官方布局、组件、主题变量和内容源 | 保留框架规定的文件与路由命名；文档通过内容文件生成，不手写逐页映射 |
-| 界面与可访问性 | [Vercel Web Interface Guidelines](https://vercel.com/design/guidelines)；视觉沿用现有 Spacious 布局 | 验证键盘、焦点、明暗主题、移动端和相关交互，按实际变更选择 |
+| Go 服务 | 格式、静态检查、测试、独立构建及设计复核 | 各服务独立检查依赖、包职责、错误与并发；有并发行为时运行适用的竞态检查 |
+| TypeScript 前端 | 类型、ESLint、Prettier、生产构建及设计复核 | 覆盖手写代码与例外边界；生成目录必须可重建且能被消费者正确使用 |
+| Swagger / 客户端 | 文档生成、路由覆盖、生成类型及实际接口调用 | 自动生成不替代真实输入输出、权限与错误路径的验证 |
+| 知识库 Next.js / Fumadocs | 官方布局、组件、主题变量和内容源 | 文档通过内容文件生成，不手写逐页映射；现有工程按实际适用检查执行 |
+| 界面与可访问性 | [Vercel Web Interface Guidelines](https://vercel.com/design/guidelines) | 验证键盘、焦点、主题及移动端；知识库沿用 Spacious，业务前端使用 shadcn / Radix 基线 |
 
-其他业务工程按其真实技术栈补充依据，不把当前网站规范直接强加给所有项目。
+尚未初始化的业务服务只能记录检查要求，不能记为通过。其他外部工程按其实际技术栈确定适用约束，不直接套用本仓库的目录或部署选型。
 
 ## 验收、变更与交接
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, JetBrains_Mono } from 'next/font/google';
-import { appName } from '@/lib/shared';
+import { appDescription, appName } from '@/lib/shared';
 import { Provider } from '@/components/provider';
 import './global.css';
 
@@ -16,7 +16,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: { default: appName, template: `%s | ${appName}` },
-  description: 'Ai2Workspace 项目知识库',
+  description: appDescription,
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
