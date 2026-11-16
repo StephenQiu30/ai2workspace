@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目执行计划"
+  short_description: "依据需求与设计拆分项目执行任务，安排依赖和验证，并如实更新执行证据与交接"
+  default_prompt: "请使用 $workspace-plan，根据已有需求、PRD 和设计制定执行计划，明确任务、依赖、验证及交接。"

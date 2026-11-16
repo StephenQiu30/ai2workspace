@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目产品 PRD"
+  short_description: "将项目需求整理为产品范围、使用流程、业务规则和可观察验收条件，保持来源关联"
+  default_prompt: "请使用 $workspace-prd，根据已知需求创建或更新 PRD，明确产品行为、范围和验收条件。"

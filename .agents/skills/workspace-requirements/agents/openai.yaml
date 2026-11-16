@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目需求记录"
+  short_description: "整理项目原始诉求、来源与确认结论，建立可追溯需求条目并标注待确认问题"
+  default_prompt: "请使用 $workspace-requirements，根据我提供的项目材料创建或更新需求记录，保留来源和待确认项。"

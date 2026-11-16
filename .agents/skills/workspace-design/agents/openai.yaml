@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目实现设计"
+  short_description: "依据项目需求、PRD 和实际工程编写设计，说明职责边界、方案取舍及验证方式"
+  default_prompt: "请使用 $workspace-design，根据已有需求、PRD 和实际工程编写设计文档，明确实现方案与取舍。"
