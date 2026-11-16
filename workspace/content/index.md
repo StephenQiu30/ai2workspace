@@ -9,6 +9,8 @@ description: 本地使用、文档编写、检查与静态部署。
 
 [项目文档与设计规范](./standards/project-design.md)说明需求、PRD、设计和执行计划的职责、关联、分工及验收方式，也列出了四个项目级 Skills 的使用入口。
 
+PRD 方法复用 `pm-execution:create-prd`，实现计划拆解复用 `superpowers:writing-plans`；项目入口负责统一目录、需求关联和实际交付记录。
+
 按实际需要使用[需求记录](./templates/requirements.md)、[设计文档](./templates/design.md)、[PRD](./templates/prd.md)和[执行计划](./templates/plan.md)模板。将模板复制到具体项目专题后填写真实材料，不把模板中的占位内容当作已确认需求或执行结果。
 
 ## 本地使用
