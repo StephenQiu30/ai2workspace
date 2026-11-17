@@ -7,11 +7,25 @@ description: 本地使用、文档编写、检查与静态部署。
 
 ## 项目文档协作
 
-[项目文档与设计规范](./standards/project-design.md)说明需求、PRD、设计和执行计划的职责、关联、分工及验收方式，也列出了四个项目级 Skills 的使用入口。
+知识库按 **Requirement → Design → PRD → Plan** 展示完整需求链路。Research 保存贯穿各阶段的调研、术语和参考资料，Template 提供写作模板，项目规范说明目录与交付约定。
 
-PRD 方法复用 `pm-execution:create-prd`，实现计划拆解复用 `superpowers:writing-plans`；项目入口负责统一目录、需求关联和实际交付记录。
+分类不编号，分类内的每份文档使用三位编号和中文名称，例如 `design/001-学习社区与通用Agent顶层设计.md`，标题显示为“001 · 学习社区与通用 Agent 顶层设计”。下一篇设计使用 `002-中文设计主题.md`，不新建带编号的分类。
 
-按实际需要使用[需求记录](./templates/requirements.md)、[设计文档](./templates/design.md)、[PRD](./templates/prd.md)和[执行计划](./templates/plan.md)模板。将模板复制到具体项目专题后填写真实材料，不把模板中的占位内容当作已确认需求或执行结果。
+| 分类目录 | 内容 |
+| --- | --- |
+| `requirement/` | 原始需求、材料来源、确认和变更 |
+| `design/` | 产品体验、工程职责、方案和取舍 |
+| `prd/` | 产品范围、业务规则、功能和验收条件 |
+| `plan/` | 任务拆解、依赖、执行证据和交接 |
+| `research/` | 调研问题、来源、观察、术语和结论 |
+| `template/` | 五份文档模板 |
+| `standards/` | 通用文档约定与 Google Go / TS 工程规范 |
+
+各分类独立递增编号；同一专题通过名称、稳定文档 ID 和相对链接串联，不要求跨分类序号相同。只创建有实际内容的文档，新增正文由 Fumadocs 自动发现，无需逐篇登记导航。
+
+[项目文档与设计规范](./standards/001-项目文档与设计规范.md)说明编号、权威边界、稳定 ID 和 Skills 入口。PRD 方法复用 `pm-execution:create-prd`，执行计划复用 `superpowers:writing-plans`；项目 Skills 已适配分类内文档编号。
+
+按实际需要使用[需求模板](./template/001-需求记录模板.md)、[设计模板](./template/002-设计文档模板.md)、[PRD 模板](./template/003-PRD模板.md)、[计划模板](./template/004-执行计划模板.md)和[调研模板](./template/005-调研记录模板.md)。模板不代表真实需求、评审或交付已经完成。
 
 ## 本地使用
 

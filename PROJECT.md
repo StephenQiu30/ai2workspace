@@ -5,10 +5,10 @@
 | 文档 ID | `DES-ai2workspace-services` |
 | 定义状态 | 前后端工程基线已初始化；业务域拆分、认证和数据模型仍待设计，实际验证记录见知识库中的初始化计划 |
 | 需求依据 | 2026-11-16 用户要求在根目录规划前后端，指定 Next.js 与 Go；随后明确 Go 微服务、Swagger 自动生成，以及 Next.js + TS + React + Tailwind CSS + shadcn/ui / Radix UI + Prettier + ESLint + Axios + Umi OpenAPI |
-| 规范依据 | 用户要求 Go 遵循 Google Go、前端遵循 Google TS，并据此规范设计文档与目录方案；具体规则及例外见[工程规范与目录设计](./workspace/content/standards/project-design.md#工程规范与目录设计) |
+| 规范依据 | 用户要求 Go 遵循 Google Go、前端遵循 Google TS，并据此规范设计文档与目录方案；具体规则及例外见[工程规范与目录设计](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计) |
 | 适用工程 | 本仓库根目录及后续的 `backend/`、`frontend/`、现有 `workspace/` |
 
-本文件是仓库工程结构与服务边界的入口。具体业务的需求、PRD、设计和执行记录仍统一保存在 `workspace/content/`，按[项目文档与设计规范](./workspace/content/standards/project-design.md)关联，避免复制同一份定义。
+本文件是仓库工程结构与服务边界的入口。具体业务的需求、PRD、设计和执行记录仍统一保存在 `workspace/content/`，按[项目文档与设计规范](./workspace/content/standards/001-项目文档与设计规范.md)关联，避免复制同一份定义。
 
 项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务按实际业务域命名，服务描述与本项目的职责及实现范围一致。
 
@@ -50,9 +50,9 @@ ai2workspace/
 
 ### 目录设计约定
 
-Go 包、手写 TypeScript 文件、框架入口与生成文件分别遵循[统一工程规范](./workspace/content/standards/project-design.md#工程规范与目录设计)。下方目录树说明工程职责及后续扩展位置；`generated/` 与 `apidocs/` 已由工具产生，业务包、测试数据与持久化文件按需添加，不预建空目录。
+Go 包、手写 TypeScript 文件、框架入口与生成文件分别遵循[统一工程规范](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计)。下方目录树说明工程职责及后续扩展位置；`generated/` 与 `apidocs/` 已由工具产生，业务包、测试数据与持久化文件按需添加，不预建空目录。
 
-每个目录说明职责、允许依赖与数据所有权。模块 README 保存本模块真实启动和检查命令，本项目业务设计保存在 `workspace/content/projects/ai2workspace/专题/`；不在每个服务内再维护平行的需求、PRD 或规范副本。
+每个目录说明职责、允许依赖与数据所有权。模块 README 保存本模块真实启动和检查命令，本项目业务设计保存在 `workspace/content/requirement/`、`design/`、`prd/`、`plan/` 和 `research/`，按专题、稳定文档 ID 与实际链接关联，知识库正文与模板在分类内独立采用三位序号及中文文件名；不在每个服务内再维护平行的需求、PRD 或规范副本。
 
 ### 技术选型
 
@@ -127,7 +127,7 @@ frontend/
 
 shadcn/ui 的 Radix 版本作为业务前端组件基线，优先使用已有组件、variant、语义颜色和官方组合方式。只在现成组件不满足需求时直接组合 Radix primitives，不为每个组件再包装项目同名组件。配色与字体在实际界面设计中定义；知识库继续沿用 Spacious。
 
-TypeScript 按[统一规范](./workspace/content/standards/project-design.md#typescript-代码设计)执行 Google TS 与 strict 要求；Next.js 必要默认导出、shadcn 文件命名及生成代码按[例外范围](./workspace/content/standards/project-design.md#框架与生成代码例外)登记。Prettier 负责格式，ESLint 负责代码质量与框架规则，使用 `eslint-config-prettier` 关闭冲突规则，参照 [Prettier 官方集成说明](https://prettier.io/docs/integrating-with-linters)。不通过全局放宽规则规避质量检查。
+TypeScript 按[统一规范](./workspace/content/standards/001-项目文档与设计规范.md#typescript-代码设计)执行 Google TS 与 strict 要求；Next.js 必要默认导出、shadcn 文件命名及生成代码按[例外范围](./workspace/content/standards/001-项目文档与设计规范.md#框架与生成代码例外)登记。Prettier 负责格式，ESLint 负责代码质量与框架规则，使用 `eslint-config-prettier` 关闭冲突规则，参照 [Prettier 官方集成说明](https://prettier.io/docs/integrating-with-linters)。不通过全局放宽规则规避质量检查。
 
 ## 4. backend：Go 微服务
 
@@ -181,7 +181,7 @@ backend/
 
 ### 实现约定
 
-- 规范基线为 Google Go，具体命名、包职责、接口、错误、context 与并发要求统一引用[Go 代码设计](./workspace/content/standards/project-design.md#go-代码设计)；Effective Go 作为补充资料。
+- 规范基线为 Google Go，具体命名、包职责、接口、错误、context 与并发要求统一引用[Go 代码设计](./workspace/content/standards/001-项目文档与设计规范.md#go-代码设计)；Effective Go 作为补充资料。
 - 接口在消费方确有需要时定义，保持最小能力；不为每个结构体或生成客户端配套包装接口。
 - 请求的超时与取消向存储和外部调用传递；显式映射 HTTP 错误，使用结构化日志关联服务名、请求与 trace ID。OpenTelemetry 接入请求入口及跨服务调用。
 - 启动时校验必需配置，处理优雅退出；探活用于进程状态，就绪检查依据实际必需依赖定义。
@@ -292,7 +292,7 @@ tests/
 
 ## 8. 落地顺序与交付条件
 
-以下是工程与业务后续推进顺序。用户已授权并完成本轮技术基线初始化，具体执行与验证记录位于 `workspace/content/projects/ai2workspace/initialization/plan.md`；业务 PRD、数据与认证不在本轮范围。具体任务在业务范围确定后通过[计划 Skill](./.agents/skills/workspace-plan/SKILL.md)拆解，不在本页重复维护任务状态。
+以下是工程与业务后续推进顺序。用户已授权并完成本轮技术基线初始化，具体执行与验证记录位于 `workspace/content/plan/001-前后端工程初始化计划与验证.md`；业务 PRD、数据与认证不在本轮范围。具体任务在业务范围确定后通过[计划 Skill](./.agents/skills/workspace-plan/SKILL.md)拆解，不在本页重复维护任务状态。
 
 | 顺序 | 交付内容 | 进入下一步的条件 |
 | --- | --- | --- |
