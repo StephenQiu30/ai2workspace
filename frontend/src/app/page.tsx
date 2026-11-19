@@ -1,14 +1,14 @@
 import {ServiceStatus} from '../features/service_status/service_status';
 import {projectName} from '../lib/project';
 import {getServerRequestOptions} from '../lib/request/server';
-import {getServiceHealth} from '../services/generated/ai2workspace/health';
+import {getIdentityHealth} from '../services/generated/identity/health';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  let health: Ai2workspaceApi.Response | null = null;
+  let health: IdentityApi.Response | null = null;
   try {
-    health = await getServiceHealth(getServerRequestOptions());
+    health = await getIdentityHealth(getServerRequestOptions());
   } catch {
     // A failed dependency must not prevent the page from offering recovery.
   }

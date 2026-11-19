@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/StephenQiu30/ai2workspace/backend/services/ai2workspace/internal/server"
+	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/server"
 )
 
 func TestHealth(t *testing.T) {
 	router := server.New(false)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/ai2workspace/v1/health", nil))
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/identity/v1/health", nil))
 	if response.Code != http.StatusOK {
 		t.Fatalf("health status = %d", response.Code)
 	}
@@ -21,7 +21,7 @@ func TestHealth(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
 		t.Fatal(err)
 	}
-	if result["service"] != "ai2workspace" || result["status"] != "ok" {
+	if result["service"] != "identity" || result["status"] != "ok" {
 		t.Fatalf("unexpected health response: %v", result)
 	}
 }
@@ -29,7 +29,7 @@ func TestHealth(t *testing.T) {
 func TestSwaggerMatchesAPIRoutes(t *testing.T) {
 	router := server.New(true)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/swagger/ai2workspace/doc.json", nil))
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/swagger/identity/doc.json", nil))
 	if response.Code != http.StatusOK {
 		t.Fatalf("swagger status = %d: %s", response.Code, response.Body)
 	}
@@ -42,7 +42,7 @@ func TestSwaggerMatchesAPIRoutes(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &document); err != nil {
 		t.Fatal(err)
 	}
-	if document.Swagger != "2.0" || document.Paths["/api/ai2workspace/v1/health"]["get"].ID != "getServiceHealth" {
+	if document.Swagger != "2.0" || document.Paths["/api/identity/v1/health"]["get"].ID != "getIdentityHealth" {
 		t.Fatalf("unexpected swagger contract: %+v", document)
 	}
 	for _, route := range router.Routes() {
@@ -65,7 +65,7 @@ func TestSwaggerMatchesAPIRoutes(t *testing.T) {
 
 func TestUnknownRouteAndDisabledSwagger(t *testing.T) {
 	router := server.New(false)
-	for _, path := range []string{"/unknown", "/swagger/ai2workspace/doc.json"} {
+	for _, path := range []string{"/unknown", "/swagger/identity/doc.json"} {
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
 		if response.Code != http.StatusNotFound {

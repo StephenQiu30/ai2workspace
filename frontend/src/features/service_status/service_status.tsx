@@ -12,10 +12,10 @@ import {
   CardContent,
   CardFooter,
 } from '../../components/ui/card';
-import {getServiceHealth} from '../../services/generated/ai2workspace/health';
+import {getIdentityHealth} from '../../services/generated/identity/health';
 
 interface ServiceStatusProps {
-  initialHealth: Ai2workspaceApi.Response | null;
+  initialHealth: IdentityApi.Response | null;
 }
 
 export function ServiceStatus({initialHealth}: ServiceStatusProps) {
@@ -25,7 +25,7 @@ export function ServiceStatus({initialHealth}: ServiceStatusProps) {
   async function refresh() {
     setPending(true);
     try {
-      setHealth(await getServiceHealth());
+      setHealth(await getIdentityHealth());
     } catch {
       setHealth(null);
     } finally {

@@ -1,4 +1,4 @@
-module github.com/StephenQiu30/ai2workspace/backend/services/ai2workspace
+module github.com/StephenQiu30/ai2workspace/backend/services/identity
 
 go 1.26.5
 

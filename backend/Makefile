@@ -1,10 +1,10 @@
-SERVICE ?= ai2workspace
+SERVICE ?= identity
 SERVICE_DIR := services/$(SERVICE)
 
 .PHONY: generate check build run
 
 generate:
-	cd $(SERVICE_DIR) && GOWORK=off go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go --parseInternal -o internal/apidocs --outputTypes go,json --quiet
+	cd $(SERVICE_DIR) && GOWORK=off go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go --parseInternal -o api --outputTypes go,json --quiet
 
 check: generate
 	cd $(SERVICE_DIR) && test -z "$$(gofmt -l cmd internal tests)"

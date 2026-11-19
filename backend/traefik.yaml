@@ -1,17 +1,17 @@
 http:
   routers:
-    api:
-      rule: PathPrefix(`/api/ai2workspace/`) || PathPrefix(`/swagger/ai2workspace/`)
+    identity:
+      rule: PathPrefix(`/api/identity/`) || PathPrefix(`/swagger/identity/`)
       priority: 100
-      service: ai2workspace
+      service: identity
     frontend:
       rule: PathPrefix(`/`)
       service: frontend
   services:
-    ai2workspace:
+    identity:
       loadBalancer:
         servers:
-          - url: http://ai2workspace:3123
+          - url: http://identity:3123
     frontend:
       loadBalancer:
         servers:

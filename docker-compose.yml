@@ -14,13 +14,13 @@ services:
       - ./backend/traefik.yaml:/etc/traefik/dynamic.yaml:ro
     depends_on:
       - frontend
-      - ai2workspace
+      - identity
 
-  ai2workspace:
-    container_name: ai2workspace-backend
+  identity:
+    container_name: ai2workspace-identity
     build:
       context: .
-      dockerfile: backend/services/ai2workspace/Dockerfile
+      dockerfile: backend/services/identity/Dockerfile
     environment:
       HTTP_ADDR: :3123
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
@@ -38,7 +38,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/ai2workspace/v1/health]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/identity/v1/health]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -51,12 +51,12 @@ services:
       dockerfile: frontend/Dockerfile
     environment:
       PORT: 3121
-      API_ORIGIN: http://ai2workspace:3123
+      API_ORIGIN: http://identity:3123
       HOST_INTERNAL: host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      ai2workspace:
+      identity:
         condition: service_healthy
 
   workspace:

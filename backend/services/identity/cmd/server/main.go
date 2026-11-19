@@ -1,4 +1,4 @@
-// Command server starts the ai2workspace HTTP service.
+// Command server starts the identity HTTP service.
 package main
 
 import (
@@ -11,19 +11,19 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/StephenQiu30/ai2workspace/backend/services/ai2workspace/internal/config"
-	"github.com/StephenQiu30/ai2workspace/backend/services/ai2workspace/internal/server"
+	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/config"
+	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/server"
 	"github.com/gin-gonic/gin"
 )
 
-// @title ai2workspace API
+// @title identity API
 // @version 0.1.0
-// @description ai2workspace service API, generated from Go source.
+// @description identity service API, generated from Go source.
 // @BasePath /
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	if err := run(); err != nil {
-		slog.Error("service stopped", "service", "ai2workspace", "error", err)
+		slog.Error("service stopped", "service", "identity", "error", err)
 		os.Exit(1)
 	}
 }
@@ -58,7 +58,7 @@ func run() error {
 			_ = httpServer.Close()
 		}
 	}()
-	slog.Info("service started", "service", "ai2workspace", "address", listener.Addr().String())
+	slog.Info("service started", "service", "identity", "address", listener.Addr().String())
 	err = httpServer.Serve(listener)
 	stop()
 	<-stopped

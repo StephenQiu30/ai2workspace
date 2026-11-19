@@ -12,5 +12,6 @@
 **/*.log
 **/tests
 frontend/src/services/generated
+backend/services/*/api
 backend/services/*/internal/apidocs
 backend/services/*/server

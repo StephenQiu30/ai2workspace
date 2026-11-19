@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StephenQiu30/ai2workspace/backend/services/ai2workspace/internal/config"
+	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/config"
 )
 
 func TestLoadDefaults(t *testing.T) {
