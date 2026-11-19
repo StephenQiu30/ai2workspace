@@ -16,6 +16,10 @@ http:
       rule: PathPrefix(`/api/community/`) || PathPrefix(`/swagger/community/`)
       priority: 100
       service: community
+    assistant:
+      rule: PathPrefix(`/api/assistant/`) || PathPrefix(`/swagger/assistant/`)
+      priority: 100
+      service: assistant
     frontend:
       rule: PathPrefix(`/`)
       service: frontend
@@ -36,6 +40,10 @@ http:
       loadBalancer:
         servers:
           - url: http://community:3126
+    assistant:
+      loadBalancer:
+        servers:
+          - url: http://assistant:3127
     frontend:
       loadBalancer:
         servers:

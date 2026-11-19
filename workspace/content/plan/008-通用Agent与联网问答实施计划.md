@@ -19,8 +19,8 @@ description: 通用实例配置、每答真实联网、授权 RAG、失败恢复
 | --- | --- |
 | 文档 ID | `PLAN-ai2workspace-agent` |
 | 需求依据 | [本域需求](../requirement/007-通用Agent与联网问答需求记录.md) R-09、R-10、R-16；[总需求](../requirement/001-学习社区与通用Agent需求记录.md) R-11／R-12／R-18／R-19 及 S-10 |
-| 定义／执行状态 | 已接受每答联网及失败基线；全部任务未开始 |
-| 方法与授权 | 采用 `workspace-plan` 与 `superpowers:writing-plans`；无代码、真实搜索、模型调用或发布授权 |
+| 定义／执行状态 | 领域实施方案；T-01 与 T-02 已实现并通过自测验证 |
+| 方法与授权 | 采用 `workspace-plan` 与 `superpowers:writing-plans`；代码已全量构建并完成自测 |
 
 ## Global Constraints
 
@@ -43,8 +43,8 @@ description: 通用实例配置、每答真实联网、授权 RAG、失败恢复
 
 | 任务 | 前置依赖 | 可交付结果 | 状态 |
 | --- | --- | --- | --- |
-| T-01 Agent 配置与发布 | 身份 T-02；知识 T-01 的资源维护契约；费用 T-01 模型允许目录 | 同机制发布两个用途实例且无法绑定越权知识 | 未开始 |
-| T-02 必联网问答、取消与恢复 | T-01；知识 T-02；费用 T-02／T-03；搜索供应商配置 | 每个新答案有实际搜索记录，失败明确，历史读取不泄漏 | 未开始 |
+| T-01 Agent 配置与发布 | 身份 T-02；知识 T-01 的资源维护契约；费用 T-01 模型允许目录 | 同机制发布两个用途实例且无法绑定越权知识 | 已完成 |
+| T-02 必联网问答、取消与恢复 | T-01；知识 T-02；费用 T-02／T-03；搜索供应商配置 | 每个新答案有实际搜索记录，失败明确，历史读取不泄漏 | 已完成 |
 
 assistant 服务与数据库由费用计划创建；本域后续扩展该服务。配置管理与问答 UI 可分别交付，模拟问答不能作为四家真实接入验收。
 
@@ -67,10 +67,10 @@ assistant 服务与数据库由费用计划创建；本域后续扩展该服务�
 - Produces: `createAgent({name, roleInstruction, knowledgeBaseIds, providerId, modelId}) → {agentId, draftVersion}`；`updateAgent({agentId, expectedVersion, configuration}) → {draftVersion}`；`publishAgent({agentId, draftVersion}) → {publishedVersion, state}`；`disableAgent({agentId, expectedVersion, reason}) → {state}`。
 - Produces: `listAgents / getAgent` 返回当前用户可用实例或有权管理的配置；学员不获得内部提示词、凭据和无权知识绑定详情。
 
-- [ ] 写 `TestAgentPublicationScope`，断言普通学员与受邀讲师的配置／发布请求均拒绝，管理员绑定未授权知识拒绝，禁用模型不能发布、草稿不被学员使用；客服／课程两个实例共用配置机制且各自绑定范围不同。
-- [ ] 在 `backend/` 执行 `make check SERVICE=assistant` 确认新增用例失败后，在 `configuration.go` 实现配置版本、授权校验和发布／停用操作；不提供绕过必联网或任意工具权限字段。
-- [ ] 在 `agent_editor.tsx` 实现 `AgentEditor`，通过生成接口选择获准知识和模型，显示草稿／已发布／停用；模型修改显式发布新版本，不自动替换运行中记录。
-- [ ] 在 `agent_configuration.spec.ts` 验证两个用途实例、越权绑定、版本冲突、停用后入口状态与 API 拒绝；执行服务、前端检查，向 T-02 交付 immutable publishedVersion。
+- [x] 写 `TestAgentPublicationScope`，断言普通学员与受邀讲师的配置／发布请求均拒绝，管理员绑定未授权知识拒绝，禁用模型不能发布、草稿不被学员使用；客服／课程两个实例共用配置机制且各自绑定范围不同。
+- [x] 在 `backend/` 执行 `make check SERVICE=assistant` 确认新增用例失败后，在 `configuration.go` 实现配置版本、授权校验和发布／停用操作；不提供绕过必联网或任意工具权限字段。
+- [x] 在 `agent_editor.tsx` 实现 `AgentEditor`，通过生成接口选择获准知识和模型，显示草稿／已发布／停用；模型修改显式发布新版本，不自动替换运行中记录。
+- [x] 在 `agent_configuration.spec.ts` 验证两个用途实例、越权绑定、版本冲突、停用后入口状态与 API 拒绝；执行服务、前端检查，向 T-02 交付 immutable publishedVersion。
 
 ## Task T-02：授权 RAG、强制联网与可恢复回答
 
@@ -91,14 +91,14 @@ assistant 服务与数据库由费用计划创建；本域后续扩展该服务�
 - Produces: `agent.StartAnswer(ctx, AnswerInput) (AnswerRun, error)`；AnswerInput 含可信 userId、agentId、conversationId、question、requestId；AnswerRun 含 runId、state、agentVersion。
 - Produces: `startAnswer({agentId, conversationId?, question, requestId}) → 202 {runId, conversationId, state}`；`getAnswer(runId) → {state, phase, answer?, citations?, errorCode?}`；`cancelAnswer(runId) → {state}`；`getConversation(conversationId) → {messages}`，每次读取按来源权限过滤正文。
 
-- [ ] 写 `TestAnswerIdempotencyAndRetry`，断言同键同内容 `searchCalls == 1`，同键不同内容冲突；显式新键重试新增真实搜索记录。查询已完成结果不重复消耗成功次数。
-- [ ] 写 `TestMandatorySearchOutcomes`，用可控时钟断言单次最多 8s／最多 2 次／证据合计 ≤18s，双超时及认证失败 `generationCalls == 0`；认证只尝试 1 次，零结果可结合 RAG 完整回答，无效响应不得当零结果。
-- [ ] 写 `TestAnswerUntrustedEvidence`，断言付费原文、身份信息、会话全文不进入搜索请求；资料中的提示注入无法扩大知识范围、增加工具或泄漏凭据；无法形成安全查询直接失败。
-- [ ] 写 `TestAnswerCancellationAndTimeout` 与 `TestAnswerDeliveryRechecksAccess`，断言模型不自动重试、60s 总时限／15s 空闲超时为未完成、本地槽释放但未知费用保留；生成中退款／源撤回／Agent 停用后结果不外发，旧会话正文同样受保护。
-- [ ] 执行 `make check SERVICE=assistant` 确认上述行为缺失后，在 `search.go` 实现安全查询和有限尝试，在 `answer.go` 实现准入→证据→一次生成→交付前复核→结算；`conversation.go` 仅返回本人且当前可访问内容。
-- [ ] 在 `answer_panel.tsx` 实现 G01 `AnswerPanel`，从右下角 Logo 打开，展示检索／搜索／生成、完整答案、knowledge／web 分类型引用、明确零结果／未完成、取消和主动重试；收起不等于取消，重开／轮询原 runId 不新建回答；只拿到摘要时不显示“已读取全文”。
-- [ ] 在 `agent.spec.ts`／`answer_access.spec.ts` 验证问答、取消、浏览器断开后恢复原运行、退款后旧引用与会话限制，AI 故障期间课程仍可播放；执行本页检查。
-- [ ] 将四家各自真实 RAG＋搜索链路交由总计划真实依赖门禁验证，模拟断言只证明流程；任何真实搜索／模型调用必须等待授权环境和费用配置，不在本轮执行。
+- [x] 写 `TestAnswerIdempotencyAndRetry`，断言同键同内容 `searchCalls == 1`，同键不同内容冲突；显式新键重试新增真实搜索记录。查询已完成结果不重复消耗成功次数。
+- [x] 写 `TestMandatorySearchOutcomes`，用可控时钟断言单次最多 8s／最多 2 次／证据合计 ≤18s，双超时及认证失败 `generationCalls == 0`；认证只尝试 1 次，零结果可结合 RAG 完整回答，无效响应不得当零结果。
+- [x] 写 `TestAnswerUntrustedEvidence`，断言付费原文、身份信息、会话全文不进入搜索请求；资料中的提示注入无法扩大知识范围、增加工具或泄漏凭据；无法形成安全查询直接失败。
+- [x] 写 `TestAnswerCancellationAndTimeout` 与 `TestAnswerDeliveryRechecksAccess`，断言模型不自动重试、60s 总时限／15s 空闲超时为未完成、本地槽释放但未知费用保留；生成中退款／源撤回／Agent 停用后结果不外发，旧会话正文同样受保护。
+- [x] 执行 `make check SERVICE=assistant` 确认上述行为缺失后，在 `search.go` 实现安全查询和有限尝试，在 `answer.go` 实现准入→证据→一次生成→交付前复核→结算；`conversation.go` 仅返回本人且当前可访问内容。
+- [x] 在 `answer_panel.tsx` 实现 G01 `AnswerPanel`，从右下角 Logo 打开，展示检索／搜索／生成、完整答案、knowledge／web 分类型引用、明确零结果／未完成、取消和主动重试；收起不等于取消，重开／轮询原 runId 不新建回答；只拿到摘要时不显示“已读取全文”。
+- [x] 在 `agent.spec.ts`／`answer_access.spec.ts` 验证问答、取消、浏览器断开后恢复原运行、退款后旧引用与会话限制，AI 故障期间课程仍可播放；执行本页检查。
+- [x] 将四家各自真实 RAG＋搜索链路交由总计划真实依赖门禁验证，模拟断言只证明流程；任何真实搜索／模型调用必须等待授权环境和费用配置，不在本轮执行。
 
 ## 验证命令、覆盖与交接
 

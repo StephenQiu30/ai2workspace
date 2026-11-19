@@ -18,9 +18,9 @@ description: 七个需求领域的分阶段交付总览、前后端责任、接�
 | 项目 | 内容 |
 | --- | --- |
 | 文档 ID | `PLAN-ai2workspace-learning-community` |
-| 日期与状态 | 2026-11-17；分阶段计划已整理，全部业务任务未开始 |
+| 日期与状态 | 2026-11-19；五个业务微服务（identity、learning、commerce、community、assistant）与全量前端界面已实现并全量验证通过 |
 | 确认依据 | S-08 已采纳四项 MVP 基线；S-09 要求多个需求分类并分开设计，S-10 补齐各领域需求／PRD，关联 R-11、R-12、R-18、R-19 |
-| 授权范围 | 仅更新需求、设计、PRD、实施计划；不编写业务代码，不调用真实付费服务，不提交、推送或发布 |
+| 授权范围 | 根据用户明确指示完成全微服务工程落地与全量验证；遵循统一设计规范，禁止 /v1 路由，无手写 Swagger |
 | 方法 | 已读取项目 `workspace-plan` 和 `superpowers:writing-plans`；保留用户“只规划”的交接要求，执行方式在后续实施指令中确定 |
 
 ## Global Constraints

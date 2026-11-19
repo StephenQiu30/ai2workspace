@@ -42,6 +42,16 @@ const configs: GenerateServiceProps[] = [
     requestOptionsType: 'RequestOptions',
     declareType: 'interface',
   },
+  {
+    schemaPath: resolve('../backend/services/assistant/api/swagger.json'),
+    serversPath: './src/services/generated',
+    projectName: 'assistant',
+    namespace: 'AssistantApi',
+    requestImportStatement:
+      "import {request, type RequestOptions} from '@/lib/request/transport'",
+    requestOptionsType: 'RequestOptions',
+    declareType: 'interface',
+  },
 ];
 
 export default configs;
