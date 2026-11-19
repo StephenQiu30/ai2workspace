@@ -4,6 +4,10 @@ http:
       rule: PathPrefix(`/api/identity/`) || PathPrefix(`/swagger/identity/`)
       priority: 100
       service: identity
+    learning:
+      rule: PathPrefix(`/api/learning/`) || PathPrefix(`/swagger/learning/`)
+      priority: 100
+      service: learning
     frontend:
       rule: PathPrefix(`/`)
       service: frontend
@@ -12,6 +16,10 @@ http:
       loadBalancer:
         servers:
           - url: http://identity:3123
+    learning:
+      loadBalancer:
+        servers:
+          - url: http://learning:3124
     frontend:
       loadBalancer:
         servers:
