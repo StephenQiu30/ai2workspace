@@ -13,7 +13,7 @@ HTTP_ADDR=127.0.0.1:3123 SWAGGER_ENABLED=true make run
 
 `generate` 固定使用 Swaggo 1.16.6，从 Go DTO 与注释生成文档至 `api/` 目录。默认 `SERVICE=identity`；其他微服务按需指定 `SERVICE=<服务名>`。
 
-- 健康检查：`http://127.0.0.1:3123/api/identity/v1/health`
+- 健康检查：`http://127.0.0.1:3123/api/identity/health`
 - 接口文档：`http://127.0.0.1:3123/swagger/identity/index.html`
 - 配置与独立检查：[服务 README](./services/identity/README.md)
 

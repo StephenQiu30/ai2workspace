@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   let health: IdentityApi.Response | null = null;
   try {
-    health = await getIdentityHealth(getServerRequestOptions());
+    const options = await getServerRequestOptions();
+    health = await getIdentityHealth(options);
   } catch {
     // A failed dependency must not prevent the page from offering recovery.
   }

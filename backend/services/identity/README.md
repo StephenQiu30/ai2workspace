@@ -1,6 +1,6 @@
 # identity 服务
 
-该 module 是账号与访问控制微服务，提供 `GET /api/identity/v1/health` 健康检查与 Swagger 契约。
+该 module 是账号与访问控制微服务，提供 `GET /api/identity/health` 健康检查与 Swagger 契约。
 
 使用 Go 1.26.5。先在 `backend/` 执行 `make generate`，然后可在本目录独立执行：
 

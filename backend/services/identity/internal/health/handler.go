@@ -20,7 +20,7 @@ type Response struct {
 // @Tags health
 // @Produce json
 // @Success 200 {object} Response
-// @Router /api/identity/v1/health [get]
+// @Router /api/identity/health [get]
 func Get(c *gin.Context) {
 	c.JSON(http.StatusOK, Response{Service: "identity", Status: "ok"})
 }

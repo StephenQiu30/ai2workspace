@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 func TestHealth(t *testing.T) {
 	router := server.New(false)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/identity/v1/health", nil))
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/identity/health", nil))
 	if response.Code != http.StatusOK {
 		t.Fatalf("health status = %d", response.Code)
 	}
@@ -42,13 +43,15 @@ func TestSwaggerMatchesAPIRoutes(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &document); err != nil {
 		t.Fatal(err)
 	}
-	if document.Swagger != "2.0" || document.Paths["/api/identity/v1/health"]["get"].ID != "getIdentityHealth" {
+	if document.Swagger != "2.0" || document.Paths["/api/identity/health"]["get"].ID != "getIdentityHealth" {
 		t.Fatalf("unexpected swagger contract: %+v", document)
 	}
+	paramRe := regexp.MustCompile(`:([a-zA-Z0-9_]+)`)
 	for _, route := range router.Routes() {
 		if strings.HasPrefix(route.Path, "/api/") {
-			if _, ok := document.Paths[route.Path][strings.ToLower(route.Method)]; !ok {
-				t.Errorf("route missing from Swagger: %s %s", route.Method, route.Path)
+			swaggerPath := paramRe.ReplaceAllString(route.Path, "{$1}")
+			if _, ok := document.Paths[swaggerPath][strings.ToLower(route.Method)]; !ok {
+				t.Errorf("route missing from Swagger: %s %s (checked %s)", route.Method, route.Path, swaggerPath)
 			}
 		}
 	}
