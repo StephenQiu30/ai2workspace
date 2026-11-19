@@ -14,15 +14,22 @@
 
 ## 1. 现状与目标
 
-当前包含独立的 `workspace/` 知识库、`frontend/` Next.js 前端，以及 `backend/services/ai2workspace/` Go 服务基线。前后端通过健康检查验证真实调用，尚未实现业务功能、认证或持久化；具体业务接口与数据模型仍需 PRD 定义。知识库正文来自 `workspace/content/`，继续独立静态构建与部署。
+当前包含独立的 `workspace/` 知识库、`frontend/` Next.js 前端，以及 `backend/services/ai2workspace/` 初始化技术基线。**注意：微服务体系中不存在名为 `ai2workspace` 的微服务**，`ai2workspace` 为整个产品和仓库标识；现存 `services/ai2workspace/` 仅用于验证前后端、Swagger 与容器联调连通性，业务服务按业务域独立规划，首个业务服务上线后该占位基线予以归并。
 
-同一仓库内的三个服务模块分别组织如下：
+项目中规划的真实微服务清单包括：
+1. `identity`：账号、认证与访问控制微服务
+2. `learning`：课程与媒体学习微服务
+3. `commerce`：交易、退款与权益微服务
+4. `community`：社区互动与内容治理微服务
+5. `assistant`：通用 Agent、知识库与 AI 费用治理微服务
+
+同一仓库内的三大模块组织如下：
 
 | 模块 | 技术与职责 | 依赖边界 | 当前状态 |
 | --- | --- | --- | --- |
 | `workspace/` | Fumadocs 知识库；承载项目资料、模板和规范 | 构建、浏览不依赖业务前后端运行 | 已有实现 |
 | `frontend/` | Next.js 前端基线，显示服务连接状态 | 使用自动生成的调用代码，不直接访问数据库 | 已初始化 |
-| `backend/` | Go 微服务工程；当前仅有 ai2workspace 技术基线 | 独立 module、镜像与 HTTP API；实际业务服务按需增加 | 已初始化基线 |
+| `backend/` | Go 微服务工程；按业务域独立维护各微服务 | 各微服务独立 module、镜像与 HTTP API | 真实服务待各域 PRD 实施 |
 
 业务功能以实际需求和 PRD 为准。旧版 Workspace 的 Harness、角色调度、空间配置和任务运行系统不属于本次服务规划。
 
@@ -113,21 +120,22 @@ frontend/
 
 依赖方向为页面组合业务功能、业务功能消费生成调用与 UI 组件、生成调用仅导入 `transport.ts`；`components/ui/` 不依赖具体业务，底层请求适配不反向导入页面或功能代码。Server Component 按请求从 `server.ts` 取得内部地址和凭据选项，传给生成函数的 options 参数；该文件使用 `server-only` 标记。通用适配器不导入 `server.ts`，避免共享调用把服务端配置带入客户端。此绑定方式在初始化时通过类型检查、产物检查和双环境实际调用验证。
 
-### 渲染、交互与数据
+### 渲染、交互与 Vercel / Google TS 设计规范
 
-优先使用 Server Components，通过生成的调用函数读取 Go API 并渲染页面；需要事件、浏览器 API 或交互状态时使用 Client Components，遵循 [Next.js 官方组件边界](https://nextjs.org/docs/app/getting-started/server-and-client-components)。Axios 的服务端请求不自动获得 Next.js `fetch` 的缓存语义；需要缓存时显式设计缓存键、范围及失效方式。
+前端工程严格遵循 **Vercel React / Web Interface Guidelines 最佳实践**与 **Google TypeScript Style Guide**：
 
-- 页面覆盖正常、加载、空、失败和权限不足等适用状态；表单保留错误提示与恢复操作。
-- 展示与表单校验放在前端，业务权限和数据约束仍由 backend 最终执行。
-- 本地交互优先使用组件状态，可分享或刷新的筛选条件使用 URL；出现跨页面需求后再评估全局状态工具。
-- 按接口访问频率与一致性要求决定缓存。用户私有数据不得进入跨用户共享缓存；写入成功后刷新相关读取结果。
-- Server Actions 或 Route Handlers 仅在会话适配、转发等有必要时使用，不复制 Go 中的业务逻辑，也不要求每个 Go API 都增加一层 Next.js 转发。
+1. **Vercel React / Next.js 最佳实践**：
+   - **服务端组件优先（RSC First）**：页面默认为 Server Components，首屏数据获取和渲染保留在服务端，交互逻辑精准下沉到 `'use client'` 树枝末端，最大化降低客户端 Bundle 尺寸。
+   - **消除请求瀑布流（Waterfall Elimination）**：合理利用 React Suspense 边界与流式渲染（Streaming），避免组件层层等待阻塞首屏展示。
+   - **服务端请求与上下文隔离**：服务端 API 客户端请求选项必须按每次调用上下文独立构建（如 `getServerRequestOptions()`），严禁在全局或跨请求共享用户 Token / Cookie；内部后端地址与敏感配置严禁泄露至浏览器端。
+   - **交互韧性与错误可恢复**：使用 Error Boundary 封装，当接口故障或依赖不可用时，页面展示明确且可重试的交互按钮（如“重新检查”），绝不白屏且严禁向用户暴露底层内部堆栈。
+   - **Web Interface Guidelines（全键盘与可访问性）**：所有控件完整支持键盘导航（Tab/Shift+Tab 焦距切换，Enter/Space 触发，Esc 关闭浮层），具备清晰的 `focus-visible` 焦点环；桌面端（1440px）与移动端（390px）视口无任何水平滚动条溢出，触控区域高度不低于 44px。
 
-### 组件与代码质量
-
-shadcn/ui 的 Radix 版本作为业务前端组件基线，优先使用已有组件、variant、语义颜色和官方组合方式。只在现成组件不满足需求时直接组合 Radix primitives，不为每个组件再包装项目同名组件。配色与字体在实际界面设计中定义；知识库继续沿用 Spacious。
-
-TypeScript 按[统一规范](./workspace/content/standards/001-项目文档与设计规范.md#typescript-代码设计)执行 Google TS 与 strict 要求；Next.js 必要默认导出、shadcn 文件命名及生成代码按[例外范围](./workspace/content/standards/001-项目文档与设计规范.md#框架与生成代码例外)登记。Prettier 负责格式，ESLint 负责代码质量与框架规则，使用 `eslint-config-prettier` 关闭冲突规则，参照 [Prettier 官方集成说明](https://prettier.io/docs/integrating-with-linters)。不通过全局放宽规则规避质量检查。
+2. **Google TypeScript 规范基线**：
+   - 保持 `strict: true`，严禁使用 `any`，外部不确定输入必须使用 `unknown` 并收窄；严禁无依据的强制类型断言（`as SomeType`）。
+   - 手写文件采用 `snake_case.ts/tsx`；类型、接口与 React 组件用 `UpperCamelCase`，函数与变量用 `lowerCamelCase`。
+   - 严格使用 `import type` 导入类型；对象结构优先 `interface`，类型表达式使用 `type`；优先命名导出（Named Exports）。
+   - Prettier 负责格式化，ESLint 负责质量检查，使用 `eslint-config-prettier` 关闭冲突规则，不全局放宽规则规避检查。
 
 ## 4. backend：Go 微服务
 
@@ -135,41 +143,47 @@ TypeScript 按[统一规范](./workspace/content/standards/001-项目文档与�
 
 按业务域拆分独立服务，每个服务有独立入口、依赖、数据所有权、镜像和发布生命周期。服务边界依据业务能力、事务范围及独立变更需求确定，不按数据表或 Controller / Service / DAO 技术层拆成微服务。
 
-当前服务 `ai2workspace` 仅承载技术基线和健康检查，不代表已完成业务域拆分。下面的 `<服务名>` 说明后续服务的组织方式，实际业务服务清单与调用关系在业务设计中明确；不提前生成用户、订单等空服务。
+当前微服务工程中，`ai2workspace` 仅作为初始化技术基线脚手架，用于验证健康检查、Swagger 与容器联调链路；**微服务体系中不存在 `ai2workspace` 这个业务微服务**。实际业务微服务划分为 `identity`、`learning`、`commerce`、`community`、`assistant` 共 5 个微服务。
+
+Go 微服务严格遵循**简洁扁平、按业务特性拆包（Package by Feature）**的设计原则，**严禁深层目录嵌套与冗长文件命名过度包装**（拒绝 `delivery/http/...`、`usecase/...`、`domain/entities/...`、`infrastructure/...` 等多层嵌套深井，也拒绝 `*_controller.go`、`*_usecase.go`、`*_repository_impl.go` 等过度包装命名）。
+
+微服务标准扁平目录规范如下：
 
 ```text
 backend/
-├── go.work                   本地多服务开发；不替代各服务 go.mod
-├── compose.yaml              本地服务、Traefik 及必要依赖的组合配置
-├── services/
-│   └── <服务名>/             每个实际业务服务独立组织
-│       ├── go.mod
-│       ├── go.sum
-│       ├── cmd/server/main.go
-│       ├── internal/
-│       │   ├── config/       服务配置读取与启动校验
-│       │   ├── server/       Gin 路由与必要中间件
-│       │   ├── <业务包>/     小写业务包；下列文件按实际职责添加
-│       │   │   ├── handler.go    HTTP 绑定、响应与 Swaggo 注释
-│       │   │   ├── request.go    请求 DTO 与字段约束
-│       │   │   ├── response.go   响应 DTO
-│       │   │   ├── service.go    业务规则，显式数据及 context 参数
-│       │   │   └── postgres.go   本业务的数据访问，有持久化需求时添加
-│       │   └── apidocs/      Swaggo 自动生成的 docs.go 与 swagger.json
-│       ├── tests/            独立测试目录，属于本服务 Go module
-│       │   ├── unit/<业务包>/     业务能力的黑盒单元测试
-│       │   ├── integration/      本服务 HTTP 与存储集成测试
-│       │   └── testdata/         需要时使用的测试数据
-│       ├── Dockerfile
-│       └── README.md
-└── README.md                 服务边界、本地联调与生成入口
+├── go.work                   本地多服务协同工作区
+├── docker-compose.yml        根目录一键启动入口（各微服务使用 host.docker.internal 直连宿主机中间件）
+├── pkg/                      [按需] 跨微服务通用的极简基础设施包（如统一响应格式、基础错误码）
+└── services/
+    └── <服务名>/             按业务域独立命名（identity, learning, commerce, community, assistant）
+        ├── go.mod            独立依赖声明与版本锁定
+        ├── go.sum
+        ├── cmd/
+        │   └── server/
+        │       └── main.go   服务启动入口（组装配置、路由并启动服务，处理优雅退出）
+        ├── api/              对外公开契约目录（Swaggo 自动生成 swagger.json 与 docs.go）
+        ├── internal/         内部核心业务实现（直属 internal，拒绝深层嵌套套娃）
+        │   ├── config/       服务配置（读取环境与启动校验）
+        │   │   └── config.go
+        │   ├── server/       路由注册与 HTTP Server 封装
+        │   │   └── server.go
+        │   └── <业务特性包>/  按业务特性命名（如 accounts, sessions, orders, courses 等）
+        │       ├── <业务名>.go核心业务逻辑与数据模型（直接直观，无冗余多余包装）
+        │       ├── handler.goHTTP 接口处理（参数绑定、响应与 Swaggo 注释）
+        │       └── store.go  数据库持久化操作（Postgres SQL 操作）
+        ├── tests/            独立测试目录（属于本服务 Go module，与 internal 平级）
+        │   ├── integration/  服务 HTTP 接口与存储集成测试
+        │   └── testdata/     按需添加的测试数据
+        ├── Dockerfile        轻量独立生产镜像
+        ├── Makefile          独立检查与生成入口
+        └── README.md         服务说明与环境变量文档
 ```
 
-每个服务的 `cmd/` 与 `internal/` 参考 [Go 官方服务项目组织建议](https://go.dev/doc/modules/layout#server-project)。本项目按用户要求将测试代码集中到独立 `tests/`，不在 `internal/`、`cmd/` 等业务源码目录混放 `*_test.go`；实际持久化服务按需增加数据库结构与变更文件。
-
-入口负责组装，Handler 负责绑定输入与 HTTP 输出，业务包负责规则和本服务事务。Gin 与 Swaggo 已覆盖本次所需的 HTTP 和文档能力，首期不再叠加另一套服务框架、通用 Repository、BaseService、插件注册器或依赖注入容器。
-
-`main` 组装配置与依赖，`server` 注册业务 Handler，业务函数接收明确数据与 `context.Context`，不接收 `*gin.Context`。业务包不反向依赖启动层、路由注册层或整个配置对象，所需配置通过明确参数传入。上述文件组织不是固定层级，小功能可以合并文件，文件增多时再按实际能力拆包。
+每个微服务的组织特点：
+- **扁平自包含**：打开任意业务特性包（例如 `accounts/`），即可一眼看清核心逻辑（`account.go`）、网络处理（`handler.go`）与存储访问（`store.go`），不需要跨多个层次目录来回跳转。
+- **杜绝空接口与过度转接**：直接使用具体结构体与显式传参，除非存在跨包解耦或单测 Mock 诉求，不人为制造一层空 Interface。
+- **契约对外公开**：文档与 OpenAPI 产物位于服务直属的 `api/`（由工具自动生成），不放入私有的 `internal/` 目录中。
+- **入口负责组装**：`main.go` 负责环境校验与生命周期，`server.go` 负责注册路由，业务函数显式接收数据和 `context.Context`，不扩散框架上下文（如 `*gin.Context`）。
 
 ### 服务通信与数据所有权
 
@@ -190,18 +204,21 @@ backend/
 
 ## 5. Swagger 与前端调用代码自动生成
 
-### 来源与产物
+### 契约自动生成铁律（严禁手动维护 API 文件）
 
-接口定义随 Go Handler、请求 / 响应 DTO、字段标签及 Swaggo 注释一起维护。通过生成器产生 Swagger 文档，再生成前端调用代码；不手工编写或更新 Swagger JSON / YAML、独立 OpenAPI 定义、前端接口函数及其 DTO 副本。
+**核心铁律：禁止手动编写、修改或维护任何 Swagger / OpenAPI 契约文件（包括 swagger.json、docs.go、YAML 文件等），严禁手写前端接口函数与 DTO 副本。**
 
-```text
-Go Handler + DTO + 字段标签 + Swaggo 注释
-    → swag：各服务的 docs.go / swagger.json
-    → gin-swagger：运行时 Swagger UI
-    → @umijs/openapi：各服务的 TypeScript 类型与调用函数
-    → Axios 适配器：执行 HTTP 请求
-    → Next.js 页面与业务组件
-```
+- **唯一事实源（Source of Truth）**：接口契约必须且仅能通过在 Go 业务源码中维护 **Handler Swaggo 注解**（`@Summary`、`@Tags`、`@Param`、`@Success`、`@Failure`、`@Router` 等）以及 **DTO 结构体字段标签**（`json:"xxx" binding:"required" example:"xxx"`）来表达。
+- **全自动代码生成流水线**：
+  ```text
+  Go Handler + DTO 字段标签 + Swaggo 注解
+      → Swaggo CLI (swag init)：全自动编译生成各微服务的 api/ 契约文件 (swagger.json, docs.go)
+      → gin-swagger：运行时 Swagger UI 预览与调试
+      → @umijs/openapi (openapi2ts CLI)：根据当前 Swagger JSON 自动生成前端 TypeScript 类型与调用函数
+      → Axios 适配器：通用请求执行
+      → Next.js 页面与业务组件消费
+  ```
+- **禁止手动干预**：文档产物与前端生成的 `services/generated/` 均纳入忽略规则，由流水线从源码重建，任何接口变更一律直接修改 Go 源码中的注解与 DTO，重新执行生成命令即可生效。
 
 Swaggo 按[官方说明](https://github.com/swaggo/swag)从 Go 注释生成 Swagger 2.0；展示使用 [gin-swagger](https://github.com/swaggo/gin-swagger)。这里明确采用 Swagger 2.0，不将其标记为 OpenAPI 3.x。注释仍需维护操作说明、路由、参数与状态信息，生成工具不能推断全部业务语义；通过路由覆盖和接口测试检查漂移。
 
@@ -249,14 +266,19 @@ Swaggo 按[官方说明](https://github.com/swaggo/swag)从 Go 注释生成 Swag
 
 ### 本地端口分配
 
-| 模块 | 固定端口 | 启动方式 |
-| --- | --- | --- |
-| frontend | 3121 | 原生 `pnpm dev` / `pnpm start`；容器组合由 Traefik 在同一端口提供统一入口 |
-| workspace | 3122 | `pnpm dev` 或构建后的 `pnpm start`，分别用于开发和静态预览 |
-| backend ai2workspace | 3123 | Go 默认监听 `:3123`，Compose 仅向本机发布 3123 |
-| 后续 Go 微服务 | 从 3124 递增 | 新服务初始化时登记各自端口；不提前创建空服务 |
+微服务按业务域独立分配固定本地运行端口，统一入口由 Traefik 网关（`3121`）分发：
 
-原生前端和容器统一入口共用 3121，按需选择一种启动方式。前端容器内部也监听 3121，Go 内外使用 3123；API 和 Swagger 可通过统一入口或后端本机端口访问。端口仅在启动配置中指定，业务组件通过同源路径或服务端配置访问 API。部署环境可使用不同的网络映射，本表规定本项目本地运行端口。
+| 模块 / 服务 | 固定端口 | 服务职责与启动说明 |
+| --- | --- | --- |
+| **frontend** | `3121` | 原生 `pnpm dev` / `pnpm start`；容器组合由 Traefik 在同一端口提供统一入口 |
+| **workspace** | `3122` | Fumadocs 知识库站点，`pnpm dev` 或构建后 `serve out --listen 3122` |
+| **identity** | `3123` | 账号、认证与访问控制微服务（取代初始化占位服务） |
+| **learning** | `3124` | 课程与媒体学习微服务 |
+| **commerce** | `3125` | 交易、退款与权益微服务 |
+| **community** | `3126` | 社区互动与内容治理微服务 |
+| **assistant** | `3127` | 通用 Agent、知识库与 AI 治理微服务 |
+
+原生前端和容器统一入口共用 3121，按需选择一种启动方式。前端容器内部监听 3121，各 Go 微服务内外使用各自独立端口（3123～3127）；API 和 Swagger 可通过统一入口或对应后端端口直接访问。端口仅在启动配置中指定，业务组件通过同源路径或服务端配置访问 API。部署环境可使用不同的网络映射，本表规定本项目本地运行端口。
 
 业务服务各自产出镜像，本地通过 Docker Compose 联调 Traefik、前端、业务服务与必需依赖，也支持开发工具分别启动。生产使用独立服务部署，目标平台与高可用配置待运行需求明确后确定；Compose 是本地联调选型，不作为已完成的生产部署。
 
