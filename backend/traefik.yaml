@@ -8,6 +8,10 @@ http:
       rule: PathPrefix(`/api/learning/`) || PathPrefix(`/swagger/learning/`)
       priority: 100
       service: learning
+    commerce:
+      rule: PathPrefix(`/api/commerce/`) || PathPrefix(`/swagger/commerce/`)
+      priority: 100
+      service: commerce
     frontend:
       rule: PathPrefix(`/`)
       service: frontend
@@ -20,6 +24,10 @@ http:
       loadBalancer:
         servers:
           - url: http://learning:3124
+    commerce:
+      loadBalancer:
+        servers:
+          - url: http://commerce:3125
     frontend:
       loadBalancer:
         servers:
