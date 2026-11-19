@@ -1,0 +1,76 @@
+name: ai2workspace
+
+services:
+  gateway:
+    container_name: ai2workspace-gateway
+    image: traefik:v3.6.0
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yaml
+      - --api.dashboard=false
+    ports:
+      - "127.0.0.1:3121:80"
+    volumes:
+      - ./backend/traefik.yaml:/etc/traefik/dynamic.yaml:ro
+    depends_on:
+      - frontend
+      - ai2workspace
+
+  ai2workspace:
+    container_name: ai2workspace-backend
+    build:
+      context: .
+      dockerfile: backend/services/ai2workspace/Dockerfile
+    environment:
+      HTTP_ADDR: :3123
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      # 中间件连接全部使用宿主机本机环境
+      HOST_INTERNAL: host.docker.internal
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+      REDIS_HOST: ${REDIS_HOST:-host.docker.internal}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-host.docker.internal}
+      KAFKA_HOST: ${KAFKA_HOST:-host.docker.internal}
+      MINIO_HOST: ${MINIO_HOST:-host.docker.internal}
+    ports:
+      - "127.0.0.1:3123:3123"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/ai2workspace/v1/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  frontend:
+    container_name: ai2workspace-frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      PORT: 3121
+      API_ORIGIN: http://ai2workspace:3123
+      HOST_INTERNAL: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      ai2workspace:
+        condition: service_healthy
+
+  workspace:
+    container_name: ai2workspace-workspace
+    build:
+      context: .
+      dockerfile: workspace/Dockerfile
+    ports:
+      - "127.0.0.1:3122:3122"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3122/]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
