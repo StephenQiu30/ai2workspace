@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {VideoUploader} from '@/features/media/video_uploader';
 import {
   learningAddLesson,
   learningAddSection,
@@ -39,6 +40,9 @@ export function CourseEditor() {
   const [lessonType, setLessonType] = useState<'video' | 'article'>('video');
   const [isTrial, setIsTrial] = useState(false);
   const [articleContent, setArticleContent] = useState('');
+  const [lastCreatedLessonId, setLastCreatedLessonId] = useState<string | null>(
+    null,
+  );
 
   // Admin action inputs
   const [reviewDecision, setReviewDecision] = useState<'approved' | 'rejected'>(
@@ -157,6 +161,7 @@ export function CourseEditor() {
         },
       );
       setSuccessMessage(`课时【${resp.title}】已添加，ID: ${resp.id}`);
+      setLastCreatedLessonId(resp.id ?? null);
       setLessonTitle('');
       setArticleContent('');
       setCurrentVersion((v) => v + 1);
@@ -487,6 +492,20 @@ export function CourseEditor() {
                 添加课时
               </Button>
             </form>
+
+            {lastCreatedLessonId && (
+              <div className="pt-4 border-t">
+                <VideoUploader
+                  courseId={courseId}
+                  lessonId={lastCreatedLessonId}
+                  onPublished={(mvId) => {
+                    setSuccessMessage(
+                      `课时视频已成功就绪并发布，版本 ID: ${mvId}`,
+                    );
+                  }}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

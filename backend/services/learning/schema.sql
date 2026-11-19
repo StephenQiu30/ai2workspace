@@ -55,3 +55,64 @@ CREATE TABLE IF NOT EXISTS enrollments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_enrollments_user_id ON enrollments(user_id);
+
+CREATE TABLE IF NOT EXISTS uploads (
+    id VARCHAR(64) PRIMARY KEY,
+    instructor_id VARCHAR(64) NOT NULL,
+    course_id VARCHAR(64) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    lesson_id VARCHAR(64) NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    declared_bytes BIGINT NOT NULL,
+    actual_bytes BIGINT,
+    status VARCHAR(32) NOT NULL DEFAULT 'uploading',
+    source_version INT NOT NULL DEFAULT 1,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_uploads_instructor_id ON uploads(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_uploads_lesson_id ON uploads(lesson_id);
+
+CREATE TABLE IF NOT EXISTS media_versions (
+    id VARCHAR(64) PRIMARY KEY,
+    upload_id VARCHAR(64) REFERENCES uploads(id) ON DELETE SET NULL,
+    lesson_id VARCHAR(64) NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    status VARCHAR(32) NOT NULL DEFAULT 'processing',
+    duration_seconds INT NOT NULL DEFAULT 0,
+    width INT NOT NULL DEFAULT 0,
+    height INT NOT NULL DEFAULT 0,
+    fps INT NOT NULL DEFAULT 0,
+    format VARCHAR(32) NOT NULL DEFAULT 'hls',
+    playback_url VARCHAR(512) NOT NULL DEFAULT '',
+    failure_reason VARCHAR(255) NOT NULL DEFAULT '',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_versions_lesson_id ON media_versions(lesson_id);
+
+CREATE TABLE IF NOT EXISTS media_jobs (
+    id VARCHAR(64) PRIMARY KEY,
+    upload_id VARCHAR(64) NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+    media_version_id VARCHAR(64) NOT NULL REFERENCES media_versions(id) ON DELETE CASCADE,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    retry_count INT NOT NULL DEFAULT 0,
+    error_message VARCHAR(512) NOT NULL DEFAULT '',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS learning_progress (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    lesson_id VARCHAR(64) NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    course_id VARCHAR(64) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    content_version INT NOT NULL DEFAULT 1,
+    position_seconds INT NOT NULL DEFAULT 0,
+    version INT NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, lesson_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_progress_user_id ON learning_progress(user_id);
+
