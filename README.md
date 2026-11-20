@@ -27,3 +27,7 @@ pnpm dev
 ```
 
 本地访问 http://localhost:3122/docs/ 。完整的[知识库使用说明](./workspace/content/index.md)由 workspace 承载。
+
+## 开源协议
+
+本项目基于 [MIT 协议](./LICENSE) 开源。

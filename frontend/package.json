@@ -2,6 +2,7 @@
   "name": "ai2workspace-frontend",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --port 3121",
     "build": "next build --webpack",
