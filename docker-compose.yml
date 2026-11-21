@@ -15,6 +15,10 @@ services:
     depends_on:
       - frontend
       - identity
+      - learning
+      - commerce
+      - community
+      - assistant
 
   identity:
     container_name: ai2workspace-identity
@@ -24,7 +28,6 @@ services:
     environment:
       HTTP_ADDR: :3123
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      # 中间件连接全部使用宿主机本机环境
       HOST_INTERNAL: host.docker.internal
       DB_HOST: ${DB_HOST:-host.docker.internal}
       MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
@@ -38,7 +41,93 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/identity/v1/health]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/identity/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  learning:
+    container_name: ai2workspace-learning
+    build:
+      context: .
+      dockerfile: backend/services/learning/Dockerfile
+    environment:
+      HTTP_ADDR: :3124
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      HOST_INTERNAL: host.docker.internal
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+    ports:
+      - "127.0.0.1:3124:3124"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3124/api/learning/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  commerce:
+    container_name: ai2workspace-commerce
+    build:
+      context: .
+      dockerfile: backend/services/commerce/Dockerfile
+    environment:
+      COMMERCE_HTTP_ADDR: :3125
+      COMMERCE_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      HOST_INTERNAL: host.docker.internal
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+    ports:
+      - "127.0.0.1:3125:3125"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3125/api/commerce/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  community:
+    container_name: ai2workspace-community
+    build:
+      context: .
+      dockerfile: backend/services/community/Dockerfile
+    environment:
+      COMMUNITY_HTTP_ADDR: :3126
+      COMMUNITY_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      HOST_INTERNAL: host.docker.internal
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+    ports:
+      - "127.0.0.1:3126:3126"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3126/api/community/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  assistant:
+    container_name: ai2workspace-assistant
+    build:
+      context: .
+      dockerfile: backend/services/assistant/Dockerfile
+    environment:
+      ASSISTANT_HTTP_ADDR: :3127
+      ASSISTANT_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      IDENTITY_SERVICE_URL: http://identity:3123
+      LEARNING_SERVICE_URL: http://learning:3124
+      HOST_INTERNAL: host.docker.internal
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+    ports:
+      - "127.0.0.1:3127:3127"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3127/healthz]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -51,12 +140,20 @@ services:
       dockerfile: frontend/Dockerfile
     environment:
       PORT: 3121
-      API_ORIGIN: http://identity:3123
+      API_ORIGIN: http://gateway
       HOST_INTERNAL: host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       identity:
+        condition: service_healthy
+      learning:
+        condition: service_healthy
+      commerce:
+        condition: service_healthy
+      community:
+        condition: service_healthy
+      assistant:
         condition: service_healthy
 
   workspace:

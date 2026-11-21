@@ -1,16 +1,16 @@
-FROM golang:1.24-alpine AS builder
-
+FROM golang:1.26.5-alpine AS build
+ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY backend/services/community/go.mod backend/services/community/go.sum ./
 RUN go mod download
+COPY backend/services/community/ ./
+RUN go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go --parseInternal -o api --outputTypes go,json --quiet
+RUN CGO_ENABLED=0 GOWORK=off go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/community cmd/server/main.go
-
-FROM alpine:3.20
-RUN apk --no-cache add ca-certificates tzdata
+FROM alpine:3.23
+RUN apk add --no-cache ca-certificates tzdata && addgroup -S community && adduser -S -G community community
 WORKDIR /app
-COPY --from=builder /app/community .
-
+COPY --from=build /out/server ./server
+USER community
 EXPOSE 3126
-ENTRYPOINT ["/app/community"]
+ENTRYPOINT ["./server"]

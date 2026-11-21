@@ -1,16 +1,16 @@
-FROM golang:1.24-alpine AS builder
-
+FROM golang:1.26.5-alpine AS build
+ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY backend/services/assistant/go.mod backend/services/assistant/go.sum ./
 RUN go mod download
+COPY backend/services/assistant/ ./
+RUN go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go --parseInternal -o api --outputTypes go,json --quiet
+RUN CGO_ENABLED=0 GOWORK=off go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/assistant cmd/server/main.go
-
-FROM alpine:3.20
-RUN apk --no-cache add ca-certificates tzdata
+FROM alpine:3.23
+RUN apk add --no-cache ca-certificates tzdata && addgroup -S assistant && adduser -S -G assistant assistant
 WORKDIR /app
-COPY --from=builder /app/assistant .
-
+COPY --from=build /out/server ./server
+USER assistant
 EXPOSE 3127
-ENTRYPOINT ["/app/assistant"]
+ENTRYPOINT ["./server"]
