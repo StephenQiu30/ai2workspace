@@ -8,8 +8,10 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	_ "github.com/StephenQiu30/ai2workspace/backend/services/assistant/api"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/agent"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/config"
+	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/health"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/knowledge"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/provider"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/usage"
@@ -72,9 +74,8 @@ func (s *Server) setupRoutes() {
 		s.router.GET("/swagger/assistant/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	s.router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "assistant"})
-	})
+	s.router.GET("/healthz", health.Get)
+	s.router.GET("/api/assistant/health", health.Get)
 
 	api := s.router.Group("/api/assistant")
 	{

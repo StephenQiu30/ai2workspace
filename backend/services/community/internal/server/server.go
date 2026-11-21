@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	_ "github.com/StephenQiu30/ai2workspace/backend/services/community/api"
+	"github.com/StephenQiu30/ai2workspace/backend/services/community/internal/health"
 	"github.com/StephenQiu30/ai2workspace/backend/services/community/internal/interaction"
 	"github.com/StephenQiu30/ai2workspace/backend/services/community/internal/moderation"
 	"github.com/StephenQiu30/ai2workspace/backend/services/community/internal/notification"
@@ -44,9 +45,7 @@ func NewWithStores(
 	notifHandler := notification.NewHandler(notifStore)
 
 	// Health
-	router.GET("/api/community/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"service": "community", "status": "ok"})
-	})
+	router.GET("/api/community/health", health.Get)
 
 	// Posts & Comments
 	router.POST("/api/community/posts", postsHandler.CreatePost)

@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/StephenQiu30/ai2workspace/backend/services/commerce/api"
 	"github.com/StephenQiu30/ai2workspace/backend/services/commerce/internal/entitlements"
+	"github.com/StephenQiu30/ai2workspace/backend/services/commerce/internal/health"
 	"github.com/StephenQiu30/ai2workspace/backend/services/commerce/internal/orders"
 	"github.com/StephenQiu30/ai2workspace/backend/services/commerce/internal/payments"
 	"github.com/StephenQiu30/ai2workspace/backend/services/commerce/internal/refunds"
@@ -57,9 +58,7 @@ func NewWithStores(
 	refundHandler := refunds.NewHandler(refundStore)
 
 	// Health
-	router.GET("/api/commerce/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"service": "commerce", "status": "ok"})
-	})
+	router.GET("/api/commerce/health", health.Get)
 
 	// Prices & Orders
 	router.POST("/api/commerce/courses/:id/price", orderHandler.SetCoursePrice)
