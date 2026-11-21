@@ -28,6 +28,10 @@ services:
     environment:
       HTTP_ADDR: :3123
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
+      DEV_EXPOSE_TOKENS: ${DEV_EXPOSE_TOKENS:-true}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@learnis.local}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin123456!}
       HOST_INTERNAL: host.docker.internal
       DB_HOST: ${DB_HOST:-host.docker.internal}
       MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
@@ -55,6 +59,9 @@ services:
     environment:
       HTTP_ADDR: :3124
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
+      IDENTITY_SERVICE_URL: http://identity:3123
+      COMMERCE_SERVICE_URL: http://commerce:3125
       HOST_INTERNAL: host.docker.internal
       POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
     ports:
@@ -76,6 +83,10 @@ services:
     environment:
       COMMERCE_HTTP_ADDR: :3125
       COMMERCE_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
+      IDENTITY_SERVICE_URL: http://identity:3123
+      LEARNING_SERVICE_URL: http://learning:3124
+      COMMUNITY_SERVICE_URL: http://community:3126
       HOST_INTERNAL: host.docker.internal
       POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
     ports:
@@ -97,6 +108,9 @@ services:
     environment:
       COMMUNITY_HTTP_ADDR: :3126
       COMMUNITY_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      COMMUNITY_SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
+      IDENTITY_SERVICE_URL: http://identity:3123
+      LEARNING_SERVICE_URL: http://learning:3124
       HOST_INTERNAL: host.docker.internal
       POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
     ports:
@@ -118,6 +132,8 @@ services:
     environment:
       ASSISTANT_HTTP_ADDR: :3127
       ASSISTANT_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      ASSISTANT_SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
+      AI_ALLOW_LOCAL_SIMULATION: ${AI_ALLOW_LOCAL_SIMULATION:-true}
       IDENTITY_SERVICE_URL: http://identity:3123
       LEARNING_SERVICE_URL: http://learning:3124
       HOST_INTERNAL: host.docker.internal

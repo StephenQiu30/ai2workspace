@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -49,9 +50,28 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
+func cloneProgress(p *Progress) *Progress {
+	if p == nil {
+		return nil
+	}
+	cp := *p
+	return &cp
+}
+
+func generateProgressID() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("prog_%s", hex.EncodeToString(b))
+}
+
+// SaveProgress creates or updates a user's learning progress using strict optimistic concurrency.
+// expectedVersion == 0 is only valid for initial creation; updating an existing record requires matching its current version.
 func (s *MemoryStore) SaveProgress(ctx context.Context, userID, courseID, lessonID string, contentVersion, positionSeconds, expectedVersion int) (*Progress, error) {
 	if positionSeconds < 0 {
 		return nil, ErrInvalidPosition
+	}
+	if expectedVersion < 0 {
+		return nil, ErrVersionConflict
 	}
 
 	s.mu.Lock()
@@ -59,15 +79,15 @@ func (s *MemoryStore) SaveProgress(ctx context.Context, userID, courseID, lesson
 
 	key := fmt.Sprintf("%s:%s", userID, lessonID)
 	existing, ok := s.progress[key]
-	now := time.Now()
+	now := time.Now().UTC()
 
 	if !ok {
-		b := make([]byte, 8)
-		_, _ = rand.Read(b)
-		id := fmt.Sprintf("prog_%s", hex.EncodeToString(b))
+		if expectedVersion != 0 {
+			return nil, ErrVersionConflict
+		}
 
 		p := &Progress{
-			ID:              id,
+			ID:              generateProgressID(),
 			UserID:          userID,
 			CourseID:        courseID,
 			LessonID:        lessonID,
@@ -77,20 +97,20 @@ func (s *MemoryStore) SaveProgress(ctx context.Context, userID, courseID, lesson
 			UpdatedAt:       now,
 		}
 		s.progress[key] = p
-		return p, nil
+		return cloneProgress(p), nil
 	}
 
-	// Optimistic concurrency check
-	if expectedVersion > 0 && existing.Version != expectedVersion {
+	if existing.Version != expectedVersion {
 		return nil, ErrVersionConflict
 	}
 
+	existing.CourseID = courseID
 	existing.ContentVersion = contentVersion
 	existing.PositionSeconds = positionSeconds
 	existing.Version++
 	existing.UpdatedAt = now
 
-	return existing, nil
+	return cloneProgress(existing), nil
 }
 
 func (s *MemoryStore) GetProgress(ctx context.Context, userID, lessonID string) (*Progress, error) {
@@ -102,7 +122,7 @@ func (s *MemoryStore) GetProgress(ctx context.Context, userID, lessonID string) 
 	if !ok {
 		return nil, ErrProgressNotFound
 	}
-	return p, nil
+	return cloneProgress(p), nil
 }
 
 func (s *MemoryStore) ListProgressByCourse(ctx context.Context, userID, courseID string) ([]*Progress, error) {
@@ -112,8 +132,14 @@ func (s *MemoryStore) ListProgressByCourse(ctx context.Context, userID, courseID
 	var list []*Progress
 	for _, p := range s.progress {
 		if p.UserID == userID && p.CourseID == courseID {
-			list = append(list, p)
+			list = append(list, cloneProgress(p))
 		}
 	}
+	sort.SliceStable(list, func(i, j int) bool {
+		if !list[i].UpdatedAt.Equal(list[j].UpdatedAt) {
+			return list[i].UpdatedAt.After(list[j].UpdatedAt)
+		}
+		return list[i].ID > list[j].ID
+	})
 	return list, nil
 }

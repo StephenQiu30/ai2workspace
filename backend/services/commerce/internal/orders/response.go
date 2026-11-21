@@ -16,6 +16,7 @@ type OrderResponse struct {
 	ID             string     `json:"id"`
 	UserID         string     `json:"userId"`
 	CourseID       string     `json:"courseId"`
+	CourseTitle    string     `json:"courseTitle,omitempty"`
 	AmountMinor    int64      `json:"amountMinor"`
 	Currency       string     `json:"currency"`
 	Status         string     `json:"status"`
@@ -26,7 +27,7 @@ type OrderResponse struct {
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }
 
-// OrderListResponse represents paginated order list.
+// OrderListResponse represents a paginated order list.
 type OrderListResponse struct {
 	Items      []OrderResponse `json:"items"`
 	Total      int             `json:"total"`

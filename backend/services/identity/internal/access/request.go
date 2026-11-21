@@ -13,7 +13,7 @@ type AcceptInvitationRequest struct {
 
 // SetAccountStatusRequest defines parameters to change an account's operational status.
 type SetAccountStatusRequest struct {
-	Status          string `json:"status" binding:"required" example:"suspended"`
+	Status          string `json:"status" binding:"required,oneof=active suspended" example:"suspended"`
 	ExpectedVersion int    `json:"expectedVersion" binding:"required" example:"1"`
 	Reason          string `json:"reason" binding:"required" example:"Policy violation"`
 }

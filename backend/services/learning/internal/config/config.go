@@ -4,25 +4,36 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // Config contains process-level configuration for the learning service.
 type Config struct {
-	HTTPAddr        string
-	HTTPTimeout     time.Duration
-	ShutdownTimeout time.Duration
-	SwaggerEnabled  bool
-	ServiceToken    string
+	HTTPAddr              string
+	HTTPTimeout           time.Duration
+	ShutdownTimeout       time.Duration
+	SwaggerEnabled        bool
+	DatabaseURL           string
+	ServiceToken          string
+	IdentityServiceURL    string
+	CommerceServiceURL    string
+	PlaybackSigningSecret string
 }
 
 // Load reads and validates configuration from environment variables.
 func Load() (Config, error) {
+	serviceToken := value("SERVICE_TOKEN", "identity-service-secret")
 	cfg := Config{
-		HTTPAddr:     value("HTTP_ADDR", ":3124"),
-		ServiceToken: value("SERVICE_TOKEN", "identity-service-secret"),
+		HTTPAddr:              value("HTTP_ADDR", ":3124"),
+		DatabaseURL:           strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		ServiceToken:          serviceToken,
+		IdentityServiceURL:    strings.TrimRight(strings.TrimSpace(os.Getenv("IDENTITY_SERVICE_URL")), "/"),
+		CommerceServiceURL:    strings.TrimRight(strings.TrimSpace(os.Getenv("COMMERCE_SERVICE_URL")), "/"),
+		PlaybackSigningSecret: value("PLAYBACK_SIGNING_SECRET", serviceToken),
 	}
 	_, port, err := net.SplitHostPort(cfg.HTTPAddr)
 	if err != nil {
@@ -41,7 +52,24 @@ func Load() (Config, error) {
 	if cfg.SwaggerEnabled, err = strconv.ParseBool(value("SWAGGER_ENABLED", "false")); err != nil {
 		return Config{}, fmt.Errorf("SWAGGER_ENABLED must be a boolean: %w", err)
 	}
+	if err := validateOptionalHTTPURL("IDENTITY_SERVICE_URL", cfg.IdentityServiceURL); err != nil {
+		return Config{}, err
+	}
+	if err := validateOptionalHTTPURL("COMMERCE_SERVICE_URL", cfg.CommerceServiceURL); err != nil {
+		return Config{}, err
+	}
 	return cfg, nil
+}
+
+func validateOptionalHTTPURL(key, raw string) error {
+	if raw == "" {
+		return nil
+	}
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return fmt.Errorf("%s must be a valid http(s) URL", key)
+	}
+	return nil
 }
 
 func value(key, fallback string) string {

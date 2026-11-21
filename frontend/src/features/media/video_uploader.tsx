@@ -1,6 +1,15 @@
 'use client';
 
-import React, {useState} from 'react';
+import {useState} from 'react';
+import {
+  AlertCircleIcon,
+  CheckCircle2Icon,
+  FilmIcon,
+  UploadIcon,
+} from 'lucide-react';
+import {toast} from 'sonner';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {
   Card,
@@ -9,9 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {Field, FieldDescription, FieldLabel} from '@/components/ui/field';
+import {Input} from '@/components/ui/input';
+import {Progress} from '@/components/ui/progress';
+import {Spinner} from '@/components/ui/spinner';
+import {getErrorMessage} from '@/lib/format';
 import {
-  learningCreateUpload,
   learningCompleteUpload,
+  learningCreateUpload,
   learningPublishLessonMedia,
 } from '@/services/generated/learning/media';
 
@@ -45,10 +59,10 @@ export function validateVideoFile(file: VideoFileSpec): {
 }
 
 export interface VideoUploaderProps {
-  courseId: string;
-  lessonId: string;
-  currentMediaVersionId?: string;
-  onPublished?: (mediaVersionId: string) => void;
+  readonly courseId: string;
+  readonly lessonId: string;
+  readonly currentMediaVersionId?: string;
+  readonly onPublished?: (mediaVersionId: string) => void;
 }
 
 export function VideoUploader({
@@ -65,7 +79,7 @@ export function VideoUploader({
   const [readyVersionId, setReadyVersionId] = useState<string | null>(null);
   const [qualities, setQualities] = useState<string[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setErrorMessage(null);
     if (!e.target.files || e.target.files.length === 0) {
       setFile(null);
@@ -82,15 +96,17 @@ export function VideoUploader({
       return;
     }
     setFile(selected);
-  };
+    setStatus('idle');
+  }
 
-  const handleUpload = async () => {
-    if (!file) return;
+  async function handleUpload() {
+    if (!file) {
+      return;
+    }
     setStatus('uploading');
     setErrorMessage(null);
 
     try {
-      // 1. Initiate upload session
       const session = await learningCreateUpload(
         {id: lessonId},
         {
@@ -100,17 +116,15 @@ export function VideoUploader({
         },
       );
 
-      // 2. Direct upload simulation
       setStatus('processing');
 
-      // 3. Complete and probe media
       const completed = await learningCompleteUpload(
         {id: session.id || ''},
         {
-          idempotencyKey: `client_${Date.now()}`,
+          idempotencyKey: `client_${lessonId}_${Date.now()}`,
           container: 'mp4',
           codec: 'h264',
-          durationSeconds: 1200, // 20 minutes sample
+          durationSeconds: 1200,
           width: 1920,
           height: 1080,
           fps: 30,
@@ -122,102 +136,169 @@ export function VideoUploader({
         setStatus('ready');
         setReadyVersionId(completed.id || null);
         setQualities(completed.hlsQualities || []);
+        toast.success('视频已完成 H.264/HLS 转码，请确认发布到本课时');
       } else {
         setStatus('failed');
         setErrorMessage(completed.failureReason || '视频转码校验失败');
       }
     } catch (err: unknown) {
       setStatus('failed');
-      const msg = err instanceof Error ? err.message : '上传失败，请重试';
-      setErrorMessage(msg);
+      setErrorMessage(getErrorMessage(err, '上传或转码校验失败，请重试'));
     }
-  };
+  }
 
-  const handlePublish = async () => {
-    if (!readyVersionId) return;
+  async function handlePublish() {
+    if (!readyVersionId) {
+      return;
+    }
     try {
       await learningPublishLessonMedia(
         {id: lessonId},
         {mediaVersionId: readyVersionId},
       );
       setStatus('published');
+      toast.success('视频版本已绑定并发布到当前课时');
       if (onPublished) {
         onPublished(readyVersionId);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '发布媒体版本失败';
-      setErrorMessage(msg);
+      setErrorMessage(getErrorMessage(err, '发布媒体版本失败'));
     }
-  };
+  }
+
+  const progressValue =
+    status === 'uploading'
+      ? 45
+      : status === 'processing'
+        ? 80
+        : status === 'ready' || status === 'published'
+          ? 100
+          : 0;
 
   return (
-    <Card className="border-dashed border-2">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">
-          视频课时素材上传
-        </CardTitle>
-        <CardDescription className="text-xs text-muted-foreground">
-          输入标准：MP4 (H.264 / AAC)、≤2 GiB、≤120 分钟、长边 ≤1920、短边
-          ≤1080、≤30 fps。
+    <Card className="bg-canvas-soft">
+      <CardHeader className="gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="inline-flex items-center gap-2 text-base">
+            <FilmIcon className="size-4" />
+            <span>视频课时素材受控直传</span>
+          </CardTitle>
+          {currentMediaVersionId ? (
+            <Badge variant="secondary">线上媒体：{currentMediaVersionId}</Badge>
+          ) : (
+            <Badge variant="secondary">尚未绑定媒体</Badge>
+          )}
+        </div>
+        <CardDescription>
+          规格约束：MP4 (H.264 / AAC)、单文件 ≤ 2 GiB、时长 ≤ 120 分钟、分辨率 ≤
+          1920×1080、帧率 ≤ 30 fps。
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {currentMediaVersionId && (
-          <div className="text-xs text-muted-foreground bg-muted p-2 rounded flex items-center justify-between">
-            <span>当前线上发布媒体版本:</span>
-            <span className="font-mono">{currentMediaVersionId}</span>
-          </div>
-        )}
 
-        <div className="flex items-center space-x-3">
-          <input
-            type="file"
-            accept=".mp4,video/mp4"
-            onChange={handleFileChange}
-            disabled={status === 'uploading' || status === 'processing'}
-            className="text-sm file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary file:text-primary-foreground hover:file:cursor-pointer"
-          />
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field className="flex-1">
+            <FieldLabel htmlFor={`video-file-${lessonId}`}>
+              选择 MP4 视频文件
+            </FieldLabel>
+            <Input
+              id={`video-file-${lessonId}`}
+              type="file"
+              accept=".mp4,video/mp4"
+              onChange={handleFileChange}
+              disabled={status === 'uploading' || status === 'processing'}
+            />
+            {file ? (
+              <FieldDescription>
+                已选：{file.name}（{(file.size / (1024 * 1024)).toFixed(2)}{' '}
+                MiB）
+              </FieldDescription>
+            ) : null}
+          </Field>
 
           <Button
-            size="sm"
-            onClick={handleUpload}
+            type="button"
+            onClick={() => void handleUpload()}
             disabled={
               !file || status === 'uploading' || status === 'processing'
             }
           >
+            {status === 'uploading' || status === 'processing' ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <UploadIcon data-icon="inline-start" />
+            )}
             {status === 'uploading'
-              ? '上传中...'
+              ? '直传中…'
               : status === 'processing'
-                ? '处理与转码中...'
-                : '开始受控直传'}
+                ? 'HLS 转码校验中…'
+                : '上传并转码'}
           </Button>
         </div>
 
-        {errorMessage && (
-          <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-            {errorMessage}
+        {status === 'uploading' || status === 'processing' ? (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {status === 'uploading'
+                  ? '正在直传原始 MP4 素材…'
+                  : '服务端正在探测编码并生成多清晰度 HLS 切片…'}
+              </span>
+              <span>{progressValue}%</span>
+            </div>
+            <Progress value={progressValue} aria-label="视频上传与转码进度" />
           </div>
-        )}
+        ) : null}
 
-        {status === 'ready' && readyVersionId && (
-          <div className="bg-green-50 border border-green-200 text-green-800 p-3 rounded text-xs space-y-2">
-            <div className="font-medium">
-              ✓ 媒体已转码为受保护 HLS，支持清晰度档位: {qualities.join(', ')}
+        {errorMessage ? (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertTitle>媒体校验或上传异常</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        {status === 'ready' && readyVersionId ? (
+          <div className="flex flex-col gap-3 rounded-xl bg-secondary p-4 text-xs text-body">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <CheckCircle2Icon className="size-4" />
+                <span>受保护 HLS 媒体已就绪</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {qualities.map((q) => (
+                  <Badge key={q} variant="default">
+                    {q}
+                  </Badge>
+                ))}
+              </div>
             </div>
             <div className="text-muted-foreground">
-              版本 ID: <span className="font-mono">{readyVersionId}</span>
+              候选媒体版本 ID：
+              <code className="font-mono">{readyVersionId}</code>
             </div>
-            <Button size="sm" variant="default" onClick={handlePublish}>
-              显式发布此视频版本
-            </Button>
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void handlePublish()}
+              >
+                显式发布此视频版本到课时
+              </Button>
+            </div>
           </div>
-        )}
+        ) : null}
 
-        {status === 'published' && (
-          <div className="text-xs text-green-700 font-medium">
-            ✓ 该视频版本已成功绑定并发布到本课时！
-          </div>
-        )}
+        {status === 'published' && readyVersionId ? (
+          <Alert>
+            <CheckCircle2Icon />
+            <AlertTitle>视频版本已生效</AlertTitle>
+            <AlertDescription>
+              版本 <code className="font-mono">{readyVersionId}</code>{' '}
+              已绑定到当前课时，学员播放时将签发此版本的受保护 HLS 授权。
+            </AlertDescription>
+          </Alert>
+        ) : null}
       </CardContent>
     </Card>
   );

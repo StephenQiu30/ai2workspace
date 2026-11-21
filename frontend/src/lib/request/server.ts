@@ -6,10 +6,7 @@ import type {RequestOptions} from './transport';
 export async function getServerRequestOptions(
   customCookie?: string,
 ): Promise<RequestOptions> {
-  const origin = process.env.API_ORIGIN;
-  if (!origin) {
-    throw new Error('API_ORIGIN is required for server-side API calls');
-  }
+  const origin = process.env.API_ORIGIN || 'http://127.0.0.1:3121';
   const url = new URL(origin);
   if (
     !['http:', 'https:'].includes(url.protocol) ||

@@ -5,6 +5,12 @@ package accounts
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
 	Password string `json:"password" binding:"required,min=8" example:"SecureP@ss123"`
+	Nickname string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"alice"`
+}
+
+// UpdateMeRequest defines the input for updating the current authenticated user's profile.
+type UpdateMeRequest struct {
+	Nickname string `json:"nickname" binding:"required,min=1,max=64" example:"Alice Chen"`
 }
 
 // VerifyEmailRequest defines the input for email verification with a token.

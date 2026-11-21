@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/config"
 	"github.com/StephenQiu30/ai2workspace/backend/services/assistant/internal/server"
@@ -17,7 +18,7 @@ import (
 )
 
 // @title assistant API
-// @version 0.1.0
+// @version 0.2.0
 // @description assistant service API (Knowledge Base, AI Governance, Agent & Search), generated from Go source.
 // @BasePath /
 func main() {
@@ -42,13 +43,20 @@ func run() error {
 	defer stop()
 
 	srv := server.New(cfg)
+	defer srv.Close()
+
+	// Ensure WriteTimeout accommodates 18s evidence + 60s model generation.
+	writeTimeout := cfg.HTTPTimeout
+	if writeTimeout < 90*time.Second {
+		writeTimeout = 90 * time.Second
+	}
 
 	httpServer := &http.Server{
 		Handler:           srv.Router(),
 		ReadHeaderTimeout: cfg.HTTPTimeout,
 		ReadTimeout:       cfg.HTTPTimeout,
-		WriteTimeout:      cfg.HTTPTimeout,
-		IdleTimeout:       cfg.HTTPTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       writeTimeout,
 	}
 	stopped := make(chan struct{})
 	go func() {

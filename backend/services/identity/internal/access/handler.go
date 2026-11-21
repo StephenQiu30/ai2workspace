@@ -2,9 +2,12 @@
 package access
 
 import (
+	"crypto/subtle"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/accounts"
@@ -12,30 +15,55 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler handles administrative and internal identity endpoints.
-type Handler struct {
-	invitations  Store
-	accounts     accounts.Store
-	sessions     sessions.Store
-	serviceToken string
+// Options configures optional behavior for access Handler.
+type Options struct {
+	ServiceToken    string
+	DevExposeTokens bool
+	Mailer          accounts.Mailer
 }
 
-// NewHandler initializes an access Handler.
+// Handler handles administrative and internal identity endpoints.
+type Handler struct {
+	invitations     Store
+	accounts        accounts.Store
+	sessions        sessions.Store
+	serviceToken    string
+	devExposeTokens bool
+	mailer          accounts.Mailer
+}
+
+// NewHandler initializes an access Handler with default secure options.
 func NewHandler(invitations Store, accs accounts.Store, sess sessions.Store, serviceToken string) *Handler {
+	return NewHandlerWithOptions(invitations, accs, sess, Options{
+		ServiceToken: serviceToken,
+	})
+}
+
+// NewHandlerWithOptions initializes an access Handler with explicit options.
+func NewHandlerWithOptions(invitations Store, accs accounts.Store, sess sessions.Store, opts Options) *Handler {
+	serviceToken := opts.ServiceToken
 	if serviceToken == "" {
 		serviceToken = "identity-service-secret"
 	}
 	return &Handler{
-		invitations:  invitations,
-		accounts:     accs,
-		sessions:     sess,
-		serviceToken: serviceToken,
+		invitations:     invitations,
+		accounts:        accs,
+		sessions:        sess,
+		serviceToken:    serviceToken,
+		devExposeTokens: opts.DevExposeTokens,
+		mailer:          opts.Mailer,
 	}
 }
 
+func (h *Handler) validServiceToken(provided string) bool {
+	if h.serviceToken == "" || provided == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(provided), []byte(h.serviceToken)) == 1
+}
+
 func (h *Handler) requireAdmin(c *gin.Context) (string, error) {
-	// Service token can act with administrative authority
-	if h.serviceToken != "" && c.GetHeader("X-Service-Token") == h.serviceToken {
+	if h.validServiceToken(c.GetHeader("X-Service-Token")) {
 		return "system_admin", nil
 	}
 
@@ -50,7 +78,7 @@ func (h *Handler) requireAdmin(c *gin.Context) (string, error) {
 	}
 
 	acc, err := h.accounts.GetAccountByID(c.Request.Context(), sess.UserID)
-	if err != nil || acc.Status == "suspended" {
+	if err != nil || acc.Status == accounts.StatusSuspended {
 		return "", errors.New("forbidden")
 	}
 
@@ -61,6 +89,194 @@ func (h *Handler) requireAdmin(c *gin.Context) (string, error) {
 	}
 
 	return "", errors.New("forbidden")
+}
+
+func parseOptionalInt(raw string, fallback int) (int, error) {
+	if strings.TrimSpace(raw) == "" {
+		return fallback, nil
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < 1 {
+		return 0, errors.New("must be a positive integer")
+	}
+	return v, nil
+}
+
+// ListAccounts godoc
+// @Summary List accounts (admin only)
+// @Description Returns a paginated list of accounts ordered by creation time descending, supporting status, role, and search query filters.
+// @Tags access
+// @Produce json
+// @Param status query string false "Filter by account status (active or suspended)"
+// @Param role query string false "Filter by role (student, instructor, admin)"
+// @Param q query string false "Search by email, nickname, or user ID"
+// @Param page query int false "Page number (default 1)"
+// @Param pageSize query int false "Page size (default 20, max 100)"
+// @Success 200 {object} ListAccountsResponse
+// @Failure 400 {object} accounts.ErrorResponse
+// @Failure 401 {object} accounts.ErrorResponse
+// @Failure 403 {object} accounts.ErrorResponse
+// @Router /api/identity/accounts [get]
+// @ID identityListAccounts
+func (h *Handler) ListAccounts(c *gin.Context) {
+	if _, err := h.requireAdmin(c); err != nil {
+		if err.Error() == "unauthorized" {
+			c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{
+				Error:   "unauthorized",
+				Message: "Authentication required",
+			})
+			return
+		}
+		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
+			Error:   "forbidden",
+			Message: "Admin privileges required",
+		})
+		return
+	}
+
+	page, err := parseOptionalInt(c.Query("page"), 1)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+			Error:   "invalid_pagination",
+			Message: "page must be a positive integer",
+		})
+		return
+	}
+	pageSize, err := parseOptionalInt(c.Query("pageSize"), 20)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+			Error:   "invalid_pagination",
+			Message: "pageSize must be a positive integer",
+		})
+		return
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	statusFilter := strings.TrimSpace(c.Query("status"))
+	if statusFilter != "" {
+		if err := accounts.ValidateStatus(statusFilter); err != nil {
+			c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+				Error:   "invalid_status",
+				Message: "status must be active or suspended",
+			})
+			return
+		}
+	}
+
+	accs, total, err := h.accounts.ListAccounts(c.Request.Context(), accounts.ListAccountsFilter{
+		Status:   statusFilter,
+		Role:     strings.TrimSpace(c.Query("role")),
+		Query:    strings.TrimSpace(c.Query("q")),
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, accounts.ErrorResponse{
+			Error:   "list_failed",
+			Message: "Failed to list accounts",
+		})
+		return
+	}
+
+	items := make([]AccountSummary, 0, len(accs))
+	for _, acc := range accs {
+		items = append(items, AccountSummary{
+			ID:            acc.ID,
+			Email:         acc.Email,
+			Nickname:      acc.Nickname,
+			EmailVerified: acc.EmailVerified,
+			Status:        acc.Status,
+			Roles:         acc.Roles,
+			Version:       acc.Version,
+			CreatedAt:     acc.CreatedAt,
+			UpdatedAt:     acc.UpdatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, ListAccountsResponse{
+		Items:    items,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	})
+}
+
+// ListInstructorInvitations godoc
+// @Summary List instructor invitations (admin only)
+// @Description Returns instructor invitations ordered by creation time descending.
+// @Tags access
+// @Produce json
+// @Param status query string false "Filter by invitation status (pending, accepted, cancelled, expired)"
+// @Param page query int false "Page number (default 1)"
+// @Param pageSize query int false "Page size (default 50, max 100)"
+// @Success 200 {object} ListInvitationsResponse
+// @Failure 400 {object} accounts.ErrorResponse
+// @Failure 401 {object} accounts.ErrorResponse
+// @Failure 403 {object} accounts.ErrorResponse
+// @Router /api/identity/instructor-invitations [get]
+// @ID identityListInstructorInvitations
+func (h *Handler) ListInstructorInvitations(c *gin.Context) {
+	if _, err := h.requireAdmin(c); err != nil {
+		if err.Error() == "unauthorized" {
+			c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{
+				Error:   "unauthorized",
+				Message: "Authentication required",
+			})
+			return
+		}
+		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
+			Error:   "forbidden",
+			Message: "Admin privileges required",
+		})
+		return
+	}
+
+	page, err := parseOptionalInt(c.Query("page"), 1)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+			Error:   "invalid_pagination",
+			Message: "page must be a positive integer",
+		})
+		return
+	}
+	pageSize, err := parseOptionalInt(c.Query("pageSize"), 50)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+			Error:   "invalid_pagination",
+			Message: "pageSize must be a positive integer",
+		})
+		return
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	invs, total, err := h.invitations.ListInvitations(c.Request.Context(), ListInvitationsFilter{
+		Status:   strings.TrimSpace(c.Query("status")),
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, accounts.ErrorResponse{
+			Error:   "list_failed",
+			Message: "Failed to list instructor invitations",
+		})
+		return
+	}
+
+	items := make([]Invitation, 0, len(invs))
+	for _, inv := range invs {
+		items = append(items, *inv)
+	}
+
+	c.JSON(http.StatusOK, ListInvitationsResponse{
+		Items:    items,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	})
 }
 
 // InviteInstructor godoc
@@ -74,8 +290,9 @@ func (h *Handler) requireAdmin(c *gin.Context) (string, error) {
 // @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
+// @Failure 503 {object} accounts.ErrorResponse
 // @Router /api/identity/instructor-invitations [post]
-// @id identityInviteInstructor
+// @ID identityInviteInstructor
 func (h *Handler) InviteInstructor(c *gin.Context) {
 	adminID, err := h.requireAdmin(c)
 	if err != nil {
@@ -111,16 +328,53 @@ func (h *Handler) InviteInstructor(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, InviteInstructorResponse{
-		InviteID:        inv.ID,
-		Status:          inv.Status,
-		InvitationToken: token,
+	_ = h.accounts.RecordMailTask(c.Request.Context(), accounts.MailTask{
+		Recipient: inv.Email,
+		Subject:   "Instructor invitation",
+		Purpose:   accounts.PurposeInstructorInvite,
+		Token:     token,
+		Status:    "pending",
+		CreatedAt: time.Now().UTC(),
 	})
+
+	if h.mailer != nil {
+		body := fmt.Sprintf("You have been invited as an instructor on ai2workspace. Use this invitation token after signing in with your verified email: %s", token)
+		if err := h.mailer.Send(c.Request.Context(), accounts.MailMessage{
+			To:      inv.Email,
+			Subject: "Instructor invitation",
+			Body:    body,
+		}); err != nil {
+			_ = h.accounts.UpdateMailTaskStatus(c.Request.Context(), inv.Email, accounts.PurposeInstructorInvite, token, "failed")
+			c.JSON(http.StatusServiceUnavailable, accounts.ErrorResponse{
+				Error:   "mail_delivery_failed",
+				Message: "Invitation created, but email delivery failed. Please retry later.",
+			})
+			return
+		}
+	}
+	_ = h.accounts.UpdateMailTaskStatus(c.Request.Context(), inv.Email, accounts.PurposeInstructorInvite, token, "sent")
+
+	_ = h.invitations.RecordAuditLog(c.Request.Context(), AuditLog{
+		ActorID:   adminID,
+		TargetID:  inv.ID,
+		Action:    "invite_instructor",
+		Detail:    inv.Email,
+		CreatedAt: time.Now().UTC(),
+	})
+
+	resp := InviteInstructorResponse{
+		InviteID: inv.ID,
+		Status:   inv.Status,
+	}
+	if h.devExposeTokens {
+		resp.InvitationToken = token
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // AcceptInstructorInvitation godoc
 // @Summary Accept instructor invitation
-// @Description Accepts an instructor invitation with token, granting instructor role to the logged-in user.
+// @Description Accepts an instructor invitation with token, granting instructor role to the logged-in verified user matching the invitation email.
 // @Tags access
 // @Accept json
 // @Produce json
@@ -130,7 +384,7 @@ func (h *Handler) InviteInstructor(c *gin.Context) {
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
 // @Router /api/identity/instructor-invitations/accept [post]
-// @id identityAcceptInstructorInvitation
+// @ID identityAcceptInstructorInvitation
 func (h *Handler) AcceptInstructorInvitation(c *gin.Context) {
 	cookie, err := c.Cookie(sessions.SessionCookieName)
 	if err != nil || cookie == "" {
@@ -151,10 +405,18 @@ func (h *Handler) AcceptInstructorInvitation(c *gin.Context) {
 	}
 
 	acc, err := h.accounts.GetAccountByID(c.Request.Context(), sess.UserID)
-	if err != nil || acc.Status == "suspended" {
+	if err != nil || acc.Status == accounts.StatusSuspended {
 		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
 			Error:   "forbidden",
 			Message: "Account unavailable",
+		})
+		return
+	}
+
+	if !acc.EmailVerified {
+		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
+			Error:   "email_not_verified",
+			Message: "Verified email is required to accept instructor invitation",
 		})
 		return
 	}
@@ -202,6 +464,14 @@ func (h *Handler) AcceptInstructorInvitation(c *gin.Context) {
 		return
 	}
 
+	_ = h.invitations.RecordAuditLog(c.Request.Context(), AuditLog{
+		ActorID:   acc.ID,
+		TargetID:  inv.ID,
+		Action:    "accept_instructor_invitation",
+		Detail:    acc.Email,
+		CreatedAt: time.Now().UTC(),
+	})
+
 	c.JSON(http.StatusOK, AcceptInvitationResponse{
 		Roles: updatedAcc.Roles,
 	})
@@ -215,13 +485,15 @@ func (h *Handler) AcceptInstructorInvitation(c *gin.Context) {
 // @Param inviteId path string true "Invitation ID"
 // @Param expectedVersion query int true "Expected version"
 // @Success 200 {object} CancelInvitationResponse
+// @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
 // @Failure 409 {object} accounts.ErrorResponse
 // @Router /api/identity/instructor-invitations/{inviteId} [delete]
-// @id identityCancelInstructorInvitation
+// @ID identityCancelInstructorInvitation
 func (h *Handler) CancelInstructorInvitation(c *gin.Context) {
-	if _, err := h.requireAdmin(c); err != nil {
+	adminID, err := h.requireAdmin(c)
+	if err != nil {
 		if err.Error() == "unauthorized" {
 			c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{Error: "unauthorized", Message: "Login required"})
 			return
@@ -257,6 +529,14 @@ func (h *Handler) CancelInstructorInvitation(c *gin.Context) {
 		return
 	}
 
+	_ = h.invitations.RecordAuditLog(c.Request.Context(), AuditLog{
+		ActorID:   adminID,
+		TargetID:  inv.ID,
+		Action:    "cancel_instructor_invitation",
+		Detail:    inv.Email,
+		CreatedAt: time.Now().UTC(),
+	})
+
 	c.JSON(http.StatusOK, CancelInvitationResponse{
 		Status:  inv.Status,
 		Version: inv.Version,
@@ -265,7 +545,7 @@ func (h *Handler) CancelInstructorInvitation(c *gin.Context) {
 
 // SetAccountStatus godoc
 // @Summary Set account status
-// @Description Suspends or reactivates an account (admin only).
+// @Description Suspends or reactivates an account (admin only). Status must be active or suspended.
 // @Tags access
 // @Accept json
 // @Produce json
@@ -275,11 +555,13 @@ func (h *Handler) CancelInstructorInvitation(c *gin.Context) {
 // @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
+// @Failure 404 {object} accounts.ErrorResponse
 // @Failure 409 {object} accounts.ErrorResponse
 // @Router /api/identity/accounts/{userId}/status [patch]
-// @id identitySetAccountStatus
+// @ID identitySetAccountStatus
 func (h *Handler) SetAccountStatus(c *gin.Context) {
-	if _, err := h.requireAdmin(c); err != nil {
+	adminID, err := h.requireAdmin(c)
+	if err != nil {
 		if err.Error() == "unauthorized" {
 			c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{Error: "unauthorized", Message: "Login required"})
 			return
@@ -293,7 +575,15 @@ func (h *Handler) SetAccountStatus(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
 			Error:   "invalid_request",
-			Message: "Status, expectedVersion, and reason are required",
+			Message: "Status (active or suspended), expectedVersion, and reason are required",
+		})
+		return
+	}
+
+	if err := accounts.ValidateStatus(req.Status); err != nil {
+		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+			Error:   "invalid_status",
+			Message: "Status must be either active or suspended",
 		})
 		return
 	}
@@ -307,6 +597,20 @@ func (h *Handler) SetAccountStatus(c *gin.Context) {
 			})
 			return
 		}
+		if errors.Is(err, accounts.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, accounts.ErrorResponse{
+				Error:   "account_not_found",
+				Message: "Account not found",
+			})
+			return
+		}
+		if errors.Is(err, accounts.ErrInvalidStatus) {
+			c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
+				Error:   "invalid_status",
+				Message: "Status must be either active or suspended",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
 			Error:   "update_failed",
 			Message: err.Error(),
@@ -314,9 +618,18 @@ func (h *Handler) SetAccountStatus(c *gin.Context) {
 		return
 	}
 
-	if req.Status == "suspended" {
+	if req.Status == accounts.StatusSuspended {
 		_ = h.sessions.RevokeAllForUser(c.Request.Context(), userID)
 	}
+
+	_ = h.invitations.RecordAuditLog(c.Request.Context(), AuditLog{
+		ActorID:   adminID,
+		TargetID:  userID,
+		Action:    "set_account_status",
+		Detail:    req.Status,
+		Reason:    strings.TrimSpace(req.Reason),
+		CreatedAt: time.Now().UTC(),
+	})
 
 	c.JSON(http.StatusOK, SetAccountStatusResponse{
 		AccountStatus:  acc.Status,
@@ -326,7 +639,7 @@ func (h *Handler) SetAccountStatus(c *gin.Context) {
 
 // RevokeInstructor godoc
 // @Summary Revoke instructor role
-// @Description Removes the instructor qualification from an account (admin only).
+// @Description Removes the instructor qualification from an account (admin only) and records an audit entry.
 // @Tags access
 // @Produce json
 // @Param userId path string true "User ID"
@@ -336,11 +649,13 @@ func (h *Handler) SetAccountStatus(c *gin.Context) {
 // @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
+// @Failure 404 {object} accounts.ErrorResponse
 // @Failure 409 {object} accounts.ErrorResponse
 // @Router /api/identity/accounts/{userId}/instructor-role [delete]
-// @id identityRevokeInstructor
+// @ID identityRevokeInstructor
 func (h *Handler) RevokeInstructor(c *gin.Context) {
-	if _, err := h.requireAdmin(c); err != nil {
+	adminID, err := h.requireAdmin(c)
+	if err != nil {
 		if err.Error() == "unauthorized" {
 			c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{Error: "unauthorized", Message: "Login required"})
 			return
@@ -359,6 +674,7 @@ func (h *Handler) RevokeInstructor(c *gin.Context) {
 		})
 		return
 	}
+	reason := strings.TrimSpace(c.Query("reason"))
 
 	acc, err := h.accounts.RevokeRole(c.Request.Context(), userID, "instructor", expectedVersion)
 	if err != nil {
@@ -369,12 +685,28 @@ func (h *Handler) RevokeInstructor(c *gin.Context) {
 			})
 			return
 		}
+		if errors.Is(err, accounts.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, accounts.ErrorResponse{
+				Error:   "account_not_found",
+				Message: "Account not found",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
 			Error:   "revoke_failed",
 			Message: err.Error(),
 		})
 		return
 	}
+
+	_ = h.invitations.RecordAuditLog(c.Request.Context(), AuditLog{
+		ActorID:   adminID,
+		TargetID:  userID,
+		Action:    "revoke_instructor_role",
+		Detail:    "instructor",
+		Reason:    reason,
+		CreatedAt: time.Now().UTC(),
+	})
 
 	c.JSON(http.StatusOK, RevokeInstructorResponse{
 		Roles:          acc.Roles,
@@ -384,20 +716,20 @@ func (h *Handler) RevokeInstructor(c *gin.Context) {
 
 // ResolveSession godoc
 // @Summary Resolve session for internal service callers
-// @Description Resolves an opaque session credential to user identity, roles, and status. Requires X-Service-Token header.
+// @Description Resolves an opaque session credential to user identity, nickname, roles, and status. Requires X-Service-Token header.
 // @Tags access
 // @Accept json
 // @Produce json
 // @Param X-Service-Token header string true "Service authentication token"
 // @Param body body ResolveSessionRequest true "Session resolve payload"
 // @Success 200 {object} ResolveSessionResponse
+// @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
 // @Router /internal/identity/sessions/resolve [post]
-// @id identityResolveSession
+// @ID identityResolveSession
 func (h *Handler) ResolveSession(c *gin.Context) {
-	token := c.GetHeader("X-Service-Token")
-	if token == "" || token != h.serviceToken {
+	if !h.validServiceToken(c.GetHeader("X-Service-Token")) {
 		c.JSON(http.StatusUnauthorized, accounts.ErrorResponse{
 			Error:   "unauthorized_service",
 			Message: "Valid service credentials required",
@@ -432,7 +764,7 @@ func (h *Handler) ResolveSession(c *gin.Context) {
 		return
 	}
 
-	if acc.Status == "suspended" {
+	if acc.Status == accounts.StatusSuspended {
 		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
 			Error:   "account_suspended",
 			Message: "Account has been suspended",
@@ -443,6 +775,7 @@ func (h *Handler) ResolveSession(c *gin.Context) {
 	c.JSON(http.StatusOK, ResolveSessionResponse{
 		UserID:         acc.ID,
 		Email:          acc.Email,
+		Nickname:       acc.Nickname,
 		EmailVerified:  acc.EmailVerified,
 		Roles:          acc.Roles,
 		AccountStatus:  acc.Status,

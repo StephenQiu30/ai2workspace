@@ -1,66 +1,94 @@
+import type {Metadata} from 'next';
+import Link from 'next/link';
+import {LockIcon} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent} from '@/components/ui/card';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import {NotificationsView} from '@/features/community/notifications_view';
+import {getServerSession} from '@/lib/auth/session';
+import {buildLoginHref, getErrorMessage} from '@/lib/format';
+import {getServerRequestOptions} from '@/lib/request/server';
 import {communityListMyNotifications} from '@/services/generated/community/community';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
+
+export const metadata: Metadata = {
+  title: '站内通知',
+  description: '接收关于课程订单、退款处理、社区讨论回复与内容治理的站内提醒。',
+};
+
+export const dynamic = 'force-dynamic';
 
 export default async function NotificationsPage() {
-  let notifications: CommunityApi.Notification[] = [];
+  const user = await getServerSession();
+  const loginHref = buildLoginHref('/notifications');
+  const registerHref = `${loginHref}${loginHref.includes('?') ? '&' : '?'}mode=register`;
+
+  if (!user) {
+    return (
+      <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6">
+        <header className="flex flex-col gap-1.5">
+          <h1 className="font-heading text-[28px] leading-[40px] font-medium text-foreground">
+            站内通知
+          </h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            查阅社区互动回复、课程购买与退款进度以及内容治理通知。
+          </p>
+        </header>
+
+        <Card>
+          <CardContent className="py-14">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <LockIcon />
+                </EmptyMedia>
+                <EmptyTitle>请先登录以查看站内通知</EmptyTitle>
+                <EmptyDescription>
+                  登录后即可实时接收讨论回复提醒、课程订单开通通知与售后服务进展。
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent className="flex-row justify-center gap-2">
+                <Button asChild>
+                  <Link href={loginHref}>前往登录</Link>
+                </Button>
+                <Button variant="secondary" asChild>
+                  <Link href={registerHref}>注册新账号</Link>
+                </Button>
+              </EmptyContent>
+            </Empty>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  let initialNotifications: CommunityApi.Notification[] = [];
+  let initialTotal = 0;
+  let initialError: string | null = null;
+
   try {
-    const resp = await communityListMyNotifications({page: 1, limit: 50});
-    notifications = resp.items || [];
-  } catch {
-    notifications = [];
+    const options = await getServerRequestOptions();
+    const resp = await communityListMyNotifications(
+      {page: 1, pageSize: 50},
+      options,
+    );
+    initialNotifications = resp.items ?? [];
+    initialTotal = resp.total ?? initialNotifications.length;
+  } catch (err: unknown) {
+    initialError = getErrorMessage(err, '站内通知列表暂时无法加载');
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">站内消息通知</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          接收关于课程交付、订单变动、退款状态及社区回复的事项提醒
-        </p>
-      </div>
-
-      {notifications.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <p className="text-xs text-muted-foreground">暂无未读消息通知</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((n) => (
-            <Card
-              key={n.id}
-              className={n.read ? 'opacity-70' : 'border-primary/40'}
-            >
-              <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="text-[10px]">
-                    {n.type === 'order'
-                      ? '订单'
-                      : n.type === 'refund'
-                        ? '退款'
-                        : n.type === 'reply'
-                          ? '回复'
-                          : '系统'}
-                  </Badge>
-                  <CardTitle className="text-xs font-semibold">
-                    {n.title}
-                  </CardTitle>
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}
-                </div>
-              </CardHeader>
-              {n.summary && (
-                <CardContent className="px-4 pb-3 pt-0 text-xs text-muted-foreground">
-                  {n.summary}
-                </CardContent>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+    <NotificationsView
+      initialNotifications={initialNotifications}
+      initialTotal={initialTotal}
+      initialError={initialError}
+    />
   );
 }

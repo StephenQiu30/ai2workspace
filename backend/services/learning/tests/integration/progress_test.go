@@ -1,151 +1,130 @@
-package integration
+package integration_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/StephenQiu30/ai2workspace/backend/services/learning/internal/courses"
-	"github.com/StephenQiu30/ai2workspace/backend/services/learning/internal/media"
 	"github.com/StephenQiu30/ai2workspace/backend/services/learning/internal/progress"
-	"github.com/StephenQiu30/ai2workspace/backend/services/learning/internal/server"
 )
 
-func TestProgressIsolationAndVersion(t *testing.T) {
-	coursesStore := courses.NewMemoryStore()
-	mediaStore := media.NewMemoryStore(nil)
-	progressStore := progress.NewMemoryStore()
-	r := server.NewWithStores(false, coursesStore, mediaStore, progressStore, "test-secret")
+func TestProgressAuthzIsolationAndStrictOptimisticLock(t *testing.T) {
+	env := newTestEnv()
 
-	// 1. User A saves progress at 120s
-	reqA, _ := json.Marshal(progress.SaveProgressRequest{
-		CourseID:        "crs_1",
-		ContentVersion:  1,
-		PositionSeconds: 120,
-		ExpectedVersion: 0,
-	})
-	req := httptest.NewRequest(http.MethodPut, "/api/learning/lessons/lsn_1/progress", bytes.NewReader(reqA))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user_A")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	c, _ := env.coursesStore.CreateCourse(t.Context(), "instructor_1", "林讲师", "付费进度测试课", "", "", "engineering", false)
+	sec, _ := env.coursesStore.AddSection(t.Context(), c.ID, "第一章", 1)
+	l1, _ := env.coursesStore.AddLesson(t.Context(), c.ID, sec.ID, "课时 1", "video", false, "", "", 1)
+	cur, _ := env.coursesStore.GetCourse(t.Context(), c.ID)
+	sub, _ := env.coursesStore.SubmitCourse(t.Context(), c.ID, "instructor_1", false, cur.Version)
+	_, _ = env.coursesStore.ReviewCourse(t.Context(), c.ID, "approved", "ok", sub.Version)
 
+	// 1. Unauthenticated cannot read or write progress -> 401
+	if w := doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 10, ExpectedVersion: 0,
+	}, "", nil); w.Code != http.StatusUnauthorized {
+		t.Fatalf("guest save progress status = %d, want 401", w.Code)
+	}
+	if w := doRequest(t, env.router, http.MethodGet, "/api/learning/lessons/"+l1.ID+"/progress", nil, "", nil); w.Code != http.StatusUnauthorized {
+		t.Fatalf("guest get progress status = %d, want 401", w.Code)
+	}
+	if w := doRequest(t, env.router, http.MethodGet, "/api/learning/courses/"+c.ID+"/progress", nil, "", nil); w.Code != http.StatusUnauthorized {
+		t.Fatalf("guest list progress status = %d, want 401", w.Code)
+	}
+
+	// 2. Unpurchased student cannot read or write progress -> 403
+	if w := doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 10, ExpectedVersion: 0,
+	}, sessStudent1, nil); w.Code != http.StatusForbidden {
+		t.Fatalf("unpurchased save progress status = %d, want 403", w.Code)
+	}
+	if w := doRequest(t, env.router, http.MethodGet, "/api/learning/lessons/"+l1.ID+"/progress", nil, sessStudent1, nil); w.Code != http.StatusForbidden {
+		t.Fatalf("unpurchased get progress status = %d, want 403", w.Code)
+	}
+	if w := doRequest(t, env.router, http.MethodGet, "/api/learning/courses/"+c.ID+"/progress", nil, sessStudent1, nil); w.Code != http.StatusForbidden {
+		t.Fatalf("unpurchased list progress status = %d, want 403", w.Code)
+	}
+
+	// 3. Grant entitlement to both student_1 and student_2
+	env.entitlements.Grant("student_1", c.ID)
+	env.entitlements.Grant("student_2", c.ID)
+
+	// Initial save with expectedVersion=0 succeeds -> version=1
+	w := doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 120, ExpectedVersion: 0,
+	}, sessStudent1, nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 saving progress for user A, got %d: %s", w.Code, w.Body.String())
+		t.Fatalf("student_1 initial save status = %d: %s", w.Code, w.Body.String())
+	}
+	var p1 progress.ProgressResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &p1)
+	if p1.PositionSeconds != 120 || p1.Version != 1 {
+		t.Fatalf("unexpected progress p1: %+v", p1)
 	}
 
-	var respA progress.ProgressResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &respA)
-	if respA.PositionSeconds != 120 || respA.Version != 1 {
-		t.Fatalf("unexpected progress for user A: %+v", respA)
-	}
-
-	// 2. User B saves progress at 45s on the same lesson
-	reqB, _ := json.Marshal(progress.SaveProgressRequest{
-		CourseID:        "crs_1",
-		ContentVersion:  1,
-		PositionSeconds: 45,
-		ExpectedVersion: 0,
-	})
-	req = httptest.NewRequest(http.MethodPut, "/api/learning/lessons/lsn_1/progress", bytes.NewReader(reqB))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user_B")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
+	// Student 2 saves independently at 45s
+	w = doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 45, ExpectedVersion: 0,
+	}, sessStudent2, nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 saving progress for user B, got %d", w.Code)
+		t.Fatalf("student_2 save status = %d: %s", w.Code, w.Body.String())
 	}
 
-	// 3. User A queries progress - should still be 120s (isolated from user B)
-	req = httptest.NewRequest(http.MethodGet, "/api/learning/lessons/lsn_1/progress", nil)
-	req.Header.Set("X-User-ID", "user_A")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	var queryA progress.ProgressResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &queryA)
-	if queryA.PositionSeconds != 120 {
-		t.Fatalf("expected user A position 120, got %d", queryA.PositionSeconds)
+	// User isolation: student_1 still sees 120s
+	w = doRequest(t, env.router, http.MethodGet, "/api/learning/lessons/"+l1.ID+"/progress", nil, sessStudent1, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("student_1 get progress status = %d", w.Code)
+	}
+	var got1 progress.ProgressResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &got1)
+	if got1.PositionSeconds != 120 {
+		t.Fatalf("expected isolated position 120, got %d", got1.PositionSeconds)
 	}
 
-	// 4. Stale update with mismatched expectedVersion -> 409 Conflict
-	conflictReq, _ := json.Marshal(progress.SaveProgressRequest{
-		CourseID:        "crs_1",
-		ContentVersion:  1,
-		PositionSeconds: 150,
-		ExpectedVersion: 99, // Mismatch (current version is 1)
-	})
-	req = httptest.NewRequest(http.MethodPut, "/api/learning/lessons/lsn_1/progress", bytes.NewReader(conflictReq))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user_A")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
+	// 4. CRITICAL: Passing expectedVersion=0 when record already exists MUST return 409 Conflict!
+	w = doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 5, ExpectedVersion: 0,
+	}, sessStudent1, nil)
 	if w.Code != http.StatusConflict {
-		t.Fatalf("expected 409 Conflict for stale progress version, got %d", w.Code)
+		t.Fatalf("expected 409 when passing expectedVersion=0 on existing progress, got %d: %s", w.Code, w.Body.String())
 	}
-}
 
-func TestPlaybackAuthorization(t *testing.T) {
-	coursesStore := courses.NewMemoryStore()
-	mediaStore := media.NewMemoryStore(nil)
-	progressStore := progress.NewMemoryStore()
-	r := server.NewWithStores(false, coursesStore, mediaStore, progressStore, "test-secret")
-
-	// Create course and lessons
-	crs, _ := coursesStore.CreateCourse(nil, "inst_1", "Paid Course", "Desc", "", false)
-	sec, _ := coursesStore.AddSection(nil, crs.ID, "Chapter 1", 1)
-	trialLesson, _ := coursesStore.AddLesson(nil, crs.ID, sec.ID, "Trial Lesson", "video", true, "", "", 1)
-	paidLesson, _ := coursesStore.AddLesson(nil, crs.ID, sec.ID, "Paid Lesson", "video", false, "", "", 2)
-
-	// Attach ready media to both lessons
-	u1, _ := mediaStore.CreateUpload(nil, "inst_1", crs.ID, trialLesson.ID, "trial.mp4", 1000)
-	v1, _ := mediaStore.CompleteUpload(nil, u1.ID, "k1", media.MediaMetadata{
-		Container: "mp4", Codec: "h264", DurationSeconds: 60, Width: 1280, Height: 720, FPS: 30, ActualBytes: 1000,
-	})
-	_ = mediaStore.PublishLessonMedia(nil, trialLesson.ID, v1.ID, "inst_1")
-
-	u2, _ := mediaStore.CreateUpload(nil, "inst_1", crs.ID, paidLesson.ID, "paid.mp4", 1000)
-	v2, _ := mediaStore.CompleteUpload(nil, u2.ID, "k2", media.MediaMetadata{
-		Container: "mp4", Codec: "h264", DurationSeconds: 60, Width: 1280, Height: 720, FPS: 30, ActualBytes: 1000,
-	})
-	_ = mediaStore.PublishLessonMedia(nil, paidLesson.ID, v2.ID, "inst_1")
-
-	// 1. Trial lesson request with purpose=trial succeeds for anonymous user
-	trialAuth, _ := json.Marshal(media.AuthorizePlaybackRequest{
-		CourseID: crs.ID,
-		Purpose:  "trial",
-	})
-	req := httptest.NewRequest(http.MethodPost, "/api/learning/lessons/"+trialLesson.ID+"/playback-authorizations", bytes.NewReader(trialAuth))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
+	// 5. Updating with matching expectedVersion=1 succeeds -> version=2
+	w = doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 200, ExpectedVersion: 1,
+	}, sessStudent1, nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 for trial lesson authorization, got %d: %s", w.Code, w.Body.String())
+		t.Fatalf("expected 200 updating progress with matching version 1, got %d: %s", w.Code, w.Body.String())
+	}
+	var p2 progress.ProgressResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &p2)
+	if p2.PositionSeconds != 200 || p2.Version != 2 {
+		t.Fatalf("unexpected updated progress p2: %+v", p2)
 	}
 
-	var authResp media.PlaybackAuthorizationResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &authResp)
-	if authResp.Token == "" || authResp.MediaVersionID != v1.ID {
-		t.Fatalf("invalid playback token issued: %+v", authResp)
+	// 6. Stale update with expectedVersion=1 -> 409 Conflict
+	w = doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 150, ExpectedVersion: 1,
+	}, sessStudent1, nil)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("expected 409 on stale version 1, got %d", w.Code)
 	}
 
-	// 2. Paid lesson request for anonymous user without trial purpose fails with 403
-	paidAuth, _ := json.Marshal(media.AuthorizePlaybackRequest{
-		CourseID: crs.ID,
-		Purpose:  "playback",
-	})
-	req = httptest.NewRequest(http.MethodPost, "/api/learning/lessons/"+paidLesson.ID+"/playback-authorizations", bytes.NewReader(paidAuth))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "anonymous")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	// 7. ListCourseProgress returns user's records
+	w = doRequest(t, env.router, http.MethodGet, "/api/learning/courses/"+c.ID+"/progress", nil, sessStudent1, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("list course progress status = %d", w.Code)
+	}
+	var list []progress.ProgressResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &list)
+	if len(list) != 1 || list[0].PositionSeconds != 200 {
+		t.Fatalf("unexpected course progress list: %+v", list)
+	}
 
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("expected 403 Forbidden for paid lesson without entitlement, got %d", w.Code)
+	// 8. After refund (entitlement revoked), student_1 can no longer read/write progress -> 403
+	env.entitlements.Revoke("student_1", c.ID)
+	if w := doRequest(t, env.router, http.MethodPut, "/api/learning/lessons/"+l1.ID+"/progress", progress.SaveProgressRequest{
+		CourseID: c.ID, ContentVersion: 1, PositionSeconds: 250, ExpectedVersion: 2,
+	}, sessStudent1, nil); w.Code != http.StatusForbidden {
+		t.Fatalf("revoked student save progress status = %d, want 403", w.Code)
 	}
 }

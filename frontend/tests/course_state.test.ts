@@ -1,37 +1,76 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import type {CatalogCourse} from '../src/features/course/course_catalog';
+import {
+  countCourseLessons,
+  flattenCourseLessons,
+  formatDurationSeconds,
+  getCourseCombinedStatusMeta,
+  sortSectionsAndLessons,
+} from '../src/features/course/course_status';
 
-test('course catalog filtering matches query case-insensitively', () => {
-  const courses: CatalogCourse[] = [
-    {id: '1', title: 'Next.js 深入浅出', isFree: true},
-    {id: '2', title: 'Go 高并发微服务架构', isFree: false},
-    {id: '3', title: 'React 19 全新特性解读', isFree: true},
-  ];
-
-  const search = (q: string) =>
-    courses.filter((c) =>
-      c.title.toLowerCase().includes(q.toLowerCase().trim()),
-    );
-
-  assert.equal(search('next').length, 1);
-  assert.equal(search('NEXT').length, 1);
-  assert.equal(search('架构').length, 1);
-  assert.equal(search('不存在').length, 0);
-  assert.equal(search(' ').length, 3);
-});
-
-test('course lessons count sums correctly across sections', () => {
-  const sections: Array<{lessons?: Array<{id: string}>}> = [
-    {lessons: [{id: 'l1'}, {id: 'l2'}]},
-    {lessons: [{id: 'l3'}]},
-    {lessons: []},
-  ];
-
-  const totalLessons = sections.reduce(
-    (acc, sec) => acc + (sec.lessons?.length ?? 0),
-    0,
+test('getCourseCombinedStatusMeta prioritizes withdrawn and sales_closed over productionState', () => {
+  assert.equal(
+    getCourseCombinedStatusMeta({
+      productionState: 'approved',
+      saleState: 'on_sale',
+      deliveryState: 'withdrawn',
+    }).label,
+    '已撤回',
   );
 
-  assert.equal(totalLessons, 3);
+  assert.equal(
+    getCourseCombinedStatusMeta({
+      productionState: 'approved',
+      saleState: 'sales_closed',
+      deliveryState: 'deliverable',
+    }).label,
+    '已停售',
+  );
+
+  assert.equal(
+    getCourseCombinedStatusMeta({
+      productionState: 'approved',
+      saleState: 'on_sale',
+      deliveryState: 'deliverable',
+    }).label,
+    '已发布',
+  );
+});
+
+test('sortSectionsAndLessons and flattenCourseLessons order curriculum deterministically', () => {
+  const sections = [
+    {
+      id: 'sec_2',
+      title: '第二章',
+      sortOrder: 2,
+      lessons: [
+        {id: 'les_2b', title: '2.2', sortOrder: 2},
+        {id: 'les_2a', title: '2.1', sortOrder: 1},
+      ],
+    },
+    {
+      id: 'sec_1',
+      title: '第一章',
+      sortOrder: 1,
+      lessons: [{id: 'les_1a', title: '1.1', sortOrder: 1}],
+    },
+  ];
+
+  const sorted = sortSectionsAndLessons(sections);
+  assert.equal(sorted[0]?.id, 'sec_1');
+  assert.equal(sorted[1]?.lessons?.[0]?.id, 'les_2a');
+
+  const flat = flattenCourseLessons(sections);
+  assert.deepEqual(
+    flat.map((item) => item.lesson.id),
+    ['les_1a', 'les_2a', 'les_2b'],
+  );
+  assert.equal(countCourseLessons({sections}), 3);
+});
+
+test('formatDurationSeconds formats hours, minutes and seconds clearly', () => {
+  assert.equal(formatDurationSeconds(0), '0 秒');
+  assert.equal(formatDurationSeconds(45), '45 秒');
+  assert.equal(formatDurationSeconds(125), '2 分 5 秒');
+  assert.equal(formatDurationSeconds(3720), '1 小时 2 分');
 });

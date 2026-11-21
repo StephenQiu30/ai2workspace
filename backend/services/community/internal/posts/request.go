@@ -1,24 +1,36 @@
 package posts
 
-// CreatePostRequest defines payload to publish a discussion topic.
+// CreatePostRequest defines the payload to create a community discussion post.
 type CreatePostRequest struct {
-	Scope         string `json:"scope"` // "global", "course"
-	CourseID      string `json:"courseId"`
-	Title         string `json:"title" binding:"required"`
-	PublicSummary string `json:"publicSummary"`
-	Body          string `json:"body" binding:"required"`
+	Scope         string `json:"scope" example:"global"`
+	CourseID      string `json:"courseId,omitempty" example:"crs_1001"`
+	Topic         string `json:"topic,omitempty" example:"learning-method"`
+	Title         string `json:"title" binding:"required" example:"如何系统整理课程笔记"`
+	PublicSummary string `json:"publicSummary" example:"分享一套兼顾复盘与检索的课程学习笔记结构。"`
+	Body          string `json:"body" binding:"required" example:"完整讨论正文内容"`
+	Status        string `json:"status,omitempty" example:"published"`
+	RequestID     string `json:"requestId,omitempty" example:"req_post_001"`
 }
 
-// UpdatePostRequest defines payload to update existing discussion topic.
+// UpdatePostRequest defines the payload to update an existing discussion post.
 type UpdatePostRequest struct {
-	ExpectedVersion int    `json:"expectedVersion"`
-	Title           string `json:"title" binding:"required"`
-	PublicSummary   string `json:"publicSummary"`
-	Body            string `json:"body" binding:"required"`
+	ExpectedVersion int    `json:"expectedVersion" binding:"required,min=1" example:"1"`
+	Topic           string `json:"topic,omitempty" example:"learning-method"`
+	Title           string `json:"title" binding:"required" example:"如何系统整理课程笔记（修订版）"`
+	PublicSummary   string `json:"publicSummary" example:"更新后的公开摘要说明。"`
+	Body            string `json:"body" binding:"required" example:"更新后的正文内容"`
+	Status          string `json:"status,omitempty" example:"published"`
 }
 
-// CreateCommentRequest defines payload to reply or comment on a post.
+// CreateCommentRequest defines the payload to add a comment or single-level reply.
 type CreateCommentRequest struct {
-	Body            string `json:"body" binding:"required"`
-	ParentCommentID string `json:"parentCommentId,omitempty"`
+	Body            string `json:"body" binding:"required" example:"感谢分享，很实用！"`
+	ParentCommentID string `json:"parentCommentId,omitempty" example:"cmt_12345"`
+	RequestID       string `json:"requestId,omitempty" example:"req_cmt_001"`
+}
+
+// UpdateCommentRequest defines the payload to update an existing comment with optimistic locking.
+type UpdateCommentRequest struct {
+	ExpectedVersion int    `json:"expectedVersion" binding:"required,min=1" example:"1"`
+	Body            string `json:"body" binding:"required" example:"补充一条复习建议"`
 }

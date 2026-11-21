@@ -1,6 +1,37 @@
 // Package access contains response DTOs.
 package access
 
+import "time"
+
+// AccountSummary represents an account item in the admin accounts table.
+type AccountSummary struct {
+	ID            string    `json:"id" example:"usr_12345"`
+	Email         string    `json:"email" example:"user@example.com"`
+	Nickname      string    `json:"nickname" example:"alice"`
+	EmailVerified bool      `json:"emailVerified" example:"true"`
+	Status        string    `json:"status" example:"active"`
+	Roles         []string  `json:"roles" example:"student"`
+	Version       int       `json:"version" example:"1"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+// ListAccountsResponse represents a paginated list of accounts for admin management.
+type ListAccountsResponse struct {
+	Items    []AccountSummary `json:"items"`
+	Total    int              `json:"total" example:"1"`
+	Page     int              `json:"page" example:"1"`
+	PageSize int              `json:"pageSize" example:"20"`
+}
+
+// ListInvitationsResponse represents a paginated list of instructor invitations for admin management.
+type ListInvitationsResponse struct {
+	Items    []Invitation `json:"items"`
+	Total    int          `json:"total" example:"1"`
+	Page     int          `json:"page" example:"1"`
+	PageSize int          `json:"pageSize" example:"50"`
+}
+
 // InviteInstructorResponse represents the outcome of creating an instructor invitation.
 type InviteInstructorResponse struct {
 	InviteID        string `json:"inviteId" example:"inv_12345"`
@@ -35,6 +66,7 @@ type RevokeInstructorResponse struct {
 type ResolveSessionResponse struct {
 	UserID         string   `json:"userId" example:"usr_12345"`
 	Email          string   `json:"email" example:"user@example.com"`
+	Nickname       string   `json:"nickname" example:"alice"`
 	EmailVerified  bool     `json:"emailVerified" example:"true"`
 	Roles          []string `json:"roles" example:"student,instructor"`
 	AccountStatus  string   `json:"accountStatus" example:"active"`

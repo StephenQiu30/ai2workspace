@@ -2,10 +2,13 @@ package integration_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/access"
 	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/accounts"
@@ -13,15 +16,44 @@ import (
 	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/sessions"
 )
 
+type failingMailer struct {
+	err error
+}
+
+func (f failingMailer) Send(ctx context.Context, msg accounts.MailMessage) error {
+	return f.err
+}
+
 func setupTestApp() (*accounts.MemoryStore, *sessions.MemoryStore, *access.MemoryStore, http.Handler) {
+	return setupTestAppWithOptions(server.Options{
+		ServiceToken: "test-service-token",
+	})
+}
+
+func setupTestAppWithOptions(opts server.Options) (*accounts.MemoryStore, *sessions.MemoryStore, *access.MemoryStore, http.Handler) {
 	accStore := accounts.NewMemoryStore()
 	sessStore := sessions.NewMemoryStore()
 	invStore := access.NewMemoryStore()
-	handler := server.NewWithStores(false, accStore, sessStore, invStore, "test-service-token")
+	if opts.ServiceToken == "" {
+		opts.ServiceToken = "test-service-token"
+	}
+	handler := server.NewWithOptions(accStore, sessStore, invStore, opts)
 	return accStore, sessStore, invStore, handler
 }
 
-func TestRegisterDuplicateEmail(t *testing.T) {
+func latestMailToken(t *testing.T, accStore accounts.Store, email string, purpose accounts.TokenPurpose) string {
+	t.Helper()
+	tasks := accStore.GetRecentMailTasks(t.Context(), email)
+	for i := len(tasks) - 1; i >= 0; i-- {
+		if tasks[i].Purpose == purpose && tasks[i].Token != "" {
+			return tasks[i].Token
+		}
+	}
+	t.Fatalf("no mail task found for %s with purpose %s", email, purpose)
+	return ""
+}
+
+func TestRegisterDuplicateEmailAndNoTokenLeakByDefault(t *testing.T) {
 	accStore, _, _, handler := setupTestApp()
 
 	body, _ := json.Marshal(map[string]string{
@@ -46,38 +78,106 @@ func TestRegisterDuplicateEmail(t *testing.T) {
 	if !firstResult.Accepted || firstResult.NextStep != "verify_email" {
 		t.Fatalf("unexpected first register response: %+v", firstResult)
 	}
-	if firstResult.VerificationToken == "" {
-		t.Fatal("expected verificationToken in test environment")
+	if firstResult.VerificationToken != "" {
+		t.Fatalf("verificationToken leaked in default mode: %q", firstResult.VerificationToken)
 	}
 
-	// Second registration with duplicate email
+	// Second registration with duplicate email must match exact structure & status code
 	reqDup := httptest.NewRequest(http.MethodPost, "/api/identity/accounts", bytes.NewReader(body))
 	reqDup.Header.Set("Content-Type", "application/json")
 	respDup := httptest.NewRecorder()
 	handler.ServeHTTP(respDup, reqDup)
 
-	if respDup.Code != http.StatusOK {
-		t.Fatalf("duplicate register status = %d: %s", respDup.Code, respDup.Body)
+	if respDup.Code != resp.Code {
+		t.Fatalf("duplicate register status = %d, want %d", respDup.Code, resp.Code)
+	}
+	if respDup.Body.String() != resp.Body.String() {
+		t.Fatalf("duplicate response %s differs from first response %s", respDup.Body.String(), resp.Body.String())
 	}
 
-	var dupResult accounts.RegisterResponse
-	if err := json.Unmarshal(respDup.Body.Bytes(), &dupResult); err != nil {
-		t.Fatal(err)
-	}
-	// Per AC-01: does not leak email existence, returns accepted
-	if !dupResult.Accepted || dupResult.NextStep != "verify_email" {
-		t.Fatalf("unexpected duplicate register response: %+v", dupResult)
-	}
-	// Assert account count is strictly 1
 	if count := accStore.CountAccounts(req.Context()); count != 1 {
 		t.Fatalf("expected 1 account, got %d", count)
 	}
+
+	// Mail task should be tracked internally with status sent and token available for ops/tests
+	tasks := accStore.GetRecentMailTasks(t.Context(), "user@example.com")
+	if len(tasks) != 1 || tasks[0].Token == "" || tasks[0].Status != "sent" {
+		t.Fatalf("unexpected mail tasks: %+v", tasks)
+	}
 }
 
-func TestLoginRejectsWrongPassword(t *testing.T) {
-	_, _, _, handler := setupTestApp()
+func TestDevExposeTokensFlagControlsResponseTokens(t *testing.T) {
+	_, _, _, handler := setupTestAppWithOptions(server.Options{
+		DevExposeTokens: true,
+	})
 
-	// Register account
+	body, _ := json.Marshal(map[string]string{
+		"email":    "devmode@example.com",
+		"password": "Password123!",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/identity/accounts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+
+	var regResult accounts.RegisterResponse
+	_ = json.Unmarshal(resp.Body.Bytes(), &regResult)
+	if regResult.VerificationToken == "" {
+		t.Fatal("expected verificationToken when DevExposeTokens=true")
+	}
+
+	// Password reset also returns token in dev mode
+	resetBody, _ := json.Marshal(map[string]string{"email": "devmode@example.com"})
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/identity/password-reset-requests", bytes.NewReader(resetBody))
+	resetReq.Header.Set("Content-Type", "application/json")
+	resetResp := httptest.NewRecorder()
+	handler.ServeHTTP(resetResp, resetReq)
+
+	var resetResult accounts.PasswordResetResponse
+	_ = json.Unmarshal(resetResp.Body.Bytes(), &resetResult)
+	if resetResult.ResetToken == "" {
+		t.Fatal("expected resetToken when DevExposeTokens=true")
+	}
+}
+
+func TestMailDeliveryFailureReturnsErrorAndMarksTaskFailed(t *testing.T) {
+	accStore, _, _, handler := setupTestAppWithOptions(server.Options{
+		Mailer: failingMailer{err: errors.New("smtp unreachable")},
+	})
+
+	body, _ := json.Marshal(map[string]string{
+		"email":    "smtp_fail@example.com",
+		"password": "Password123!",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/identity/accounts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 on SMTP failure, got %d: %s", resp.Code, resp.Body)
+	}
+
+	// Account should still exist (not rolled back) and stay unverified
+	acc, err := accStore.GetAccountByEmail(t.Context(), "smtp_fail@example.com")
+	if err != nil {
+		t.Fatalf("expected account to remain created after SMTP failure: %v", err)
+	}
+	if acc.EmailVerified {
+		t.Fatal("account must not be marked verified when mail delivery failed")
+	}
+
+	tasks := accStore.GetRecentMailTasks(t.Context(), "smtp_fail@example.com")
+	if len(tasks) != 1 || tasks[0].Status != "failed" {
+		t.Fatalf("expected failed mail task record, got %+v", tasks)
+	}
+}
+
+func TestLoginRejectsWrongPasswordAndSetsSecureCookieAttributes(t *testing.T) {
+	_, _, _, handler := setupTestAppWithOptions(server.Options{
+		CookieSecure: true,
+	})
+
 	regBody, _ := json.Marshal(map[string]string{
 		"email":    "login_test@example.com",
 		"password": "CorrectPassword123",
@@ -90,7 +190,7 @@ func TestLoginRejectsWrongPassword(t *testing.T) {
 		t.Fatalf("register status = %d", regResp.Code)
 	}
 
-	// Attempt login with wrong password
+	// Wrong password
 	wrongBody, _ := json.Marshal(map[string]string{
 		"email":    "login_test@example.com",
 		"password": "WrongPassword456",
@@ -109,7 +209,7 @@ func TestLoginRejectsWrongPassword(t *testing.T) {
 		}
 	}
 
-	// Attempt login with correct password
+	// Correct password
 	correctBody, _ := json.Marshal(map[string]string{
 		"email":    "login_test@example.com",
 		"password": "CorrectPassword123",
@@ -122,24 +222,290 @@ func TestLoginRejectsWrongPassword(t *testing.T) {
 	if correctResp.Code != http.StatusOK {
 		t.Fatalf("correct login status = %d", correctResp.Code)
 	}
-	var foundSessionCookie bool
+	var sessionCookie *http.Cookie
 	for _, cookie := range correctResp.Result().Cookies() {
 		if cookie.Name == sessions.SessionCookieName && cookie.Value != "" {
-			foundSessionCookie = true
-			if !cookie.HttpOnly {
-				t.Error("expected session cookie to be HttpOnly")
+			sessionCookie = cookie
+		}
+	}
+	if sessionCookie == nil {
+		t.Fatal("session cookie not found on successful login")
+	}
+	if !sessionCookie.HttpOnly || !sessionCookie.Secure || sessionCookie.SameSite != http.SameSiteLaxMode {
+		t.Fatalf("cookie security flags mismatch: HttpOnly=%v Secure=%v SameSite=%v", sessionCookie.HttpOnly, sessionCookie.Secure, sessionCookie.SameSite)
+	}
+
+	// Logout clears cookie with matching security flags
+	logoutReq := httptest.NewRequest(http.MethodDelete, "/api/identity/sessions/current", nil)
+	logoutReq.AddCookie(sessionCookie)
+	logoutResp := httptest.NewRecorder()
+	handler.ServeHTTP(logoutResp, logoutReq)
+	if logoutResp.Code != http.StatusNoContent {
+		t.Fatalf("logout status = %d", logoutResp.Code)
+	}
+	var clearedCookie *http.Cookie
+	for _, cookie := range logoutResp.Result().Cookies() {
+		if cookie.Name == sessions.SessionCookieName {
+			clearedCookie = cookie
+		}
+	}
+	if clearedCookie == nil || clearedCookie.MaxAge >= 0 || !clearedCookie.HttpOnly || !clearedCookie.Secure || clearedCookie.SameSite != http.SameSiteLaxMode {
+		t.Fatalf("unexpected logout cookie: %+v", clearedCookie)
+	}
+}
+
+func TestNicknameDefaultAndUpdateMe(t *testing.T) {
+	_, _, _, handler := setupTestApp()
+
+	// Unauthenticated PATCH /api/identity/me rejected
+	unauthReq := httptest.NewRequest(http.MethodPatch, "/api/identity/me", bytes.NewReader([]byte(`{"nickname":"Bob"}`)))
+	unauthReq.Header.Set("Content-Type", "application/json")
+	unauthResp := httptest.NewRecorder()
+	handler.ServeHTTP(unauthResp, unauthReq)
+	if unauthResp.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated PATCH /me status = %d, want 401", unauthResp.Code)
+	}
+
+	// Register without nickname -> defaults to email prefix
+	regBody, _ := json.Marshal(map[string]string{
+		"email":    "alice.smith@example.com",
+		"password": "Password123!",
+	})
+	regReq := httptest.NewRequest(http.MethodPost, "/api/identity/accounts", bytes.NewReader(regBody))
+	regReq.Header.Set("Content-Type", "application/json")
+	regResp := httptest.NewRecorder()
+	handler.ServeHTTP(regResp, regReq)
+	if regResp.Code != http.StatusOK {
+		t.Fatalf("register status = %d", regResp.Code)
+	}
+
+	// Login
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/identity/sessions", bytes.NewReader(regBody))
+	loginReq.Header.Set("Content-Type", "application/json")
+	loginResp := httptest.NewRecorder()
+	handler.ServeHTTP(loginResp, loginReq)
+	var cookie *http.Cookie
+	for _, c := range loginResp.Result().Cookies() {
+		if c.Name == sessions.SessionCookieName {
+			cookie = c
+		}
+	}
+
+	// GET /api/identity/me returns id, email, nickname, emailVerified, status, roles, version
+	meReq := httptest.NewRequest(http.MethodGet, "/api/identity/me", nil)
+	meReq.AddCookie(cookie)
+	meResp := httptest.NewRecorder()
+	handler.ServeHTTP(meResp, meReq)
+	if meResp.Code != http.StatusOK {
+		t.Fatalf("GET /me status = %d: %s", meResp.Code, meResp.Body)
+	}
+	var meResult sessions.CurrentUserResponse
+	if err := json.Unmarshal(meResp.Body.Bytes(), &meResult); err != nil {
+		t.Fatal(err)
+	}
+	if meResult.ID == "" || meResult.Nickname != "alice.smith" || meResult.Status != "active" || meResult.Version != 1 {
+		t.Fatalf("unexpected /me response: %+v", meResult)
+	}
+
+	// PATCH /api/identity/me with whitespace-only nickname -> 400
+	badPatchReq := httptest.NewRequest(http.MethodPatch, "/api/identity/me", bytes.NewReader([]byte(`{"nickname":"   "}`)))
+	badPatchReq.Header.Set("Content-Type", "application/json")
+	badPatchReq.AddCookie(cookie)
+	badPatchResp := httptest.NewRecorder()
+	handler.ServeHTTP(badPatchResp, badPatchReq)
+	if badPatchResp.Code != http.StatusBadRequest {
+		t.Fatalf("whitespace nickname status = %d, want 400", badPatchResp.Code)
+	}
+
+	// PATCH /api/identity/me updates nickname and increments version
+	patchReq := httptest.NewRequest(http.MethodPatch, "/api/identity/me", bytes.NewReader([]byte(`{"nickname":"Alice Chen"}`)))
+	patchReq.Header.Set("Content-Type", "application/json")
+	patchReq.AddCookie(cookie)
+	patchResp := httptest.NewRecorder()
+	handler.ServeHTTP(patchResp, patchReq)
+	if patchResp.Code != http.StatusOK {
+		t.Fatalf("PATCH /me status = %d: %s", patchResp.Code, patchResp.Body)
+	}
+	var patched accounts.ProfileResponse
+	if err := json.Unmarshal(patchResp.Body.Bytes(), &patched); err != nil {
+		t.Fatal(err)
+	}
+	if patched.Nickname != "Alice Chen" || patched.Version != 2 {
+		t.Fatalf("unexpected patched profile: %+v", patched)
+	}
+
+	// Verify /internal/identity/sessions/resolve reflects updated nickname
+	resolveBody, _ := json.Marshal(map[string]string{"opaqueSession": cookie.Value})
+	resolveReq := httptest.NewRequest(http.MethodPost, "/internal/identity/sessions/resolve", bytes.NewReader(resolveBody))
+	resolveReq.Header.Set("Content-Type", "application/json")
+	resolveReq.Header.Set("X-Service-Token", "test-service-token")
+	resolveResp := httptest.NewRecorder()
+	handler.ServeHTTP(resolveResp, resolveReq)
+	var resolved access.ResolveSessionResponse
+	_ = json.Unmarshal(resolveResp.Body.Bytes(), &resolved)
+	if resolved.Nickname != "Alice Chen" {
+		t.Fatalf("expected resolved nickname Alice Chen, got %+v", resolved)
+	}
+}
+
+func TestResendEmailVerificationRejectsSuspendedAndHidesToken(t *testing.T) {
+	accStore, sessStore, _, handler := setupTestApp()
+
+	acc, _, err := accStore.CreateAccount(t.Context(), "resend_user@example.com", "Password123!", "ResendUser")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawSess, _, err := sessStore.CreateSession(t.Context(), acc.ID, sessions.DefaultSessionTTL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cookie := &http.Cookie{Name: sessions.SessionCookieName, Value: rawSess}
+
+	// Active unverified user resend succeeds without exposing token
+	req := httptest.NewRequest(http.MethodPost, "/api/identity/email-verification-requests", nil)
+	req.AddCookie(cookie)
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("resend status = %d: %s", resp.Code, resp.Body)
+	}
+	var resendRes accounts.ResendVerificationResponse
+	_ = json.Unmarshal(resp.Body.Bytes(), &resendRes)
+	if !resendRes.Accepted || resendRes.VerificationToken != "" {
+		t.Fatalf("unexpected resend response: %+v", resendRes)
+	}
+
+	// Suspend account directly while keeping session token intact -> resend must be 403
+	if _, err := accStore.SetAccountStatus(t.Context(), acc.ID, accounts.StatusSuspended, acc.Version); err != nil {
+		t.Fatal(err)
+	}
+	suspReq := httptest.NewRequest(http.MethodPost, "/api/identity/email-verification-requests", nil)
+	suspReq.AddCookie(cookie)
+	suspResp := httptest.NewRecorder()
+	handler.ServeHTTP(suspResp, suspReq)
+	if suspResp.Code != http.StatusForbidden {
+		t.Fatalf("suspended resend status = %d, want 403", suspResp.Code)
+	}
+}
+
+func TestRateLimitingOnAuthAndMailEndpoints(t *testing.T) {
+	accStore, sessStore, _, handler := setupTestAppWithOptions(server.Options{
+		AuthLimiter: accounts.NewRateLimiter(2, time.Minute),
+		MailLimiter: accounts.NewRateLimiter(1, time.Minute),
+	})
+
+	// Register limit: 2 allowed, 3rd returns 429
+	for i := range 3 {
+		body, _ := json.Marshal(map[string]string{
+			"email":    "rl" + string(rune('a'+i)) + "@example.com",
+			"password": "Password123!",
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/identity/accounts", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = "10.0.0.1:12345"
+		resp := httptest.NewRecorder()
+		handler.ServeHTTP(resp, req)
+		if i < 2 && resp.Code != http.StatusOK {
+			t.Fatalf("register #%d status = %d, want 200", i, resp.Code)
+		}
+		if i == 2 {
+			if resp.Code != http.StatusTooManyRequests {
+				t.Fatalf("register #3 status = %d, want 429", resp.Code)
+			}
+			if resp.Header().Get("Retry-After") == "" {
+				t.Fatal("missing Retry-After header on 429")
 			}
 		}
 	}
-	if !foundSessionCookie {
-		t.Fatal("session cookie not found on successful login")
+
+	// Login limit on another IP: 2 attempts allowed, 3rd returns 429
+	for i := range 3 {
+		body, _ := json.Marshal(map[string]string{
+			"email":    "rla@example.com",
+			"password": "WrongPassword",
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/identity/sessions", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = "10.0.0.2:12345"
+		resp := httptest.NewRecorder()
+		handler.ServeHTTP(resp, req)
+		if i < 2 && resp.Code != http.StatusUnauthorized {
+			t.Fatalf("login #%d status = %d, want 401", i, resp.Code)
+		}
+		if i == 2 && resp.Code != http.StatusTooManyRequests {
+			t.Fatalf("login #3 status = %d, want 429", resp.Code)
+		}
+	}
+
+	// Password reset limit: 1 allowed, 2nd returns 429
+	for i := range 2 {
+		body, _ := json.Marshal(map[string]string{"email": "rla@example.com"})
+		req := httptest.NewRequest(http.MethodPost, "/api/identity/password-reset-requests", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = "10.0.0.3:12345"
+		resp := httptest.NewRecorder()
+		handler.ServeHTTP(resp, req)
+		if i == 0 && resp.Code != http.StatusOK {
+			t.Fatalf("pwdreset #1 status = %d, want 200", resp.Code)
+		}
+		if i == 1 && resp.Code != http.StatusTooManyRequests {
+			t.Fatalf("pwdreset #2 status = %d, want 429", resp.Code)
+		}
+	}
+
+	// Resend verification limit: 1 allowed, 2nd returns 429
+	acc, err := accStore.GetAccountByEmail(t.Context(), "rla@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawSess, _, _ := sessStore.CreateSession(t.Context(), acc.ID, sessions.DefaultSessionTTL)
+	cookie := &http.Cookie{Name: sessions.SessionCookieName, Value: rawSess}
+	for i := range 2 {
+		req := httptest.NewRequest(http.MethodPost, "/api/identity/email-verification-requests", nil)
+		req.AddCookie(cookie)
+		resp := httptest.NewRecorder()
+		handler.ServeHTTP(resp, req)
+		if i == 0 && resp.Code != http.StatusOK {
+			t.Fatalf("resend #1 status = %d, want 200", resp.Code)
+		}
+		if i == 1 && resp.Code != http.StatusTooManyRequests {
+			t.Fatalf("resend #2 status = %d, want 429", resp.Code)
+		}
+	}
+}
+
+func TestBootstrapAdminIdempotentAndLogin(t *testing.T) {
+	accStore, _, _, handler := setupTestApp()
+
+	first, err := accStore.EnsureBootstrapAdmin(t.Context(), "Admin@AI2Workspace.local", "AdminSecret123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := accStore.EnsureBootstrapAdmin(t.Context(), "admin@ai2workspace.local", "AdminSecret123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.ID != second.ID || !second.EmailVerified || accStore.CountAccounts(t.Context()) != 1 {
+		t.Fatalf("bootstrap admin not idempotent: first=%+v second=%+v count=%d", first, second, accStore.CountAccounts(t.Context()))
+	}
+
+	// Bootstrap admin can log in
+	loginBody, _ := json.Marshal(map[string]string{
+		"email":    "admin@ai2workspace.local",
+		"password": "AdminSecret123",
+	})
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/identity/sessions", bytes.NewReader(loginBody))
+	loginReq.Header.Set("Content-Type", "application/json")
+	loginResp := httptest.NewRecorder()
+	handler.ServeHTTP(loginResp, loginReq)
+	if loginResp.Code != http.StatusOK {
+		t.Fatalf("bootstrap admin login status = %d: %s", loginResp.Code, loginResp.Body)
 	}
 }
 
 func TestAccountTokenSingleUse(t *testing.T) {
-	_, _, _, handler := setupTestApp()
+	accStore, _, _, handler := setupTestApp()
 
-	// Register account to obtain verification token
 	regBody, _ := json.Marshal(map[string]string{
 		"email":    "token_test@example.com",
 		"password": "StrongPassword123",
@@ -149,12 +515,7 @@ func TestAccountTokenSingleUse(t *testing.T) {
 	regResp := httptest.NewRecorder()
 	handler.ServeHTTP(regResp, regReq)
 
-	var regResult accounts.RegisterResponse
-	_ = json.Unmarshal(regResp.Body.Bytes(), &regResult)
-	token := regResult.VerificationToken
-	if token == "" {
-		t.Fatal("empty verification token")
-	}
+	token := latestMailToken(t, accStore, "token_test@example.com", accounts.PurposeEmailVerification)
 
 	// Verify email first time
 	vBody, _ := json.Marshal(map[string]string{"token": token})
@@ -172,7 +533,7 @@ func TestAccountTokenSingleUse(t *testing.T) {
 		t.Fatal("email should be marked verified")
 	}
 
-	// Re-verify with same token should be idempotent and not fail or rollback
+	// Re-verify with same token is idempotent
 	vReqDup := httptest.NewRequest(http.MethodPost, "/api/identity/email-verifications", bytes.NewReader(vBody))
 	vReqDup.Header.Set("Content-Type", "application/json")
 	vRespDup := httptest.NewRecorder()
@@ -182,7 +543,7 @@ func TestAccountTokenSingleUse(t *testing.T) {
 		t.Fatalf("duplicate verify email status = %d: %s", vRespDup.Code, vRespDup.Body)
 	}
 
-	// Attempt verify with bogus token
+	// Bogus token rejected
 	bogusBody, _ := json.Marshal(map[string]string{"token": "bogus_token_12345"})
 	bogusReq := httptest.NewRequest(http.MethodPost, "/api/identity/email-verifications", bytes.NewReader(bogusBody))
 	bogusReq.Header.Set("Content-Type", "application/json")
@@ -195,7 +556,7 @@ func TestAccountTokenSingleUse(t *testing.T) {
 }
 
 func TestPasswordResetFlowAndSessionInvalidation(t *testing.T) {
-	_, _, _, handler := setupTestApp()
+	accStore, _, _, handler := setupTestApp()
 
 	// 1. Register and login
 	regBody, _ := json.Marshal(map[string]string{
@@ -226,7 +587,7 @@ func TestPasswordResetFlowAndSessionInvalidation(t *testing.T) {
 		t.Fatal("login session cookie missing")
 	}
 
-	// 2. Request password reset
+	// 2. Request password reset (token hidden in JSON, tracked in mail_tasks)
 	resetReqBody, _ := json.Marshal(map[string]string{"email": "reset_user@example.com"})
 	resetReq := httptest.NewRequest(http.MethodPost, "/api/identity/password-reset-requests", bytes.NewReader(resetReqBody))
 	resetReq.Header.Set("Content-Type", "application/json")
@@ -235,10 +596,10 @@ func TestPasswordResetFlowAndSessionInvalidation(t *testing.T) {
 
 	var resetResult accounts.PasswordResetResponse
 	_ = json.Unmarshal(resetResp.Body.Bytes(), &resetResult)
-	resetToken := resetResult.ResetToken
-	if resetToken == "" {
-		t.Fatal("expected reset token in test environment")
+	if !resetResult.Accepted || resetResult.ResetToken != "" {
+		t.Fatalf("expected accepted response without exposed resetToken, got %+v", resetResult)
 	}
+	resetToken := latestMailToken(t, accStore, "reset_user@example.com", accounts.PurposePasswordReset)
 
 	// 3. Complete password reset
 	doResetBody, _ := json.Marshal(map[string]string{
@@ -254,7 +615,7 @@ func TestPasswordResetFlowAndSessionInvalidation(t *testing.T) {
 		t.Fatalf("reset password status = %d: %s", doResetResp.Code, doResetResp.Body)
 	}
 
-	// 4. Old session must now be invalidated!
+	// 4. Old session must now be invalidated
 	meReq := httptest.NewRequest(http.MethodGet, "/api/identity/me", nil)
 	meReq.AddCookie(cookie)
 	meResp := httptest.NewRecorder()
@@ -293,7 +654,6 @@ func TestPasswordResetFlowAndSessionInvalidation(t *testing.T) {
 func TestLogout(t *testing.T) {
 	_, _, _, handler := setupTestApp()
 
-	// Register & login
 	regBody, _ := json.Marshal(map[string]string{
 		"email":    "logout_user@example.com",
 		"password": "Password123!",
@@ -318,7 +678,6 @@ func TestLogout(t *testing.T) {
 		t.Fatal("session cookie missing")
 	}
 
-	// Call logout
 	logoutReq := httptest.NewRequest(http.MethodDelete, "/api/identity/sessions/current", nil)
 	logoutReq.AddCookie(cookie)
 	logoutResp := httptest.NewRecorder()
@@ -328,7 +687,6 @@ func TestLogout(t *testing.T) {
 		t.Fatalf("logout status = %d", logoutResp.Code)
 	}
 
-	// Subsequent /me call with old cookie must fail
 	meReq := httptest.NewRequest(http.MethodGet, "/api/identity/me", nil)
 	meReq.AddCookie(cookie)
 	meResp := httptest.NewRecorder()

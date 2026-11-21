@@ -1,18 +1,23 @@
 package progress
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
+	"github.com/StephenQiu30/ai2workspace/backend/services/learning/internal/auth"
 	"github.com/gin-gonic/gin"
 )
 
+// ErrCourseNotFound indicates the target course or lesson does not exist.
+var ErrCourseNotFound = errors.New("course or lesson not found")
+
 // SaveProgressRequest defines payload to update student study position.
 type SaveProgressRequest struct {
-	CourseID        string `json:"courseId" binding:"required"`
-	ContentVersion  int    `json:"contentVersion" binding:"required"`
-	PositionSeconds int    `json:"positionSeconds"`
-	ExpectedVersion int    `json:"expectedVersion"`
+	CourseID        string `json:"courseId" binding:"required" example:"crs_12345"`
+	ContentVersion  int    `json:"contentVersion" binding:"required" example:"1"`
+	PositionSeconds int    `json:"positionSeconds" example:"120"`
+	ExpectedVersion int    `json:"expectedVersion" example:"0"`
 }
 
 // ProgressResponse represents serialized progress record.
@@ -27,20 +32,57 @@ type ProgressResponse struct {
 	UpdatedAt       string `json:"updatedAt"`
 }
 
+// LessonCourseResolver returns the course ID owning lessonID, or ErrCourseNotFound if missing.
+type LessonCourseResolver func(ctx context.Context, lessonID string) (courseID string, err error)
+
+// CourseAccessChecker verifies whether the authenticated principal currently holds access to courseID.
+// Returns (allowed, reason, err); err == ErrCourseNotFound if course does not exist.
+type CourseAccessChecker func(ctx context.Context, p *auth.Principal, courseID string) (bool, string, error)
+
 // Handler manages progress HTTP endpoints.
 type Handler struct {
-	store Store
+	store          Store
+	lessonResolver LessonCourseResolver
+	accessChecker  CourseAccessChecker
 }
 
 // NewHandler creates a progress Handler.
-func NewHandler(store Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store Store, lessonResolver LessonCourseResolver, accessChecker CourseAccessChecker) *Handler {
+	return &Handler{
+		store:          store,
+		lessonResolver: lessonResolver,
+		accessChecker:  accessChecker,
+	}
+}
+
+func (h *Handler) checkAccess(c *gin.Context, p *auth.Principal, courseID string) bool {
+	if h.accessChecker == nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "Access verification unavailable"})
+		return false
+	}
+	allowed, reason, err := h.accessChecker(c.Request.Context(), p, courseID)
+	if err != nil {
+		if errors.Is(err, ErrCourseNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "course_not_found", "message": "Course not found"})
+			return false
+		}
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "entitlement_service_unavailable", "message": "Failed to verify course access"})
+		return false
+	}
+	if !allowed {
+		if reason == "" {
+			reason = "access_denied"
+		}
+		c.JSON(http.StatusForbidden, gin.H{"error": reason, "message": "You do not have access to this course"})
+		return false
+	}
+	return true
 }
 
 // SaveProgress updates or creates study progress for a lesson.
 // @ID learningSaveProgress
 // @Summary Save learning progress
-// @Description Updates current study timestamp for lesson with optimistic version check.
+// @Description Updates current study timestamp for a lesson with course access verification and strict optimistic version check.
 // @Tags Progress
 // @Accept json
 // @Produce json
@@ -48,33 +90,52 @@ func NewHandler(store Store) *Handler {
 // @Param request body SaveProgressRequest true "Progress update payload"
 // @Success 200 {object} ProgressResponse
 // @Failure 400 {object} map[string]string
-// @Failure 409 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]interface{}
+// @Failure 503 {object} map[string]string
 // @Router /api/learning/lessons/{id}/progress [put]
 func (h *Handler) SaveProgress(c *gin.Context) {
+	p, ok := auth.RequirePrincipal(c)
+	if !ok {
+		return
+	}
+
 	lessonID := c.Param("id")
 	var req SaveProgressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
 		return
 	}
 
-	userID := c.GetHeader("X-User-ID")
-	if userID == "" {
-		userID = "user_mock"
-	}
-
-	p, err := h.store.SaveProgress(c.Request.Context(), userID, req.CourseID, lessonID, req.ContentVersion, req.PositionSeconds, req.ExpectedVersion)
-	if err != nil {
-		switch {
-		case errors.Is(err, ErrVersionConflict):
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-		default:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if h.lessonResolver != nil {
+		courseID, err := h.lessonResolver(c.Request.Context(), lessonID)
+		if err != nil || courseID != req.CourseID {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lesson_not_found", "message": "Lesson not found in specified course"})
+			return
 		}
+	}
+
+	if !h.checkAccess(c, p, req.CourseID) {
 		return
 	}
 
-	c.JSON(http.StatusOK, progressToResponse(p))
+	record, err := h.store.SaveProgress(c.Request.Context(), p.UserID, req.CourseID, lessonID, req.ContentVersion, req.PositionSeconds, req.ExpectedVersion)
+	if err != nil {
+		if errors.Is(err, ErrVersionConflict) {
+			resp := gin.H{"error": "version_conflict", "message": err.Error()}
+			if current, getErr := h.store.GetProgress(c.Request.Context(), p.UserID, lessonID); getErr == nil {
+				resp["current"] = progressToResponse(current)
+			}
+			c.JSON(http.StatusConflict, resp)
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_progress", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, progressToResponse(record))
 }
 
 // GetProgress returns the user's latest progress in a lesson.
@@ -84,22 +145,36 @@ func (h *Handler) SaveProgress(c *gin.Context) {
 // @Produce json
 // @Param id path string true "Lesson ID"
 // @Success 200 {object} ProgressResponse
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 404 {object} map[string]string
+// @Failure 503 {object} map[string]string
 // @Router /api/learning/lessons/{id}/progress [get]
 func (h *Handler) GetProgress(c *gin.Context) {
-	lessonID := c.Param("id")
-	userID := c.GetHeader("X-User-ID")
-	if userID == "" {
-		userID = "user_mock"
-	}
-
-	p, err := h.store.GetProgress(c.Request.Context(), userID, lessonID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	p, ok := auth.RequirePrincipal(c)
+	if !ok {
 		return
 	}
 
-	c.JSON(http.StatusOK, progressToResponse(p))
+	lessonID := c.Param("id")
+	if h.lessonResolver != nil {
+		courseID, err := h.lessonResolver(c.Request.Context(), lessonID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lesson_not_found", "message": "Lesson not found"})
+			return
+		}
+		if !h.checkAccess(c, p, courseID) {
+			return
+		}
+	}
+
+	record, err := h.store.GetProgress(c.Request.Context(), p.UserID, lessonID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "progress_not_found", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, progressToResponse(record))
 }
 
 // ListCourseProgress returns all user progress records for a course.
@@ -109,23 +184,31 @@ func (h *Handler) GetProgress(c *gin.Context) {
 // @Produce json
 // @Param id path string true "Course ID"
 // @Success 200 {array} ProgressResponse
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 503 {object} map[string]string
 // @Router /api/learning/courses/{id}/progress [get]
 func (h *Handler) ListCourseProgress(c *gin.Context) {
-	courseID := c.Param("id")
-	userID := c.GetHeader("X-User-ID")
-	if userID == "" {
-		userID = "user_mock"
+	p, ok := auth.RequirePrincipal(c)
+	if !ok {
+		return
 	}
 
-	list, err := h.store.ListProgressByCourse(c.Request.Context(), userID, courseID)
+	courseID := c.Param("id")
+	if !h.checkAccess(c, p, courseID) {
+		return
+	}
+
+	list, err := h.store.ListProgressByCourse(c.Request.Context(), p.UserID, courseID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": err.Error()})
 		return
 	}
 
 	resp := make([]ProgressResponse, 0, len(list))
-	for _, p := range list {
-		resp = append(resp, progressToResponse(p))
+	for _, item := range list {
+		resp = append(resp, progressToResponse(item))
 	}
 	c.JSON(http.StatusOK, resp)
 }

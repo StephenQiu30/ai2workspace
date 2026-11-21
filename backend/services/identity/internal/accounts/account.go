@@ -8,11 +8,20 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	// StatusActive indicates an operational account.
+	StatusActive = "active"
+	// StatusSuspended indicates an administratively suspended account.
+	StatusSuspended = "suspended"
 )
 
 var (
@@ -20,6 +29,8 @@ var (
 	ErrAccountSuspended     = errors.New("account is suspended")
 	ErrDuplicateEmail       = errors.New("email already registered")
 	ErrInvalidPassword      = errors.New("invalid password")
+	ErrInvalidStatus        = errors.New("invalid account status")
+	ErrInvalidNickname      = errors.New("invalid nickname")
 	ErrTokenNotFound        = errors.New("token not found")
 	ErrTokenExpired         = errors.New("token expired")
 	ErrTokenConsumed        = errors.New("token already consumed")
@@ -27,6 +38,7 @@ var (
 	ErrVersionConflict      = errors.New("version conflict")
 )
 
+// TokenPurpose scopes a one-time token to a single workflow.
 type TokenPurpose string
 
 const (
@@ -39,6 +51,7 @@ const (
 type Account struct {
 	ID            string    `json:"id"`
 	Email         string    `json:"email"`
+	Nickname      string    `json:"nickname"`
 	PasswordHash  string    `json:"-"`
 	EmailVerified bool      `json:"emailVerified"`
 	Status        string    `json:"status"` // "active", "suspended"
@@ -46,6 +59,15 @@ type Account struct {
 	Version       int       `json:"version"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+// ListAccountsFilter defines optional filters and pagination for admin account listing.
+type ListAccountsFilter struct {
+	Status   string
+	Role     string
+	Query    string
+	Page     int
+	PageSize int
 }
 
 // StoredToken tracks one-time tokens for email verification or password reset.
@@ -69,11 +91,14 @@ type MailTask struct {
 	CreatedAt time.Time
 }
 
-// Store defines persistence operations for accounts and tokens.
+// Store defines persistence operations for accounts, one-time tokens, and mail tasks.
 type Store interface {
-	CreateAccount(ctx context.Context, email, password string) (*Account, string, error)
+	CreateAccount(ctx context.Context, email, password, nickname string) (*Account, string, error)
+	EnsureBootstrapAdmin(ctx context.Context, email, password string) (*Account, error)
 	GetAccountByEmail(ctx context.Context, email string) (*Account, error)
 	GetAccountByID(ctx context.Context, id string) (*Account, error)
+	ListAccounts(ctx context.Context, filter ListAccountsFilter) ([]*Account, int, error)
+	UpdateNickname(ctx context.Context, id, nickname string) (*Account, error)
 	VerifyEmailWithToken(ctx context.Context, rawToken string) (*Account, error)
 	CreateVerificationToken(ctx context.Context, email string, ttl time.Duration) (string, error)
 	CreatePasswordResetToken(ctx context.Context, email string, ttl time.Duration) (string, error)
@@ -82,6 +107,8 @@ type Store interface {
 	AddRole(ctx context.Context, id, role string) (*Account, error)
 	RevokeRole(ctx context.Context, id, role string, expectedVersion int) (*Account, error)
 	CountAccounts(ctx context.Context) int
+	RecordMailTask(ctx context.Context, task MailTask) error
+	UpdateMailTaskStatus(ctx context.Context, recipient string, purpose TokenPurpose, rawToken, status string) error
 	GetRecentMailTasks(ctx context.Context, recipient string) []MailTask
 	Authenticate(ctx context.Context, email, password string) (*Account, error)
 }
@@ -110,6 +137,64 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
+// DefaultNickname returns the trimmed nickname or falls back to the email prefix before "@".
+func DefaultNickname(email, nickname string) string {
+	trimmed := strings.TrimSpace(nickname)
+	if trimmed != "" {
+		if utf8.RuneCountInString(trimmed) > 64 {
+			return string([]rune(trimmed)[:64])
+		}
+		return trimmed
+	}
+	norm := NormalizeEmail(email)
+	if prefix, _, ok := strings.Cut(norm, "@"); ok && prefix != "" {
+		if utf8.RuneCountInString(prefix) > 64 {
+			return string([]rune(prefix)[:64])
+		}
+		return prefix
+	}
+	return "user"
+}
+
+// ValidateNickname checks that a user-provided nickname is non-empty and within length bounds.
+func ValidateNickname(nickname string) (string, error) {
+	trimmed := strings.TrimSpace(nickname)
+	if trimmed == "" || utf8.RuneCountInString(trimmed) > 64 {
+		return "", ErrInvalidNickname
+	}
+	return trimmed, nil
+}
+
+// ValidateStatus checks that an account status is an allowed value.
+func ValidateStatus(status string) error {
+	if status != StatusActive && status != StatusSuspended {
+		return ErrInvalidStatus
+	}
+	return nil
+}
+
+func cloneAccount(acc *Account) *Account {
+	if acc == nil {
+		return nil
+	}
+	cp := *acc
+	cp.Roles = append([]string(nil), acc.Roles...)
+	return &cp
+}
+
+func normalizePagination(page, pageSize int) (int, int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	return page, pageSize
+}
+
 func hashToken(raw string) string {
 	h := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(h[:])
@@ -126,10 +211,15 @@ func generateID(prefix string) string {
 }
 
 // CreateAccount registers a new account with a hashed password and returns a verification token.
-func (s *MemoryStore) CreateAccount(ctx context.Context, email, password string) (*Account, string, error) {
+func (s *MemoryStore) CreateAccount(ctx context.Context, email, password, nickname string) (*Account, string, error) {
 	normEmail := NormalizeEmail(email)
 	if normEmail == "" {
 		return nil, "", errors.New("email cannot be empty")
+	}
+	if strings.TrimSpace(nickname) != "" {
+		if _, err := ValidateNickname(nickname); err != nil {
+			return nil, "", err
+		}
 	}
 
 	s.mu.Lock()
@@ -148,9 +238,10 @@ func (s *MemoryStore) CreateAccount(ctx context.Context, email, password string)
 	acc := &Account{
 		ID:            generateID("usr"),
 		Email:         normEmail,
+		Nickname:      DefaultNickname(normEmail, nickname),
 		PasswordHash:  string(hash),
 		EmailVerified: false,
-		Status:        "active",
+		Status:        StatusActive,
 		Roles:         []string{"student"},
 		Version:       1,
 		CreatedAt:     now,
@@ -160,7 +251,6 @@ func (s *MemoryStore) CreateAccount(ctx context.Context, email, password string)
 	s.accounts[acc.ID] = acc
 	s.byEmail[normEmail] = acc.ID
 
-	// Create verification token
 	rawToken := generateRandomToken(16)
 	tHash := hashToken(rawToken)
 	s.tokens[tHash] = &StoredToken{
@@ -178,12 +268,73 @@ func (s *MemoryStore) CreateAccount(ctx context.Context, email, password string)
 		Subject:   "Verify your email",
 		Purpose:   PurposeEmailVerification,
 		Token:     rawToken,
-		Status:    "sent",
+		Status:    "pending",
 		CreatedAt: now,
 	})
 
-	accCopy := *acc
-	return &accCopy, rawToken, nil
+	return cloneAccount(acc), rawToken, nil
+}
+
+// EnsureBootstrapAdmin idempotently initializes a verified administrator account.
+func (s *MemoryStore) EnsureBootstrapAdmin(ctx context.Context, email, password string) (*Account, error) {
+	normEmail := NormalizeEmail(email)
+	if normEmail == "" || len(password) < 8 {
+		return nil, errors.New("valid bootstrap admin email and password (min 8 chars) are required")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if id, exists := s.byEmail[normEmail]; exists {
+		acc := s.accounts[id]
+		changed := false
+		if !acc.EmailVerified {
+			acc.EmailVerified = true
+			changed = true
+		}
+		if acc.Status != StatusActive {
+			acc.Status = StatusActive
+			changed = true
+		}
+		hasAdmin := false
+		for _, r := range acc.Roles {
+			if r == "admin" {
+				hasAdmin = true
+				break
+			}
+		}
+		if !hasAdmin {
+			acc.Roles = append(acc.Roles, "admin")
+			changed = true
+		}
+		if changed {
+			acc.Version++
+			acc.UpdatedAt = time.Now()
+		}
+		return cloneAccount(acc), nil
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("hash bootstrap admin password: %w", err)
+	}
+
+	now := time.Now()
+	acc := &Account{
+		ID:            generateID("usr"),
+		Email:         normEmail,
+		Nickname:      DefaultNickname(normEmail, ""),
+		PasswordHash:  string(hash),
+		EmailVerified: true,
+		Status:        StatusActive,
+		Roles:         []string{"student", "admin"},
+		Version:       1,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+	s.accounts[acc.ID] = acc
+	s.byEmail[normEmail] = acc.ID
+	return cloneAccount(acc), nil
 }
 
 // Authenticate verifies email and password against stored hash.
@@ -197,14 +348,13 @@ func (s *MemoryStore) Authenticate(ctx context.Context, email, password string) 
 		return nil, ErrInvalidPassword
 	}
 	acc := s.accounts[id]
-	if acc.Status == "suspended" {
+	if acc.Status == StatusSuspended {
 		return nil, ErrAccountSuspended
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(acc.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrInvalidPassword
 	}
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // GetAccountByEmail looks up an account by normalized email.
@@ -217,8 +367,7 @@ func (s *MemoryStore) GetAccountByEmail(ctx context.Context, email string) (*Acc
 	if !exists {
 		return nil, ErrAccountNotFound
 	}
-	accCopy := *s.accounts[id]
-	return &accCopy, nil
+	return cloneAccount(s.accounts[id]), nil
 }
 
 // GetAccountByID retrieves an account by ID.
@@ -230,8 +379,86 @@ func (s *MemoryStore) GetAccountByID(ctx context.Context, id string) (*Account, 
 	if !exists {
 		return nil, ErrAccountNotFound
 	}
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
+}
+
+// ListAccounts returns filtered accounts sorted by createdAt DESC with pagination.
+func (s *MemoryStore) ListAccounts(ctx context.Context, filter ListAccountsFilter) ([]*Account, int, error) {
+	page, pageSize := normalizePagination(filter.Page, filter.PageSize)
+	statusFilter := strings.TrimSpace(filter.Status)
+	roleFilter := strings.TrimSpace(filter.Role)
+	queryFilter := strings.ToLower(strings.TrimSpace(filter.Query))
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	matched := make([]*Account, 0, len(s.accounts))
+	for _, acc := range s.accounts {
+		if statusFilter != "" && acc.Status != statusFilter {
+			continue
+		}
+		if roleFilter != "" && !hasRole(acc.Roles, roleFilter) {
+			continue
+		}
+		if queryFilter != "" {
+			if !strings.Contains(strings.ToLower(acc.Email), queryFilter) &&
+				!strings.Contains(strings.ToLower(acc.Nickname), queryFilter) &&
+				!strings.Contains(strings.ToLower(acc.ID), queryFilter) {
+				continue
+			}
+		}
+		matched = append(matched, cloneAccount(acc))
+	}
+
+	sort.Slice(matched, func(i, j int) bool {
+		if matched[i].CreatedAt.Equal(matched[j].CreatedAt) {
+			return matched[i].ID > matched[j].ID
+		}
+		return matched[i].CreatedAt.After(matched[j].CreatedAt)
+	})
+
+	total := len(matched)
+	start := (page - 1) * pageSize
+	if start >= total {
+		return []*Account{}, total, nil
+	}
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+	return matched[start:end], total, nil
+}
+
+func hasRole(roles []string, target string) bool {
+	for _, r := range roles {
+		if r == target {
+			return true
+		}
+	}
+	return false
+}
+
+// UpdateNickname updates an account's display nickname and increments its version.
+func (s *MemoryStore) UpdateNickname(ctx context.Context, id, nickname string) (*Account, error) {
+	trimmed, err := ValidateNickname(nickname)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	acc, exists := s.accounts[id]
+	if !exists {
+		return nil, ErrAccountNotFound
+	}
+	if acc.Status == StatusSuspended {
+		return nil, ErrAccountSuspended
+	}
+	acc.Nickname = trimmed
+	acc.Version++
+	acc.UpdatedAt = time.Now()
+	return cloneAccount(acc), nil
 }
 
 // VerifyEmailWithToken validates the single-use token and sets email_verified = true.
@@ -251,11 +478,9 @@ func (s *MemoryStore) VerifyEmailWithToken(ctx context.Context, rawToken string)
 		return nil, ErrTokenExpired
 	}
 	if st.Consumed {
-		// Idempotent return: already consumed
 		id := s.byEmail[st.Target]
 		if acc, ok := s.accounts[id]; ok {
-			accCopy := *acc
-			return &accCopy, nil
+			return cloneAccount(acc), nil
 		}
 		return nil, ErrTokenConsumed
 	}
@@ -271,8 +496,7 @@ func (s *MemoryStore) VerifyEmailWithToken(ctx context.Context, rawToken string)
 	acc.Version++
 	acc.UpdatedAt = time.Now()
 
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // CreateVerificationToken creates a new token and records an email task.
@@ -281,8 +505,7 @@ func (s *MemoryStore) CreateVerificationToken(ctx context.Context, email string,
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id, exists := s.byEmail[normEmail]
-	if !exists {
+	if _, exists := s.byEmail[normEmail]; !exists {
 		return "", ErrAccountNotFound
 	}
 
@@ -304,11 +527,10 @@ func (s *MemoryStore) CreateVerificationToken(ctx context.Context, email string,
 		Subject:   "Verify your email",
 		Purpose:   PurposeEmailVerification,
 		Token:     rawToken,
-		Status:    "sent",
+		Status:    "pending",
 		CreatedAt: now,
 	})
 
-	_ = id
 	return rawToken, nil
 }
 
@@ -319,7 +541,6 @@ func (s *MemoryStore) CreatePasswordResetToken(ctx context.Context, email string
 	defer s.mu.Unlock()
 
 	if _, exists := s.byEmail[normEmail]; !exists {
-		// Return empty token without error to avoid email enumeration.
 		return "", nil
 	}
 
@@ -341,7 +562,7 @@ func (s *MemoryStore) CreatePasswordResetToken(ctx context.Context, email string
 		Subject:   "Reset your password",
 		Purpose:   PurposePasswordReset,
 		Token:     rawToken,
-		Status:    "sent",
+		Status:    "pending",
 		CreatedAt: now,
 	})
 
@@ -384,12 +605,15 @@ func (s *MemoryStore) ResetPasswordWithToken(ctx context.Context, rawToken, newP
 	acc.Version++
 	acc.UpdatedAt = time.Now()
 
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // SetAccountStatus updates status with optimistic version check.
 func (s *MemoryStore) SetAccountStatus(ctx context.Context, id, status string, expectedVersion int) (*Account, error) {
+	if err := ValidateStatus(status); err != nil {
+		return nil, err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -405,8 +629,7 @@ func (s *MemoryStore) SetAccountStatus(ctx context.Context, id, status string, e
 	acc.Version++
 	acc.UpdatedAt = time.Now()
 
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // AddRole appends a role to the account if not already present.
@@ -419,19 +642,15 @@ func (s *MemoryStore) AddRole(ctx context.Context, id, role string) (*Account, e
 		return nil, ErrAccountNotFound
 	}
 
-	for _, r := range acc.Roles {
-		if r == role {
-			accCopy := *acc
-			return &accCopy, nil
-		}
+	if hasRole(acc.Roles, role) {
+		return cloneAccount(acc), nil
 	}
 
 	acc.Roles = append(acc.Roles, role)
 	acc.Version++
 	acc.UpdatedAt = time.Now()
 
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // RevokeRole removes a role from the account with optimistic version check.
@@ -457,8 +676,7 @@ func (s *MemoryStore) RevokeRole(ctx context.Context, id, role string, expectedV
 	acc.Version++
 	acc.UpdatedAt = time.Now()
 
-	accCopy := *acc
-	return &accCopy, nil
+	return cloneAccount(acc), nil
 }
 
 // CountAccounts returns the total number of registered accounts.
@@ -466,6 +684,41 @@ func (s *MemoryStore) CountAccounts(ctx context.Context) int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return len(s.accounts)
+}
+
+// RecordMailTask appends an outbound mail task record.
+func (s *MemoryStore) RecordMailTask(ctx context.Context, task MailTask) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if task.ID == "" {
+		task.ID = generateID("mail")
+	}
+	task.Recipient = NormalizeEmail(task.Recipient)
+	if task.CreatedAt.IsZero() {
+		task.CreatedAt = time.Now()
+	}
+	if task.Status == "" {
+		task.Status = "pending"
+	}
+	s.mailTasks = append(s.mailTasks, task)
+	return nil
+}
+
+// UpdateMailTaskStatus updates the status of the latest matching mail task.
+func (s *MemoryStore) UpdateMailTaskStatus(ctx context.Context, recipient string, purpose TokenPurpose, rawToken, status string) error {
+	norm := NormalizeEmail(recipient)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i := len(s.mailTasks) - 1; i >= 0; i-- {
+		t := &s.mailTasks[i]
+		if t.Recipient == norm && t.Purpose == purpose && t.Token == rawToken {
+			t.Status = status
+			return nil
+		}
+	}
+	return nil
 }
 
 // GetRecentMailTasks returns mail tasks sent to the given recipient.

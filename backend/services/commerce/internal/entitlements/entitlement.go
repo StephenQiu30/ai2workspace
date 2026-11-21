@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -23,7 +24,7 @@ const (
 	GrantRevoked GrantStatus = "revoked"
 )
 
-// Entitlement represents a purchased learning access grant.
+// Entitlement represents a purchased learning access grant tied to a specific order.
 type Entitlement struct {
 	ID           string      `json:"id"`
 	UserID       string      `json:"userId"`
@@ -43,7 +44,25 @@ type Store interface {
 	ListUserEntitlements(ctx context.Context, userID string) ([]*Entitlement, error)
 }
 
-// MemoryStore provides in-memory thread-safe store for entitlements.
+func generateID(prefix string) string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(b))
+}
+
+func cloneEntitlement(e *Entitlement) *Entitlement {
+	if e == nil {
+		return nil
+	}
+	cp := *e
+	if e.RevokedAt != nil {
+		t := *e.RevokedAt
+		cp.RevokedAt = &t
+	}
+	return &cp
+}
+
+// MemoryStore provides a thread-safe in-memory store for entitlements.
 type MemoryStore struct {
 	mu           sync.RWMutex
 	entitlements map[string]*Entitlement // entitlementID -> Entitlement
@@ -56,24 +75,17 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
-func generateID(prefix string) string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(b))
-}
-
-func (s *MemoryStore) GrantEntitlement(ctx context.Context, userID, courseID, orderID string) (*Entitlement, error) {
+func (s *MemoryStore) GrantEntitlement(_ context.Context, userID, courseID, orderID string) (*Entitlement, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Check if already granted for this order
 	for _, e := range s.entitlements {
 		if e.OrderID == orderID {
-			return e, nil
+			return cloneEntitlement(e), nil
 		}
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	entID := generateID("ent")
 	ent := &Entitlement{
 		ID:           entID,
@@ -86,29 +98,38 @@ func (s *MemoryStore) GrantEntitlement(ctx context.Context, userID, courseID, or
 	}
 
 	s.entitlements[entID] = ent
-	return ent, nil
+	return cloneEntitlement(ent), nil
 }
 
-func (s *MemoryStore) CheckEntitlement(ctx context.Context, userID, courseID, purpose string) (allowed bool, grantVersion int, reason string, err error) {
+func (s *MemoryStore) CheckEntitlement(_ context.Context, userID, courseID, _ string) (allowed bool, grantVersion int, reason string, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	var latest *Entitlement
 	for _, e := range s.entitlements {
 		if e.UserID == userID && e.CourseID == courseID && e.Status == GrantActive {
-			return true, e.GrantVersion, "active_purchase_grant", nil
+			if latest == nil || e.ActivatedAt.After(latest.ActivatedAt) {
+				latest = e
+			}
 		}
+	}
+	if latest != nil {
+		return true, latest.GrantVersion, "active_purchase_grant", nil
 	}
 
 	return false, 0, "not_purchased", nil
 }
 
-func (s *MemoryStore) RevokeEntitlement(ctx context.Context, orderID string) error {
+func (s *MemoryStore) RevokeEntitlement(_ context.Context, orderID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	now := time.Now()
+	now := time.Now().UTC()
 	for _, e := range s.entitlements {
-		if e.OrderID == orderID && e.Status == GrantActive {
+		if e.OrderID == orderID {
+			if e.Status == GrantRevoked {
+				return nil
+			}
 			e.Status = GrantRevoked
 			e.RevokedAt = &now
 			e.GrantVersion++
@@ -118,15 +139,23 @@ func (s *MemoryStore) RevokeEntitlement(ctx context.Context, orderID string) err
 	return ErrEntitlementNotFound
 }
 
-func (s *MemoryStore) ListUserEntitlements(ctx context.Context, userID string) ([]*Entitlement, error) {
+func (s *MemoryStore) ListUserEntitlements(_ context.Context, userID string) ([]*Entitlement, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var list []*Entitlement
+	list := make([]*Entitlement, 0)
 	for _, e := range s.entitlements {
 		if e.UserID == userID {
-			list = append(list, e)
+			list = append(list, cloneEntitlement(e))
 		}
 	}
+
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].ActivatedAt.Equal(list[j].ActivatedAt) {
+			return list[i].ID > list[j].ID
+		}
+		return list[i].ActivatedAt.After(list[j].ActivatedAt)
+	})
+
 	return list, nil
 }

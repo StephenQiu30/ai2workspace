@@ -2,7 +2,7 @@ package orders
 
 // SetPriceRequest defines the payload to set course price.
 type SetPriceRequest struct {
-	AmountMinor     int64  `json:"amountMinor" binding:"required"`
+	AmountMinor     *int64 `json:"amountMinor" binding:"required"`
 	Currency        string `json:"currency"`
 	ExpectedVersion int    `json:"expectedVersion"`
 }

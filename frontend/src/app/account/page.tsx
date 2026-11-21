@@ -1,46 +1,49 @@
 import type {Metadata} from 'next';
 import {AccountForm} from '@/features/account/account_form';
-import type {SessionUser} from '@/features/account/session_state';
-import {getServerRequestOptions} from '@/lib/request/server';
-import {identityGetCurrentUser} from '@/services/generated/identity/sessions';
+import {normalizeAccountMode} from '@/features/account/session_state';
+import {getServerSession} from '@/lib/auth/session';
+import {sanitizeNextPath} from '@/lib/format';
 
 export const metadata: Metadata = {
-  title: '账号与个人中心 · ai2workspace',
-  description: '登录、注册与管理您的学员账号及凭据。',
+  title: '账号与认证',
+  description: '登录、注册、邮箱验证、密码重置与个人资料管理。',
 };
 
 export const dynamic = 'force-dynamic';
 
-export default async function AccountPage() {
-  let initialUser: SessionUser | null = null;
+interface AccountPageProps {
+  searchParams: Promise<{
+    next?: string;
+    mode?: string;
+    token?: string;
+  }>;
+}
 
-  try {
-    const options = await getServerRequestOptions();
-    const currentUser = await identityGetCurrentUser(options);
-    if (currentUser && currentUser.userId) {
-      initialUser = {
-        userId: currentUser.userId,
-        email: currentUser.email ?? '',
-        emailVerified: currentUser.emailVerified ?? false,
-        roles: currentUser.roles ?? ['student'],
-        accountStatus: currentUser.accountStatus ?? 'active',
-      };
-    }
-  } catch {
-    // Unauthenticated or service unavailable defaults to null initial user.
-  }
+export default async function AccountPage({searchParams}: AccountPageProps) {
+  const [user, params] = await Promise.all([getServerSession(), searchParams]);
+  const safeNext = sanitizeNextPath(params.next);
+  const initialMode = normalizeAccountMode(params.mode);
+  const initialToken = typeof params.token === 'string' ? params.token : '';
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-xl flex-col justify-center px-4 py-12 sm:px-6">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          ai2workspace 账号服务
+    <section className="mx-auto w-full max-w-2xl space-y-6">
+      <header className="space-y-1.5">
+        <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+          {user ? '本人账号与安全' : '账号与认证'}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          提供可信身份认证、邮箱验证与权限管理
+        <p className="text-sm leading-6 text-muted-foreground">
+          {user
+            ? '管理公开昵称、邮箱验证状态、讲师邀请资格与快捷学习入口。'
+            : '登录或注册学屿账号，验证邮箱后即可参与社区讨论与课程学习。'}
         </p>
-      </div>
-      <AccountForm initialUser={initialUser} />
-    </main>
+      </header>
+
+      <AccountForm
+        initialUser={user}
+        nextPath={safeNext}
+        initialMode={initialMode}
+        initialToken={initialToken}
+      />
+    </section>
   );
 }

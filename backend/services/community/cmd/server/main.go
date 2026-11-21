@@ -34,14 +34,21 @@ func run() error {
 		return err
 	}
 	gin.SetMode(gin.ReleaseMode)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	router, cleanup, err := server.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	httpServer := &http.Server{
-		Handler:           server.New(cfg.SwaggerEnabled),
+		Handler:           router,
 		ReadHeaderTimeout: cfg.HTTPTimeout,
 		ReadTimeout:       cfg.HTTPTimeout,
 		WriteTimeout:      cfg.HTTPTimeout,
@@ -57,7 +64,7 @@ func run() error {
 		}
 		close(stopped)
 	}()
-	slog.Info("community service starting", "addr", cfg.HTTPAddr)
+	slog.Info("community service starting", "addr", cfg.HTTPAddr, "postgresEnabled", cfg.DatabaseURL != "")
 	if err := httpServer.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

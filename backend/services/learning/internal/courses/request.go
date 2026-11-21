@@ -6,6 +6,7 @@ type CreateCourseRequest struct {
 	Title       string `json:"title" binding:"required" example:"深入浅出 Next.js"`
 	Description string `json:"description" example:"现代化全栈工程实战"`
 	CoverURL    string `json:"coverUrl" example:"https://example.com/cover.png"`
+	Category    string `json:"category" example:"engineering"`
 	IsFree      bool   `json:"isFree"`
 }
 
@@ -14,6 +15,7 @@ type UpdateCourseRequest struct {
 	Title           string `json:"title"`
 	Description     string `json:"description"`
 	CoverURL        string `json:"coverUrl"`
+	Category        string `json:"category" example:"ai"`
 	IsFree          *bool  `json:"isFree"`
 	ExpectedVersion int    `json:"expectedVersion" binding:"required" example:"1"`
 }
@@ -48,6 +50,12 @@ type AddSectionRequest struct {
 	SortOrder int    `json:"sortOrder" example:"1"`
 }
 
+// UpdateSectionRequest defines parameters for updating a curriculum section.
+type UpdateSectionRequest struct {
+	Title     *string `json:"title" example:"第一章：工程基线（更新）"`
+	SortOrder *int    `json:"sortOrder" example:"2"`
+}
+
 // AddLessonRequest defines parameters for adding a curriculum lesson.
 type AddLessonRequest struct {
 	SectionID      string `json:"sectionId" binding:"required" example:"sec_12345"`
@@ -59,16 +67,29 @@ type AddLessonRequest struct {
 	SortOrder      int    `json:"sortOrder" example:"1"`
 }
 
+// UpdateLessonRequest defines parameters for updating a curriculum lesson.
+type UpdateLessonRequest struct {
+	SectionID      *string `json:"sectionId" example:"sec_12345"`
+	Title          *string `json:"title" example:"1.1 项目初始化（修订）"`
+	Type           *string `json:"type" example:"article"`
+	IsTrial        *bool   `json:"isTrial"`
+	Content        *string `json:"content"`
+	MediaVersionID *string `json:"mediaVersionId"`
+	SortOrder      *int    `json:"sortOrder" example:"2"`
+}
+
 // CheckCourseAccessRequest defines payload for internal access check.
 type CheckCourseAccessRequest struct {
-	UserID   string `json:"userId" binding:"required" example:"usr_12345"`
-	CourseID string `json:"courseId" binding:"required" example:"crs_12345"`
-	Purpose  string `json:"purpose" binding:"required" example:"playback"`
+	UserID   string   `json:"userId" binding:"required" example:"usr_12345"`
+	CourseID string   `json:"courseId" binding:"required" example:"crs_12345"`
+	Purpose  string   `json:"purpose" binding:"required" example:"playback"`
+	Roles    []string `json:"roles,omitempty"`
 }
 
 // CheckCourseManagementRequest defines payload for internal management check.
 type CheckCourseManagementRequest struct {
-	ActorID  string `json:"actorId" binding:"required" example:"usr_12345"`
-	CourseID string `json:"courseId" binding:"required" example:"crs_12345"`
-	Purpose  string `json:"purpose" binding:"required" example:"management"`
+	ActorID    string   `json:"actorId" binding:"required" example:"usr_12345"`
+	CourseID   string   `json:"courseId" binding:"required" example:"crs_12345"`
+	Purpose    string   `json:"purpose" binding:"required" example:"management"`
+	ActorRoles []string `json:"actorRoles,omitempty"`
 }

@@ -4,7 +4,9 @@ package media
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,6 +18,8 @@ var (
 	ErrUploadNotFound       = errors.New("upload session not found")
 	ErrUploadExpired        = errors.New("upload session has expired")
 	ErrUploadCancelled      = errors.New("upload session has been cancelled")
+	ErrUploadCompleted      = errors.New("upload session already completed and cannot be cancelled")
+	ErrIdempotencyConflict  = errors.New("idempotency key reused with different payload")
 	ErrMaxConcurrentUploads = errors.New("exceeded maximum concurrent upload sessions (limit 2)")
 	ErrFileTooLarge         = errors.New("file size exceeds maximum allowed 2 GiB (2,147,483,648 bytes)")
 	ErrFileEmpty            = errors.New("file size must be greater than zero")
@@ -27,6 +31,7 @@ var (
 	ErrFPSExceeded          = errors.New("video frame rate exceeds maximum allowed 30 fps")
 	ErrMediaVersionNotFound = errors.New("media version not found")
 	ErrMediaNotReady        = errors.New("media version is not ready for publication")
+	ErrLessonMismatch       = errors.New("media version does not belong to target lesson")
 	ErrMediaJobNotFound     = errors.New("media processing job not found")
 	ErrJobNotRetryable      = errors.New("only failed media jobs can be retried")
 	ErrPermissionDenied     = errors.New("permission denied")
@@ -40,6 +45,7 @@ const (
 	MaxFPS               int   = 30
 	MaxConcurrentUploads       = 2
 	UploadExpiryDuration       = 24 * time.Hour
+	PlaybackTokenTTL           = 30 * time.Minute
 )
 
 // UploadStatus indicates the current state of an upload session.
@@ -133,34 +139,37 @@ type Store interface {
 	CreateUpload(ctx context.Context, instructorID, courseID, lessonID, fileName string, declaredBytes int64) (*UploadSession, error)
 	GetUpload(ctx context.Context, uploadID string) (*UploadSession, error)
 	ListActiveUploads(ctx context.Context, instructorID string) ([]*UploadSession, error)
-	CancelUpload(ctx context.Context, uploadID, instructorID string) error
-	CompleteUpload(ctx context.Context, uploadID, idempotencyKey string, meta MediaMetadata) (*MediaVersion, error)
+	CancelUpload(ctx context.Context, uploadID, instructorID string, isAdmin bool) error
+	CompleteUpload(ctx context.Context, uploadID, instructorID string, isAdmin bool, idempotencyKey string, meta MediaMetadata) (*MediaVersion, error)
 	GetMediaVersion(ctx context.Context, versionID string) (*MediaVersion, error)
-	PublishLessonMedia(ctx context.Context, lessonID, mediaVersionID, instructorID string) error
-	RetryMediaJob(ctx context.Context, jobID, instructorID string) (*MediaJob, error)
+	PublishLessonMedia(ctx context.Context, lessonID, mediaVersionID, instructorID string, isAdmin bool) error
+	RetryMediaJob(ctx context.Context, jobID, instructorID string, isAdmin bool) (*MediaJob, error)
 	GetLessonMediaVersion(ctx context.Context, lessonID string) (*MediaVersion, error)
+}
+
+type idempotencyRecord struct {
+	payloadHash    string
+	mediaVersionID string
 }
 
 // MemoryStore provides a thread-safe in-memory store for media operations.
 type MemoryStore struct {
-	mu             sync.RWMutex
-	uploads        map[string]*UploadSession
-	mediaVersions  map[string]*MediaVersion
-	jobs           map[string]*MediaJob
-	lessonMedia    map[string]string // lessonID -> published mediaVersionID
-	completedKeys  map[string]string // uploadID + ":" + idempotencyKey -> mediaVersionID
-	courseVerifier func(courseID, instructorID string) (bool, error)
+	mu            sync.RWMutex
+	uploads       map[string]*UploadSession
+	mediaVersions map[string]*MediaVersion
+	jobs          map[string]*MediaJob
+	lessonMedia   map[string]string            // lessonID -> published mediaVersionID
+	completedKeys map[string]idempotencyRecord // uploadID + ":" + idempotencyKey -> record
 }
 
 // NewMemoryStore initializes a memory store for media.
-func NewMemoryStore(verifier func(courseID, instructorID string) (bool, error)) *MemoryStore {
+func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		uploads:        make(map[string]*UploadSession),
-		mediaVersions:  make(map[string]*MediaVersion),
-		jobs:           make(map[string]*MediaJob),
-		lessonMedia:    make(map[string]string),
-		completedKeys:  make(map[string]string),
-		courseVerifier: verifier,
+		uploads:       make(map[string]*UploadSession),
+		mediaVersions: make(map[string]*MediaVersion),
+		jobs:          make(map[string]*MediaJob),
+		lessonMedia:   make(map[string]string),
+		completedKeys: make(map[string]idempotencyRecord),
 	}
 }
 
@@ -170,6 +179,55 @@ func generateID(prefix string) string {
 	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(b))
 }
 
+func hashMetadata(meta MediaMetadata) string {
+	normalized := MediaMetadata{
+		Container:       strings.ToLower(strings.TrimSpace(meta.Container)),
+		Codec:           strings.ToLower(strings.TrimSpace(meta.Codec)),
+		DurationSeconds: meta.DurationSeconds,
+		Width:           meta.Width,
+		Height:          meta.Height,
+		FPS:             meta.FPS,
+		ActualBytes:     meta.ActualBytes,
+	}
+	raw, _ := json.Marshal(normalized)
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+func cloneUpload(u *UploadSession) *UploadSession {
+	if u == nil {
+		return nil
+	}
+	cp := *u
+	if u.UploadInstructions.Headers != nil {
+		headers := make(map[string]string, len(u.UploadInstructions.Headers))
+		for k, v := range u.UploadInstructions.Headers {
+			headers[k] = v
+		}
+		cp.UploadInstructions.Headers = headers
+	}
+	return &cp
+}
+
+func cloneVersion(v *MediaVersion) *MediaVersion {
+	if v == nil {
+		return nil
+	}
+	cp := *v
+	if v.HLSQualities != nil {
+		cp.HLSQualities = append([]string(nil), v.HLSQualities...)
+	}
+	return &cp
+}
+
+func cloneJob(j *MediaJob) *MediaJob {
+	if j == nil {
+		return nil
+	}
+	cp := *j
+	return &cp
+}
+
 func (s *MemoryStore) CreateUpload(ctx context.Context, instructorID, courseID, lessonID, fileName string, declaredBytes int64) (*UploadSession, error) {
 	if declaredBytes <= 0 {
 		return nil, ErrFileEmpty
@@ -177,22 +235,14 @@ func (s *MemoryStore) CreateUpload(ctx context.Context, instructorID, courseID, 
 	if declaredBytes > MaxDeclaredBytes {
 		return nil, ErrFileTooLarge
 	}
-	if !strings.HasSuffix(strings.ToLower(fileName), ".mp4") {
+	if !strings.HasSuffix(strings.ToLower(strings.TrimSpace(fileName)), ".mp4") {
 		return nil, ErrInvalidContainer
-	}
-
-	if s.courseVerifier != nil {
-		allowed, err := s.courseVerifier(courseID, instructorID)
-		if err != nil || !allowed {
-			return nil, ErrPermissionDenied
-		}
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Check active upload sessions for this instructor
-	now := time.Now()
+	now := time.Now().UTC()
 	activeCount := 0
 	for _, u := range s.uploads {
 		if u.InstructorID == instructorID && u.Status == StatusUploading && u.ExpiresAt.After(now) {
@@ -227,7 +277,7 @@ func (s *MemoryStore) CreateUpload(ctx context.Context, instructorID, courseID, 
 	}
 
 	s.uploads[uploadID] = session
-	return session, nil
+	return cloneUpload(session), nil
 }
 
 func (s *MemoryStore) GetUpload(ctx context.Context, uploadID string) (*UploadSession, error) {
@@ -238,24 +288,24 @@ func (s *MemoryStore) GetUpload(ctx context.Context, uploadID string) (*UploadSe
 	if !exists {
 		return nil, ErrUploadNotFound
 	}
-	return session, nil
+	return cloneUpload(session), nil
 }
 
 func (s *MemoryStore) ListActiveUploads(ctx context.Context, instructorID string) ([]*UploadSession, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	now := time.Now()
+	now := time.Now().UTC()
 	var list []*UploadSession
 	for _, u := range s.uploads {
 		if u.InstructorID == instructorID && u.Status == StatusUploading && u.ExpiresAt.After(now) {
-			list = append(list, u)
+			list = append(list, cloneUpload(u))
 		}
 	}
 	return list, nil
 }
 
-func (s *MemoryStore) CancelUpload(ctx context.Context, uploadID, instructorID string) error {
+func (s *MemoryStore) CancelUpload(ctx context.Context, uploadID, instructorID string, isAdmin bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -263,15 +313,18 @@ func (s *MemoryStore) CancelUpload(ctx context.Context, uploadID, instructorID s
 	if !exists {
 		return ErrUploadNotFound
 	}
-	if session.InstructorID != instructorID {
+	if !isAdmin && (instructorID == "" || session.InstructorID != instructorID) {
 		return ErrPermissionDenied
 	}
+	if session.Status == StatusCompleted {
+		return ErrUploadCompleted
+	}
 	session.Status = StatusCancelled
-	session.UpdatedAt = time.Now()
+	session.UpdatedAt = time.Now().UTC()
 	return nil
 }
 
-func (s *MemoryStore) CompleteUpload(ctx context.Context, uploadID, idempotencyKey string, meta MediaMetadata) (*MediaVersion, error) {
+func (s *MemoryStore) CompleteUpload(ctx context.Context, uploadID, instructorID string, isAdmin bool, idempotencyKey string, meta MediaMetadata) (*MediaVersion, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -279,8 +332,11 @@ func (s *MemoryStore) CompleteUpload(ctx context.Context, uploadID, idempotencyK
 	if !exists {
 		return nil, ErrUploadNotFound
 	}
+	if !isAdmin && (instructorID == "" || session.InstructorID != instructorID) {
+		return nil, ErrPermissionDenied
+	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if session.ExpiresAt.Before(now) {
 		return nil, ErrUploadExpired
 	}
@@ -288,15 +344,20 @@ func (s *MemoryStore) CompleteUpload(ctx context.Context, uploadID, idempotencyK
 		return nil, ErrUploadCancelled
 	}
 
-	// Idempotent replay check
+	payloadHash := hashMetadata(meta)
 	cacheKey := uploadID + ":" + idempotencyKey
-	if existingVersionID, ok := s.completedKeys[cacheKey]; ok {
-		if v, ok := s.mediaVersions[existingVersionID]; ok {
-			return v, nil
+	if existing, ok := s.completedKeys[cacheKey]; ok {
+		if existing.payloadHash != payloadHash {
+			return nil, ErrIdempotencyConflict
+		}
+		if v, ok := s.mediaVersions[existing.mediaVersionID]; ok {
+			if v.Status == MediaFailed {
+				return cloneVersion(v), errors.New(v.FailureReason)
+			}
+			return cloneVersion(v), nil
 		}
 	}
 
-	// Validate actual media properties
 	validationErr := ValidateMedia(meta)
 
 	mediaVersionID := generateID("mv")
@@ -342,12 +403,15 @@ func (s *MemoryStore) CompleteUpload(ctx context.Context, uploadID, idempotencyK
 
 	s.mediaVersions[mediaVersionID] = version
 	s.jobs[jobID] = job
-	s.completedKeys[cacheKey] = mediaVersionID
+	s.completedKeys[cacheKey] = idempotencyRecord{
+		payloadHash:    payloadHash,
+		mediaVersionID: mediaVersionID,
+	}
 
 	if validationErr != nil {
-		return version, validationErr
+		return cloneVersion(version), validationErr
 	}
-	return version, nil
+	return cloneVersion(version), nil
 }
 
 func (s *MemoryStore) GetMediaVersion(ctx context.Context, versionID string) (*MediaVersion, error) {
@@ -358,10 +422,10 @@ func (s *MemoryStore) GetMediaVersion(ctx context.Context, versionID string) (*M
 	if !exists {
 		return nil, ErrMediaVersionNotFound
 	}
-	return v, nil
+	return cloneVersion(v), nil
 }
 
-func (s *MemoryStore) PublishLessonMedia(ctx context.Context, lessonID, mediaVersionID, instructorID string) error {
+func (s *MemoryStore) PublishLessonMedia(ctx context.Context, lessonID, mediaVersionID, instructorID string, isAdmin bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -369,19 +433,19 @@ func (s *MemoryStore) PublishLessonMedia(ctx context.Context, lessonID, mediaVer
 	if !exists {
 		return ErrMediaVersionNotFound
 	}
+	if v.LessonID != lessonID {
+		return ErrLessonMismatch
+	}
 	if v.Status != MediaReady {
 		return ErrMediaNotReady
 	}
 
-	// Verify upload ownership if upload exists
 	if session, exists := s.uploads[v.UploadID]; exists {
-		if session.InstructorID != instructorID {
+		if !isAdmin && (instructorID == "" || session.InstructorID != instructorID) {
 			return ErrPermissionDenied
 		}
 	}
 
-	// Safely update lesson published media version.
-	// If a failed version was submitted previously, the existing published version is untouched.
 	s.lessonMedia[lessonID] = mediaVersionID
 	return nil
 }
@@ -398,16 +462,23 @@ func (s *MemoryStore) GetLessonMediaVersion(ctx context.Context, lessonID string
 	if !exists {
 		return nil, ErrMediaVersionNotFound
 	}
-	return v, nil
+	return cloneVersion(v), nil
 }
 
-func (s *MemoryStore) RetryMediaJob(ctx context.Context, jobID, instructorID string) (*MediaJob, error) {
+func (s *MemoryStore) RetryMediaJob(ctx context.Context, jobID, instructorID string, isAdmin bool) (*MediaJob, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	job, exists := s.jobs[jobID]
 	if !exists {
 		return nil, ErrMediaJobNotFound
+	}
+	if session, ok := s.uploads[job.UploadID]; ok {
+		if !isAdmin && (instructorID == "" || session.InstructorID != instructorID) {
+			return nil, ErrPermissionDenied
+		}
+	} else if !isAdmin {
+		return nil, ErrPermissionDenied
 	}
 	if job.Status != "failed" {
 		return nil, ErrJobNotRetryable
@@ -416,13 +487,12 @@ func (s *MemoryStore) RetryMediaJob(ctx context.Context, jobID, instructorID str
 	job.Status = "pending"
 	job.RetryCount++
 	job.ErrorMessage = ""
-	job.UpdatedAt = time.Now()
+	job.UpdatedAt = time.Now().UTC()
 
-	// Update corresponding media version to processing
 	if v, exists := s.mediaVersions[job.MediaVersionID]; exists {
 		v.Status = MediaProcessing
 		v.FailureReason = ""
 	}
 
-	return job, nil
+	return cloneJob(job), nil
 }

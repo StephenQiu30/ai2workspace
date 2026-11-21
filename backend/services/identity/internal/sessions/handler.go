@@ -3,7 +3,10 @@ package sessions
 
 import (
 	"errors"
+	"math"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/StephenQiu30/ai2workspace/backend/services/identity/internal/accounts"
 	"github.com/gin-gonic/gin"
@@ -17,25 +20,83 @@ type LoginRequest struct {
 
 // CurrentUserResponse returns the authenticated user profile.
 type CurrentUserResponse struct {
+	ID            string   `json:"id" example:"usr_12345"`
 	UserID        string   `json:"userId" example:"usr_12345"`
 	Email         string   `json:"email" example:"user@example.com"`
+	Nickname      string   `json:"nickname" example:"alice"`
 	EmailVerified bool     `json:"emailVerified" example:"true"`
-	Roles         []string `json:"roles" example:"student"`
+	Status        string   `json:"status" example:"active"`
 	AccountStatus string   `json:"accountStatus" example:"active"`
+	Roles         []string `json:"roles" example:"student"`
+	Version       int      `json:"version" example:"1"`
+}
+
+// Options configures cookie security and rate limiting for session endpoints.
+type Options struct {
+	CookieSecure bool
+	AuthLimiter  *accounts.RateLimiter
 }
 
 // Handler handles session endpoints.
 type Handler struct {
-	sessions Store
-	accounts accounts.Store
+	sessions     Store
+	accounts     accounts.Store
+	cookieSecure bool
+	authLimiter  *accounts.RateLimiter
 }
 
-// NewHandler initializes a session HTTP Handler.
+// NewHandler initializes a session HTTP Handler with default options.
 func NewHandler(sessions Store, accounts accounts.Store) *Handler {
+	return NewHandlerWithOptions(sessions, accounts, Options{})
+}
+
+// NewHandlerWithOptions initializes a session HTTP Handler with explicit options.
+func NewHandlerWithOptions(sessions Store, accounts accounts.Store, opts Options) *Handler {
 	return &Handler{
-		sessions: sessions,
-		accounts: accounts,
+		sessions:     sessions,
+		accounts:     accounts,
+		cookieSecure: opts.CookieSecure,
+		authLimiter:  opts.AuthLimiter,
 	}
+}
+
+func (h *Handler) setSessionCookie(c *gin.Context, rawToken string, maxAge int) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     SessionCookieName,
+		Value:    rawToken,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   h.cookieSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func toCurrentUserResponse(acc *accounts.Account) CurrentUserResponse {
+	return CurrentUserResponse{
+		ID:            acc.ID,
+		UserID:        acc.ID,
+		Email:         acc.Email,
+		Nickname:      acc.Nickname,
+		EmailVerified: acc.EmailVerified,
+		Status:        acc.Status,
+		AccountStatus: acc.Status,
+		Roles:         acc.Roles,
+		Version:       acc.Version,
+	}
+}
+
+func writeRateLimitError(c *gin.Context, retryAfter time.Duration) {
+	secs := int(math.Ceil(retryAfter.Seconds()))
+	if secs < 1 {
+		secs = 1
+	}
+	c.Header("Retry-After", strconv.Itoa(secs))
+	c.JSON(http.StatusTooManyRequests, accounts.ErrorResponse{
+		Error:             "rate_limited",
+		Message:           "Too many login attempts, please try again later",
+		RetryAfterSeconds: secs,
+	})
 }
 
 // Login godoc
@@ -49,9 +110,15 @@ func NewHandler(sessions Store, accounts accounts.Store) *Handler {
 // @Failure 400 {object} accounts.ErrorResponse
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
+// @Failure 429 {object} accounts.ErrorResponse
 // @Router /api/identity/sessions [post]
-// @id identityLogin
+// @ID identityLogin
 func (h *Handler) Login(c *gin.Context) {
+	if allowed, retryAfter := h.authLimiter.Allow("login:" + c.ClientIP()); !allowed {
+		writeRateLimitError(c, retryAfter)
+		return
+	}
+
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, accounts.ErrorResponse{
@@ -86,15 +153,8 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(SessionCookieName, rawToken, int(DefaultSessionTTL.Seconds()), "/", "", false, true)
-
-	c.JSON(http.StatusOK, CurrentUserResponse{
-		UserID:        acc.ID,
-		Email:         acc.Email,
-		EmailVerified: acc.EmailVerified,
-		Roles:         acc.Roles,
-		AccountStatus: acc.Status,
-	})
+	h.setSessionCookie(c, rawToken, int(DefaultSessionTTL.Seconds()))
+	c.JSON(http.StatusOK, toCurrentUserResponse(acc))
 }
 
 // Logout godoc
@@ -104,13 +164,13 @@ func (h *Handler) Login(c *gin.Context) {
 // @Produce json
 // @Success 204 "No Content"
 // @Router /api/identity/sessions/current [delete]
-// @id identityLogout
+// @ID identityLogout
 func (h *Handler) Logout(c *gin.Context) {
 	cookie, err := c.Cookie(SessionCookieName)
 	if err == nil && cookie != "" {
 		_ = h.sessions.RevokeSession(c.Request.Context(), cookie)
 	}
-	c.SetCookie(SessionCookieName, "", -1, "/", "", false, true)
+	h.setSessionCookie(c, "", -1)
 	c.Status(http.StatusNoContent)
 }
 
@@ -123,7 +183,7 @@ func (h *Handler) Logout(c *gin.Context) {
 // @Failure 401 {object} accounts.ErrorResponse
 // @Failure 403 {object} accounts.ErrorResponse
 // @Router /api/identity/me [get]
-// @id identityGetCurrentUser
+// @ID identityGetCurrentUser
 func (h *Handler) GetCurrentUser(c *gin.Context) {
 	cookie, err := c.Cookie(SessionCookieName)
 	if err != nil || cookie == "" {
@@ -152,7 +212,7 @@ func (h *Handler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	if acc.Status == "suspended" {
+	if acc.Status == accounts.StatusSuspended {
 		c.JSON(http.StatusForbidden, accounts.ErrorResponse{
 			Error:   "account_suspended",
 			Message: "Account has been suspended",
@@ -160,11 +220,5 @@ func (h *Handler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, CurrentUserResponse{
-		UserID:        acc.ID,
-		Email:         acc.Email,
-		EmailVerified: acc.EmailVerified,
-		Roles:         acc.Roles,
-		AccountStatus: acc.Status,
-	})
+	c.JSON(http.StatusOK, toCurrentUserResponse(acc))
 }

@@ -7,18 +7,26 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/StephenQiu30/ai2workspace/backend/services/community/internal/posts"
 )
 
 var (
+	// ErrReportNotFound indicates the requested report does not exist.
 	ErrReportNotFound = errors.New("report not found")
+	// ErrReportResolved indicates the report has already been reviewed.
 	ErrReportResolved = errors.New("report has already been reviewed")
+	// ErrInvalidTargetType indicates targetType must be post or comment.
+	ErrInvalidTargetType = errors.New("targetType must be post or comment")
+	// ErrInvalidDecision indicates decision must be approved or rejected.
+	ErrInvalidDecision = errors.New("decision must be approved or rejected")
+	// ErrInvalidStatusFilter indicates an unrecognized report status filter.
+	ErrInvalidStatusFilter = errors.New("status must be pending, approved, or rejected")
 )
 
-// ReportStatus defines moderation state.
+// ReportStatus defines the moderation workflow state of a report.
 type ReportStatus string
 
 const (
@@ -27,16 +35,16 @@ const (
 	StatusRejected ReportStatus = "rejected"
 )
 
-// Report represents a user flag against violation content.
+// Report represents a user flag against a post or comment.
 type Report struct {
-	ID           string       `json:"id"`
-	ReporterID   string       `json:"reporterId"`
-	TargetType   string       `json:"targetType"` // "post", "comment"
-	TargetID     string       `json:"targetId"`
-	Reason       string       `json:"reason"`
-	Status       ReportStatus `json:"status"`
-	ReviewReason string       `json:"reviewReason,omitempty"`
-	ReviewerID   string       `json:"reviewerId,omitempty"`
+	ID           string       `json:"id" example:"rep_12345"`
+	ReporterID   string       `json:"reporterId" example:"usr_12345"`
+	TargetType   string       `json:"targetType" example:"post"`
+	TargetID     string       `json:"targetId" example:"post_12345"`
+	Reason       string       `json:"reason" example:"广告垃圾信息"`
+	Status       ReportStatus `json:"status" example:"pending"`
+	ReviewReason string       `json:"reviewReason,omitempty" example:"核实属违规推广，予以隐藏"`
+	ReviewerID   string       `json:"reviewerId,omitempty" example:"usr_admin"`
 	CreatedAt    time.Time    `json:"createdAt"`
 	ReviewedAt   *time.Time   `json:"reviewedAt,omitempty"`
 }
@@ -44,22 +52,22 @@ type Report struct {
 // Store defines persistence operations for moderation reports.
 type Store interface {
 	CreateReport(ctx context.Context, reporterID, targetType, targetID, reason string) (*Report, error)
-	ModerateReport(ctx context.Context, reviewerID, reportID string, approved bool, reviewReason string) (*Report, error)
-	ListReports(ctx context.Context, page, limit int) ([]*Report, int, error)
+	GetReport(ctx context.Context, reportID string) (*Report, error)
+	ResolveReport(ctx context.Context, reviewerID, reportID string, status ReportStatus, reviewReason string) (*Report, error)
+	ListReports(ctx context.Context, statusFilter string, page, pageSize int) ([]*Report, int, error)
 }
 
-// MemoryStore provides in-memory store for moderation.
+// MemoryStore provides a thread-safe in-memory store for moderation reports.
 type MemoryStore struct {
-	mu        sync.RWMutex
-	reports   map[string]*Report
-	postStore posts.Store
+	mu            sync.RWMutex
+	reports       map[string]*Report
+	lastTimestamp time.Time
 }
 
 // NewMemoryStore initializes a new MemoryStore for moderation.
-func NewMemoryStore(postStore posts.Store) *MemoryStore {
+func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		reports:   make(map[string]*Report),
-		postStore: postStore,
+		reports: make(map[string]*Report),
 	}
 }
 
@@ -69,27 +77,79 @@ func generateID(prefix string) string {
 	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(b))
 }
 
+func (s *MemoryStore) nextTimestampLocked() time.Time {
+	now := time.Now().UTC()
+	if !now.After(s.lastTimestamp) {
+		now = s.lastTimestamp.Add(time.Microsecond)
+	}
+	s.lastTimestamp = now
+	return now
+}
+
+func cloneReport(r *Report) *Report {
+	if r == nil {
+		return nil
+	}
+	cp := *r
+	if r.ReviewedAt != nil {
+		t := *r.ReviewedAt
+		cp.ReviewedAt = &t
+	}
+	return &cp
+}
+
+// CreateReport creates a pending report, deduplicating open reports by the same reporter for the same target.
 func (s *MemoryStore) CreateReport(ctx context.Context, reporterID, targetType, targetID, reason string) (*Report, error) {
+	if targetType != "post" && targetType != "comment" {
+		return nil, ErrInvalidTargetType
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	now := time.Now()
+	for _, existing := range s.reports {
+		if existing.Status == StatusPending &&
+			existing.ReporterID == reporterID &&
+			existing.TargetType == targetType &&
+			existing.TargetID == targetID {
+			return cloneReport(existing), nil
+		}
+	}
+
+	now := s.nextTimestampLocked()
 	reportID := generateID("rep")
 	rep := &Report{
 		ID:         reportID,
 		ReporterID: reporterID,
 		TargetType: targetType,
 		TargetID:   targetID,
-		Reason:     reason,
+		Reason:     strings.TrimSpace(reason),
 		Status:     StatusPending,
 		CreatedAt:  now,
 	}
 
 	s.reports[reportID] = rep
-	return rep, nil
+	return cloneReport(rep), nil
 }
 
-func (s *MemoryStore) ModerateReport(ctx context.Context, reviewerID, reportID string, approved bool, reviewReason string) (*Report, error) {
+// GetReport retrieves a report by ID.
+func (s *MemoryStore) GetReport(ctx context.Context, reportID string) (*Report, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	rep, ok := s.reports[reportID]
+	if !ok {
+		return nil, ErrReportNotFound
+	}
+	return cloneReport(rep), nil
+}
+
+// ResolveReport marks a pending report as approved or rejected.
+func (s *MemoryStore) ResolveReport(ctx context.Context, reviewerID, reportID string, status ReportStatus, reviewReason string) (*Report, error) {
+	if status != StatusApproved && status != StatusRejected {
+		return nil, ErrInvalidDecision
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -101,53 +161,57 @@ func (s *MemoryStore) ModerateReport(ctx context.Context, reviewerID, reportID s
 		return nil, ErrReportResolved
 	}
 
-	now := time.Now()
+	now := s.nextTimestampLocked()
 	rep.ReviewerID = reviewerID
-	rep.ReviewReason = reviewReason
+	rep.ReviewReason = strings.TrimSpace(reviewReason)
+	rep.Status = status
 	rep.ReviewedAt = &now
-
-	if approved {
-		rep.Status = StatusApproved
-		// Atomically hide the target violation content
-		if s.postStore != nil {
-			if rep.TargetType == "post" {
-				_ = s.postStore.HidePost(ctx, rep.TargetID)
-			} else if rep.TargetType == "comment" {
-				_ = s.postStore.HideComment(ctx, rep.TargetID)
-			}
-		}
-	} else {
-		rep.Status = StatusRejected
-	}
-
-	return rep, nil
+	return cloneReport(rep), nil
 }
 
-func (s *MemoryStore) ListReports(ctx context.Context, page, limit int) ([]*Report, int, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+// ListReports returns reports ordered deterministically by CreatedAt DESC, ID DESC.
+func (s *MemoryStore) ListReports(ctx context.Context, statusFilter string, page, pageSize int) ([]*Report, int, error) {
+	statusFilter = strings.TrimSpace(statusFilter)
+	if statusFilter != "" &&
+		statusFilter != string(StatusPending) &&
+		statusFilter != string(StatusApproved) &&
+		statusFilter != string(StatusRejected) {
+		return nil, 0, ErrInvalidStatusFilter
+	}
 
 	if page < 1 {
 		page = 1
 	}
-	if limit < 1 || limit > 100 {
-		limit = 20
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	var list []*Report
 	for _, r := range s.reports {
-		list = append(list, r)
+		if statusFilter != "" && string(r.Status) != statusFilter {
+			continue
+		}
+		list = append(list, cloneReport(r))
 	}
 
+	sort.Slice(list, func(i, j int) bool {
+		if !list[i].CreatedAt.Equal(list[j].CreatedAt) {
+			return list[i].CreatedAt.After(list[j].CreatedAt)
+		}
+		return list[i].ID > list[j].ID
+	})
+
 	total := len(list)
-	start := (page - 1) * limit
+	start := (page - 1) * pageSize
 	if start >= total {
 		return []*Report{}, total, nil
 	}
-	end := start + limit
+	end := start + pageSize
 	if end > total {
 		end = total
 	}
-
 	return list[start:end], total, nil
 }

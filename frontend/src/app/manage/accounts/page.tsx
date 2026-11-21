@@ -1,46 +1,110 @@
 import type {Metadata} from 'next';
+import Link from 'next/link';
+import {ShieldAlertIcon} from 'lucide-react';
+import {ManageNav} from '@/components/layout/manage_nav';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent} from '@/components/ui/card';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {AccountManagement} from '@/features/account/account_management';
-import type {SessionUser} from '@/features/account/session_state';
+import {isAdmin} from '@/lib/auth/roles';
+import {getServerSession} from '@/lib/auth/session';
+import {buildLoginHref, getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {identityGetCurrentUser} from '@/services/generated/identity/sessions';
+import {
+  identityListAccounts,
+  identityListInstructorInvitations,
+} from '@/services/generated/identity/access';
 
 export const metadata: Metadata = {
-  title: '账号与权限管理 · ai2workspace',
-  description: '管理员控制台：受控讲师邀请、资质撤销及账号状态处置。',
+  title: '账号管理',
+  description: '管理员控制台：用户列表、账号状态处置与受控讲师邀请管理。',
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function ManageAccountsPage() {
-  let currentUser: SessionUser | null = null;
+  const user = await getServerSession();
+
+  if (!isAdmin(user)) {
+    return (
+      <section className="mx-auto w-full max-w-4xl">
+        <ManageNav user={user} />
+        <Card>
+          <CardContent className="py-12">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ShieldAlertIcon />
+                </EmptyMedia>
+                <EmptyTitle>需要管理员权限</EmptyTitle>
+                <EmptyDescription>
+                  {user
+                    ? '当前账号不具备管理员角色，无法访问账号管理与讲师邀请控制台。'
+                    : '请先使用管理员账号登录后再访问账号管理页面。'}
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                {user ? (
+                  <Button asChild variant="secondary">
+                    <Link href="/">返回社区首页</Link>
+                  </Button>
+                ) : (
+                  <Button asChild>
+                    <Link href={buildLoginHref('/manage/accounts')}>
+                      前往登录
+                    </Link>
+                  </Button>
+                )}
+              </EmptyContent>
+            </Empty>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  let initialAccounts: IdentityApi.ListAccountsResponse = {
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  };
+  let initialInvitations: IdentityApi.ListInvitationsResponse = {
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  };
+  let initialError: string | null = null;
 
   try {
     const options = await getServerRequestOptions();
-    const user = await identityGetCurrentUser(options);
-    if (user && user.userId) {
-      currentUser = {
-        userId: user.userId,
-        email: user.email ?? '',
-        emailVerified: user.emailVerified ?? false,
-        roles: user.roles ?? ['student'],
-        accountStatus: user.accountStatus ?? 'active',
-      };
-    }
-  } catch {
-    // Unauthenticated user will see access restricted message in the management component
+    const [accountsResp, invitationsResp] = await Promise.all([
+      identityListAccounts({page: 1, pageSize: 20}, options),
+      identityListInstructorInvitations({page: 1, pageSize: 20}, options),
+    ]);
+    initialAccounts = accountsResp;
+    initialInvitations = invitationsResp;
+  } catch (err: unknown) {
+    initialError = getErrorMessage(err, '初始化账号管理数据失败');
   }
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col px-4 py-12 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          账号与权限治理
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          受控讲师邀请、资格撤销及账号停用处置（需具备管理员身份）
-        </p>
-      </div>
-      <AccountManagement currentUser={currentUser} />
-    </main>
+    <section className="w-full">
+      <ManageNav user={user} />
+      <AccountManagement
+        currentUser={user!}
+        initialAccounts={initialAccounts}
+        initialInvitations={initialInvitations}
+        initialError={initialError}
+      />
+    </section>
   );
 }

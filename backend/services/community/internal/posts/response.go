@@ -2,50 +2,73 @@ package posts
 
 import "time"
 
-// CommentResponse represents a serialized comment.
+// CommentResponse represents a serialized comment or single-level reply.
 type CommentResponse struct {
-	ID              string    `json:"id"`
-	PostID          string    `json:"postId"`
-	AuthorID        string    `json:"authorId"`
-	ParentCommentID string    `json:"parentCommentId,omitempty"`
-	Body            string    `json:"body"`
+	ID              string    `json:"id" example:"cmt_12345"`
+	PostID          string    `json:"postId" example:"post_12345"`
+	AuthorID        string    `json:"authorId" example:"usr_12345"`
+	AuthorNickname  string    `json:"authorNickname" example:"小屿学员"`
+	ParentCommentID string    `json:"parentCommentId,omitempty" example:"cmt_10001"`
+	Body            string    `json:"body" example:"感谢分享！"`
+	Status          string    `json:"status" example:"published"`
+	Version         int       `json:"version" example:"1"`
 	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
-// PostResponse represents serialized post item in list or basic view.
+// PostResponse represents a serialized post item with public metadata only (never includes Body).
 type PostResponse struct {
-	ID            string    `json:"id"`
-	Scope         string    `json:"scope"`
-	CourseID      string    `json:"courseId,omitempty"`
-	AuthorID      string    `json:"authorId"`
-	Title         string    `json:"title"`
-	PublicSummary string    `json:"publicSummary"`
-	Status        string    `json:"status"`
-	Version       int       `json:"version"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID             string    `json:"id" example:"post_12345"`
+	Scope          string    `json:"scope" example:"global"`
+	CourseID       string    `json:"courseId,omitempty" example:"crs_1001"`
+	Topic          string    `json:"topic" example:"learning-method"`
+	AuthorID       string    `json:"authorId" example:"usr_12345"`
+	AuthorNickname string    `json:"authorNickname" example:"小屿学员"`
+	Title          string    `json:"title" example:"如何系统整理课程笔记"`
+	PublicSummary  string    `json:"publicSummary" example:"分享一套兼顾复盘与检索的课程学习笔记结构。"`
+	Status         string    `json:"status" example:"published"`
+	Version        int       `json:"version" example:"1"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
-// PostDetailResponse represents comprehensive post view with protected body and comments.
+// PostDetailResponse represents a post detail view with protected body and comments gated by accessState.
 type PostDetailResponse struct {
-	ID            string            `json:"id"`
-	Scope         string            `json:"scope"`
-	CourseID      string            `json:"courseId,omitempty"`
-	AuthorID      string            `json:"authorId"`
-	Title         string            `json:"title"`
-	PublicSummary string            `json:"publicSummary"`
-	Body          string            `json:"body"`
-	Status        string            `json:"status"`
-	Version       int               `json:"version"`
-	Comments      []CommentResponse `json:"comments"`
-	CreatedAt     time.Time         `json:"createdAt"`
-	UpdatedAt     time.Time         `json:"updatedAt"`
+	ID             string            `json:"id" example:"post_12345"`
+	Scope          string            `json:"scope" example:"global"`
+	CourseID       string            `json:"courseId,omitempty" example:"crs_1001"`
+	Topic          string            `json:"topic" example:"learning-method"`
+	AuthorID       string            `json:"authorId" example:"usr_12345"`
+	AuthorNickname string            `json:"authorNickname" example:"小屿学员"`
+	Title          string            `json:"title" example:"如何系统整理课程笔记"`
+	PublicSummary  string            `json:"publicSummary" example:"分享一套兼顾复盘与检索的课程学习笔记结构。"`
+	Body           string            `json:"body" example:"仅登录且具备权限后可见的正文内容"`
+	Status         string            `json:"status" example:"published"`
+	AccessState    string            `json:"accessState" example:"full"`
+	Version        int               `json:"version" example:"1"`
+	Comments       []CommentResponse `json:"comments"`
+	CreatedAt      time.Time         `json:"createdAt"`
+	UpdatedAt      time.Time         `json:"updatedAt"`
 }
 
-// PostListResponse represents paginated posts list.
+// PostUnavailableResponse describes a post that has been deleted by its author or hidden by moderation.
+type PostUnavailableResponse struct {
+	ID          string `json:"id" example:"post_12345"`
+	Status      string `json:"status" example:"deleted"`
+	AccessState string `json:"accessState" example:"deleted"`
+	Error       string `json:"error" example:"post_deleted"`
+	Message     string `json:"message" example:"作者已删除"`
+}
+
+// PostListResponse represents a paginated list of posts.
 type PostListResponse struct {
-	Items []PostResponse `json:"items"`
-	Total int            `json:"total"`
-	Page  int            `json:"page"`
-	Limit int            `json:"limit"`
+	Items    []PostResponse `json:"items"`
+	Total    int            `json:"total" example:"42"`
+	Page     int            `json:"page" example:"1"`
+	PageSize int            `json:"pageSize" example:"20"`
+}
+
+// TopicListResponse represents the list of community topics and published post counts.
+type TopicListResponse struct {
+	Items []TopicInfo `json:"items"`
 }

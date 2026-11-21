@@ -2,6 +2,16 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
+import {
+  AlertCircleIcon,
+  ArrowRightIcon,
+  BookOpenIcon,
+  SearchIcon,
+  UserIcon,
+  XIcon,
+} from 'lucide-react';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {
@@ -12,94 +22,362 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {Input} from '@/components/ui/input';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  COURSE_CATEGORIES,
+  formatPriceCny,
+  getCourseCategoryLabel,
+} from '@/lib/format';
 
 export interface CatalogCourse {
   id: string;
   title: string;
   description?: string;
   coverUrl?: string;
+  category?: string;
+  authorNickname?: string;
   isFree?: boolean;
+  priceAmountMinor?: number;
   publishedVersion?: number;
   sectionsCount?: number;
   lessonsCount?: number;
+  saleState?: string;
+  deliveryState?: string;
 }
 
-interface CourseCatalogProps {
+export interface CourseCatalogProps {
   readonly initialCourses?: CatalogCourse[];
+  readonly total?: number;
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly initialQuery?: string;
+  readonly initialCategory?: string;
+  readonly loadFailed?: boolean;
 }
 
-export function CourseCatalog({initialCourses = []}: CourseCatalogProps) {
-  const [query, setQuery] = useState('');
+function buildCoursesHref(
+  query: string,
+  category: string,
+  page: number,
+): string {
+  const params = new URLSearchParams();
+  const trimmed = query.trim();
+  if (trimmed) {
+    params.set('q', trimmed);
+  }
+  if (category && category !== 'all') {
+    params.set('category', category);
+  }
+  if (page > 1) {
+    params.set('page', String(page));
+  }
+  const serialized = params.toString();
+  return serialized ? `/courses?${serialized}` : '/courses';
+}
 
-  const filtered = initialCourses.filter((c) =>
-    c.title.toLowerCase().includes(query.toLowerCase().trim()),
-  );
+export function CourseCatalog({
+  initialCourses = [],
+  total = initialCourses.length,
+  page = 1,
+  pageSize = 12,
+  initialQuery = '',
+  initialCategory = 'all',
+  loadFailed = false,
+}: CourseCatalogProps) {
+  const router = useRouter();
+  const [queryInput, setQueryInput] = useState(initialQuery);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const hasActiveFilter =
+    Boolean(initialQuery.trim()) ||
+    (Boolean(initialCategory) && initialCategory !== 'all');
+
+  function applyFilters(nextQuery: string, nextCategory: string) {
+    router.push(buildCoursesHref(nextQuery, nextCategory, 1));
+  }
+
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    applyFilters(queryInput, initialCategory);
+  }
+
+  function handleClearSearch() {
+    setQueryInput('');
+    applyFilters('', initialCategory);
+  }
+
+  function handleCategoryChange(nextCategory: string) {
+    applyFilters(queryInput, nextCategory);
+  }
+
+  function handleResetAll() {
+    setQueryInput('');
+    router.push('/courses');
+  }
+
+  const pageNumbers: number[] = [];
+  const startPage = Math.max(1, page - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  for (let current = startPage; current <= endPage; current += 1) {
+    pageNumbers.push(current);
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Input
-          type="search"
-          placeholder="搜索课程标题..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="max-w-md h-10"
-        />
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:max-w-2xl"
+          role="search"
+          aria-label="筛选公开课程"
+        >
+          <InputGroup className="flex-1">
+            <InputGroupAddon align="inline-start">
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              placeholder="按课程标题或关键字搜索…"
+              aria-label="搜索课程标题"
+              value={queryInput}
+              onChange={(e) => setQueryInput(e.target.value)}
+            />
+            {queryInput ? (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  aria-label="清空搜索词"
+                  size="icon-xs"
+                  onClick={handleClearSearch}
+                >
+                  <XIcon />
+                </InputGroupButton>
+              </InputGroupAddon>
+            ) : null}
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton type="submit" variant="secondary" size="xs">
+                搜索
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+
+          <Select
+            value={initialCategory || 'all'}
+            onValueChange={handleCategoryChange}
+          >
+            <SelectTrigger
+              className="w-full sm:w-48"
+              aria-label="按分类筛选课程"
+            >
+              <SelectValue placeholder="全部分类" />
+            </SelectTrigger>
+            <SelectContent>
+              {COURSE_CATEGORIES.map((category) => (
+                <SelectItem key={category.slug} value={category.slug}>
+                  {category.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </form>
+
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span>共 {total} 门课程</span>
+          {hasActiveFilter ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleResetAll}
+            >
+              重置筛选
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card className="text-center py-12 border-dashed">
-          <CardContent className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              暂无可用的公开课程
-            </p>
-            <p className="text-xs text-muted-foreground">
-              讲师发布并通过审核的课程将在此展示
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((course) => (
-            <Card
-              key={course.id}
-              className="flex flex-col justify-between hover:border-primary/50 transition-colors"
+      {loadFailed ? (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertTitle>课程目录加载失败</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>课程服务暂时不可用，请稍后重新尝试获取课程列表。</span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => router.refresh()}
             >
-              <CardHeader className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge
-                    variant={course.isFree ? 'secondary' : 'default'}
-                    className="text-xs"
-                  >
-                    {course.isFree ? '免费课' : '精品付费'}
-                  </Badge>
-                  {course.publishedVersion && (
-                    <span className="text-[10px] text-muted-foreground">
-                      v{course.publishedVersion}
+              重新加载
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!loadFailed && initialCourses.length === 0 ? (
+        <Empty className="bg-canvas-soft py-16">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <BookOpenIcon />
+            </EmptyMedia>
+            <EmptyTitle>
+              {hasActiveFilter ? '未找到匹配的课程' : '暂无公开课程'}
+            </EmptyTitle>
+            <EmptyDescription>
+              {hasActiveFilter
+                ? '可以尝试调整搜索关键字或切换到其他课程分类。'
+                : '讲师创建并通过审核的课程将在此处展示。'}
+            </EmptyDescription>
+          </EmptyHeader>
+          {hasActiveFilter ? (
+            <EmptyContent>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleResetAll}
+              >
+                查看全部课程
+              </Button>
+            </EmptyContent>
+          ) : null}
+        </Empty>
+      ) : null}
+
+      {initialCourses.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {initialCourses.map((course) => {
+            const isSalesClosed = course.saleState === 'sales_closed';
+            const lessonsCount = course.lessonsCount ?? 0;
+
+            return (
+              <Card
+                key={course.id}
+                className="flex h-full flex-col justify-between transition-colors duration-120 hover:bg-secondary/60"
+              >
+                <CardHeader className="gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                      {getCourseCategoryLabel(course.category)}
+                    </Badge>
+                    <Badge variant={course.isFree ? 'secondary' : 'default'}>
+                      {course.isFree ? '免费公开' : '单课买断'}
+                    </Badge>
+                    {isSalesClosed ? (
+                      <Badge variant="destructive">已停售</Badge>
+                    ) : null}
+                  </div>
+                  <CardTitle className="line-clamp-2">
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {course.title}
+                    </Link>
+                  </CardTitle>
+                  <CardDescription className="line-clamp-3">
+                    {course.description?.trim() || '暂无课程简介'}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <UserIcon className="size-3.5" />
+                      <span>{course.authorNickname?.trim() || '学屿讲师'}</span>
                     </span>
-                  )}
-                </div>
-                <CardTitle className="text-lg line-clamp-2">
-                  {course.title}
-                </CardTitle>
-                <CardDescription className="text-xs line-clamp-3">
-                  {course.description || '暂无课程描述'}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="border-t pt-4">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full h-9 text-xs"
-                >
-                  <Link href={`/courses/${course.id}`}>进入学习详情</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                    <span className="inline-flex items-center gap-1.5">
+                      <BookOpenIcon className="size-3.5" />
+                      <span>共 {lessonsCount} 课时</span>
+                    </span>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="mt-auto items-center justify-between pt-1">
+                  <div className="text-base font-medium text-foreground">
+                    {formatPriceCny(course.priceAmountMinor, course.isFree)}
+                  </div>
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/courses/${course.id}`}>
+                      查看详情
+                      <ArrowRightIcon data-icon="inline-end" />
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
-      )}
+      ) : null}
+
+      {totalPages > 1 ? (
+        <Pagination>
+          <PaginationContent>
+            {page > 1 ? (
+              <PaginationItem>
+                <PaginationPrevious
+                  text="上一页"
+                  href={buildCoursesHref(
+                    initialQuery,
+                    initialCategory,
+                    page - 1,
+                  )}
+                />
+              </PaginationItem>
+            ) : null}
+
+            {pageNumbers.map((num) => (
+              <PaginationItem key={num}>
+                <PaginationLink
+                  href={buildCoursesHref(initialQuery, initialCategory, num)}
+                  isActive={num === page}
+                >
+                  {num}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            {page < totalPages ? (
+              <PaginationItem>
+                <PaginationNext
+                  text="下一页"
+                  href={buildCoursesHref(
+                    initialQuery,
+                    initialCategory,
+                    page + 1,
+                  )}
+                />
+              </PaginationItem>
+            ) : null}
+          </PaginationContent>
+        </Pagination>
+      ) : null}
     </div>
   );
 }

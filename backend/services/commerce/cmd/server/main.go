@@ -34,14 +34,22 @@ func run() error {
 		return err
 	}
 	gin.SetMode(gin.ReleaseMode)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	router, cleanup, err := server.NewFromConfig(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+
 	httpServer := &http.Server{
-		Handler:           server.New(cfg.SwaggerEnabled),
+		Handler:           router,
 		ReadHeaderTimeout: cfg.HTTPTimeout,
 		ReadTimeout:       cfg.HTTPTimeout,
 		WriteTimeout:      cfg.HTTPTimeout,

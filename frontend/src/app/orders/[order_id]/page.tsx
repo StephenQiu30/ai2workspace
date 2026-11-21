@@ -1,6 +1,34 @@
+import type {Metadata} from 'next';
+import Link from 'next/link';
 import {notFound} from 'next/navigation';
-import {commerceGetOrder} from '@/services/generated/commerce/commerce';
+import {LockIcon} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent} from '@/components/ui/card';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {OrderDetail} from '@/features/commerce/order_detail';
+import {getServerSession} from '@/lib/auth/session';
+import {buildLoginHref} from '@/lib/format';
+import {getServerRequestOptions} from '@/lib/request/server';
+import {
+  commerceGetOrder,
+  commerceListOrderRefunds,
+  commerceListPaymentAttempts,
+} from '@/services/generated/commerce/commerce';
+
+export const metadata: Metadata = {
+  title: '订单详情与售后',
+  description:
+    '查看订单服务端核定金额、支付状态核验、权益生效与 7×24 小时退款申请。',
+};
+
+export const dynamic = 'force-dynamic';
 
 interface OrderDetailPageProps {
   params: Promise<{
@@ -9,11 +37,57 @@ interface OrderDetailPageProps {
 }
 
 export default async function OrderDetailPage({params}: OrderDetailPageProps) {
-  const {order_id: orderId} = await params;
+  const [{order_id: orderId}, user] = await Promise.all([
+    params,
+    getServerSession(),
+  ]);
+
+  if (!user) {
+    return (
+      <section className="mx-auto w-full max-w-4xl space-y-6">
+        <Card>
+          <CardContent className="py-12">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <LockIcon />
+                </EmptyMedia>
+                <EmptyTitle>请先登录查看订单详情</EmptyTitle>
+                <EmptyDescription>
+                  订单详情、支付核验与退款售后仅对订单所属账号开放。
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent className="flex-row justify-center">
+                <Button asChild>
+                  <Link href={buildLoginHref(`/orders/${orderId}`)}>
+                    前往登录
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary">
+                  <Link href="/courses">返回课程目录</Link>
+                </Button>
+              </EmptyContent>
+            </Empty>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   let order: CommerceApi.OrderResponse | null = null;
+  let initialRefunds: CommerceApi.RefundResponse[] = [];
+  let initialAttempts: CommerceApi.PaymentAttemptResponse[] = [];
+
   try {
-    order = await commerceGetOrder({id: orderId});
+    const options = await getServerRequestOptions();
+    const [orderResp, refundsResp, attemptsResp] = await Promise.all([
+      commerceGetOrder({id: orderId}, options),
+      commerceListOrderRefunds({id: orderId}, options).catch(() => []),
+      commerceListPaymentAttempts({id: orderId}, options).catch(() => []),
+    ]);
+    order = orderResp;
+    initialRefunds = refundsResp ?? [];
+    initialAttempts = attemptsResp ?? [];
   } catch {
     notFound();
   }
@@ -23,8 +97,12 @@ export default async function OrderDetailPage({params}: OrderDetailPageProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
-      <OrderDetail order={order} />
-    </div>
+    <section className="mx-auto w-full max-w-4xl space-y-6">
+      <OrderDetail
+        order={order}
+        initialRefunds={initialRefunds}
+        initialAttempts={initialAttempts}
+      />
+    </section>
   );
 }

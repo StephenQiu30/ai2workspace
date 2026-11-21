@@ -1,47 +1,56 @@
-import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {
+  isSafeUrl,
+  sanitizeRichTextHtml,
+} from '../src/components/editor/tiptap_renderer';
+import {
+  buildLoginHref,
+  getTopicMeta,
+  sanitizeNextPath,
+} from '../src/lib/format';
 
-export function computeNextReaction(
-  current: 'like' | 'dislike' | 'none',
-  target: 'like' | 'dislike',
-): 'like' | 'dislike' | 'none' {
-  if (current === target) {
-    return 'none';
-  }
-  return target;
-}
+test('sanitizeNextPath and buildLoginHref strictly block open redirects (R-24)', () => {
+  assert.equal(sanitizeNextPath('/community/post_1'), '/community/post_1');
+  assert.equal(sanitizeNextPath('https://evil.example.com'), '/');
+  assert.equal(sanitizeNextPath('//evil.example.com'), '/');
+  assert.equal(sanitizeNextPath('/account?mode=login'), '/');
 
-export function truncateSummary(text: string, maxLength = 100): string {
-  const runes = Array.from(text);
-  if (runes.length <= maxLength) {
-    return text;
-  }
-  return runes.slice(0, maxLength).join('') + '...';
-}
-
-test('computeNextReaction enforces mutual exclusion between like and dislike', () => {
-  // 1. From none to like
-  assert.equal(computeNextReaction('none', 'like'), 'like');
-
-  // 2. From like to like (toggle cancel)
-  assert.equal(computeNextReaction('like', 'like'), 'none');
-
-  // 3. From like to dislike (switch)
-  assert.equal(computeNextReaction('like', 'dislike'), 'dislike');
-
-  // 4. From dislike to dislike (toggle cancel)
-  assert.equal(computeNextReaction('dislike', 'dislike'), 'none');
-
-  // 5. From dislike to like (switch)
-  assert.equal(computeNextReaction('dislike', 'like'), 'like');
+  assert.equal(
+    buildLoginHref('/community/post_1'),
+    '/account?next=%2Fcommunity%2Fpost_1',
+  );
+  assert.equal(buildLoginHref('/'), '/account');
 });
 
-test('truncateSummary accurately limits preview length and preserves short strings', () => {
-  const shortText = '短文本无需截断';
-  assert.equal(truncateSummary(shortText, 20), shortText);
+test('getTopicMeta resolves standard community topics and custom slugs', () => {
+  const method = getTopicMeta('learning-method');
+  assert.equal(method.label, '学习方法');
 
-  const longText = 'A'.repeat(120);
-  const truncated = truncateSummary(longText, 100);
-  assert.equal(truncated.length, 103); // 100 characters + '...'
-  assert.ok(truncated.endsWith('...'));
+  const fallback = getTopicMeta('custom-topic');
+  assert.equal(fallback.slug, 'custom-topic');
+});
+
+test('sanitizeRichTextHtml strips scripts, unsafe attributes and javascript: URLs (R-26)', () => {
+  const dirty =
+    '<h1>主标题降级</h1><p onclick="alert(1)">安全正文<script>alert("xss")</script></p><a href="javascript:alert(1)">危险链接</a><a href="https://learnis.example.com">合法外链</a>';
+  const clean = sanitizeRichTextHtml(dirty);
+
+  assert.ok(clean.includes('<h2>主标题降级</h2>'));
+  assert.ok(!clean.includes('<script'));
+  assert.ok(!clean.includes('onclick'));
+  assert.ok(!clean.includes('javascript:'));
+  assert.ok(
+    clean.includes(
+      '<a href="https://learnis.example.com" target="_blank" rel="noopener noreferrer">合法外链</a>',
+    ),
+  );
+});
+
+test('isSafeUrl allows http, https and internal paths while rejecting script protocols', () => {
+  assert.equal(isSafeUrl('https://example.com/image.png'), true);
+  assert.equal(isSafeUrl('/courses/c_1'), true);
+  assert.equal(isSafeUrl('//evil.com'), false);
+  assert.equal(isSafeUrl('javascript:void(0)'), false);
+  assert.equal(isSafeUrl('data:text/html,<script>alert(1)</script>'), false);
 });

@@ -46,11 +46,18 @@ type MediaJobResponse struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
-// PlaybackAuthorizationResponse provides a short-lived access authorization for HLS streaming.
+// PlaybackAuthorizationResponse provides a short-lived signed access authorization for HLS streaming.
 type PlaybackAuthorizationResponse struct {
 	MediaVersionID string    `json:"mediaVersionId"`
 	PlaybackURL    string    `json:"playbackUrl"`
 	HLSQualities   []string  `json:"hlsQualities"`
 	ExpiresAt      time.Time `json:"expiresAt"`
 	Token          string    `json:"token"`
+}
+
+// PublishMediaResponse confirms media version publication for a lesson.
+type PublishMediaResponse struct {
+	Status         string `json:"status" example:"published"`
+	LessonID       string `json:"lessonId" example:"lsn_12345"`
+	MediaVersionID string `json:"mediaVersionId" example:"mv_12345"`
 }
