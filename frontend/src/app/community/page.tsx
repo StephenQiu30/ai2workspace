@@ -1,7 +1,5 @@
 import type {Metadata} from 'next';
-import {loadHomePageData} from '@/features/community/community_data';
-import {CommunityHomeView} from '@/features/community/community_home_view';
-import {getServerSession} from '@/lib/auth/session';
+import {redirect} from 'next/navigation';
 
 export const metadata: Metadata = {
   title: '讨论社区',
@@ -13,6 +11,8 @@ export const dynamic = 'force-dynamic';
 interface CommunityPageProps {
   searchParams: Promise<{
     topic?: string | string[];
+    compose?: string;
+    course?: string;
     page?: string | string[];
   }>;
 }
@@ -20,31 +20,11 @@ interface CommunityPageProps {
 export default async function CommunityPage({
   searchParams,
 }: CommunityPageProps) {
-  const [resolvedParams, user] = await Promise.all([
-    searchParams,
-    getServerSession(),
-  ]);
-  const data = await loadHomePageData({
-    topic: resolvedParams.topic,
-    page: resolvedParams.page,
-    user,
-  });
-
-  return (
-    <CommunityHomeView
-      basePath="/community"
-      user={user}
-      activeTopic={data.activeTopic}
-      page={data.page}
-      pageSize={data.pageSize}
-      courses={data.courses}
-      coursesError={data.coursesError}
-      posts={data.posts}
-      postsTotal={data.postsTotal}
-      postsError={data.postsError}
-      topics={data.topics}
-      myCourses={data.myCourses}
-      myCoursesError={data.myCoursesError}
-    />
-  );
+  const {topic, page, compose, course} = await searchParams;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries({topic, page, compose, course})) {
+    const first = Array.isArray(value) ? value[0] : value;
+    if (first) query.set(key, first);
+  }
+  redirect(query.size ? '/?' + query.toString() : '/');
 }

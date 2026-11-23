@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {LockIcon} from 'lucide-react';
@@ -31,15 +33,19 @@ export default async function NotificationsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6">
-        <header className="flex flex-col gap-1.5">
-          <h1 className="font-heading text-[28px] leading-[40px] font-medium text-foreground">
+      <Layout flow="stack" className="w-full gap-6">
+        <Layout as="header" flow="stack" className="gap-1.5">
+          <Heading
+            level={1}
+            size="page"
+            className="font-heading text-foreground"
+          >
             站内通知
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             查阅社区互动回复、课程购买与退款进度以及内容治理通知。
-          </p>
-        </header>
+          </Text>
+        </Layout>
 
         <Card>
           <CardContent className="py-14">
@@ -64,7 +70,7 @@ export default async function NotificationsPage() {
             </Empty>
           </CardContent>
         </Card>
-      </div>
+      </Layout>
     );
   }
 

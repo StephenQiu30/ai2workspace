@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -62,6 +64,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -317,7 +320,7 @@ export function KnowledgeDetailView({
   };
 
   return (
-    <div className="space-y-6">
+    <Layout className="space-y-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -334,12 +337,15 @@ export function KnowledgeDetailView({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-start"
+      >
+        <Layout className="space-y-1.5">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
+            <Heading level={1} size="page">
               {base?.name || '知识库来源与版本治理'}
-            </h1>
+            </Heading>
             {base ? (
               <>
                 <Badge
@@ -349,17 +355,17 @@ export function KnowledgeDetailView({
                 >
                   {getKnowledgeVisibilityLabel(base.visibility)}
                 </Badge>
-                <Badge variant="outline">库版本 v{base.version ?? 1}</Badge>
+                <Badge variant="ghost">库版本 v{base.version ?? 1}</Badge>
               </>
             ) : null}
-          </div>
-          <p className="text-sm text-muted-foreground">
+          </Layout>
+          <Text as="p" className="text-sm text-muted-foreground">
             {base?.description ||
               '严格遵循「1. 登记或升版来源 → 2. 触发切片索引（受后台日预算约束） → 3. 发布就绪版本 → 4. 按需撤回清理」四步生命周期。'}
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Button variant="secondary" asChild>
             <Link href="/manage/knowledge">返回列表</Link>
           </Button>
@@ -377,7 +383,8 @@ export function KnowledgeDetailView({
                   登记后来源处于「待切片索引」草稿状态，不会自动触发预算消耗或对外发布。
                 </DialogDescription>
               </DialogHeader>
-              <form
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleRegisterSource(e)}
                 className="space-y-5"
               >
@@ -395,13 +402,15 @@ export function KnowledgeDetailView({
                         <SelectValue placeholder="选择来源类型" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="manual_doc">
-                          手动文档（manual_doc：通用学习指南、FAQ 或技术规范）
-                        </SelectItem>
-                        <SelectItem value="course_text">
-                          授权课程图文（course_text：与特定课程 ID
-                          绑定并校验学习权限）
-                        </SelectItem>
+                        <SelectGroup>
+                          <SelectItem value="manual_doc">
+                            手动文档（manual_doc：通用学习指南、FAQ 或技术规范）
+                          </SelectItem>
+                          <SelectItem value="course_text">
+                            授权课程图文（course_text：与特定课程 ID
+                            绑定并校验学习权限）
+                          </SelectItem>
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </Field>
@@ -466,11 +475,11 @@ export function KnowledgeDetailView({
                     {registering ? '登记中...' : '确认登记草稿'}
                   </Button>
                 </DialogFooter>
-              </form>
+              </Layout>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {errorMsg ? (
         <Alert variant="destructive">
@@ -541,12 +550,12 @@ export function KnowledgeDetailView({
                   return (
                     <TableRow key={src.id}>
                       <TableCell>
-                        <div className="font-medium text-foreground">
+                        <Layout className="font-medium text-foreground">
                           {src.title || '未命名来源'}
-                        </div>
-                        <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        </Layout>
+                        <Layout className="mt-0.5 font-mono text-xs text-muted-foreground">
                           标识: {src.sourceRef || '—'}
-                        </div>
+                        </Layout>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
@@ -554,25 +563,28 @@ export function KnowledgeDetailView({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                          <Badge variant="outline">当前 v{srcVer}</Badge>
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-1.5 text-xs"
+                        >
+                          <Badge variant="ghost">当前 v{srcVer}</Badge>
                           <Badge
-                            variant={readyVer >= srcVer ? 'default' : 'outline'}
+                            variant={readyVer >= srcVer ? 'default' : 'ghost'}
                           >
                             就绪 v{readyVer}
                           </Badge>
-                          <Badge variant={pubVer > 0 ? 'secondary' : 'outline'}>
+                          <Badge variant={pubVer > 0 ? 'secondary' : 'ghost'}>
                             已发布 {pubVer > 0 ? `v${pubVer}` : '无'}
                           </Badge>
-                        </div>
+                        </Layout>
                         {pubVer > 0 && pubVer < srcVer ? (
-                          <div className="mt-1 text-xs text-muted-foreground">
+                          <Layout className="mt-1 text-xs text-muted-foreground">
                             新版本发布前，线上仍检索 v{pubVer}
-                          </div>
+                          </Layout>
                         ) : null}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
+                        <Layout className="space-y-1">
                           <Badge
                             variant={
                               src.state === 'published'
@@ -585,27 +597,27 @@ export function KnowledgeDetailView({
                             {getSourceStateLabel(src.state)}
                           </Badge>
                           {latestJob ? (
-                            <div className="text-xs text-muted-foreground">
+                            <Layout className="text-xs text-muted-foreground">
                               作业: {getIndexJobStateLabel(latestJob.state)} ·{' '}
                               {getIndexJobStageLabel(latestJob.stage)}
                               {typeof latestJob.costCents === 'number'
                                 ? `（耗时费用 ${formatCentsToYuan(latestJob.costCents)}）`
                                 : ''}
-                            </div>
+                            </Layout>
                           ) : null}
                           {latestJob?.state === 'paused_budget' ? (
-                            <div className="text-xs font-medium text-foreground">
+                            <Layout className="text-xs font-medium text-foreground">
                               提示:
                               后台入库子额度不足，作业已暂停（paused_budget）
-                            </div>
+                            </Layout>
                           ) : null}
-                        </div>
+                        </Layout>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {formatDateTime(src.updatedAt ?? src.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                        <Layout className="inline-flex flex-wrap items-center justify-end gap-1.5">
                           <Button
                             variant="secondary"
                             size="sm"
@@ -690,7 +702,7 @@ export function KnowledgeDetailView({
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </div>
+                        </Layout>
                       </TableCell>
                     </TableRow>
                   );
@@ -723,7 +735,8 @@ export function KnowledgeDetailView({
               ；在新版本完成「触发切片索引」与「发布就绪版本」之前，原已发布版本继续对外有效。
             </DialogDescription>
           </DialogHeader>
-          <form
+          <Layout
+            as="form"
             onSubmit={(e) => void handleUpdateSource(e)}
             className="space-y-5"
           >
@@ -771,9 +784,9 @@ export function KnowledgeDetailView({
                 {updatingSource ? '保存升版中...' : '保存并递增版本号'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

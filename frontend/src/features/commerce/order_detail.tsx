@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -54,6 +56,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -342,26 +345,29 @@ export function OrderDetail({
     order.courseTitle?.trim() || order.courseId || '未知课程';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
+    <Layout className="space-y-6">
+      <Layout
+        flow="row"
+        className="flex-wrap items-center justify-between gap-3"
+      >
+        <Layout className="space-y-1">
+          <Layout flow="row" className="items-center gap-2">
             <Button asChild variant="ghost" size="xs">
               <Link href="/orders">
                 <ArrowLeftIcon />
                 返回我的订单
               </Link>
             </Button>
-          </div>
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+          </Layout>
+          <Heading level={1} size="page" className="text-foreground">
             订单详情与售后
-          </h1>
-          <p className="font-mono text-xs text-muted-foreground">
+          </Heading>
+          <Text as="p" className="font-mono text-xs text-muted-foreground">
             订单编号：{order.id}
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
           {order.courseId ? (
             <Button
@@ -375,8 +381,8 @@ export function OrderDetail({
               </Link>
             </Button>
           ) : null}
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {errorBanner ? (
         <Alert variant="destructive">
@@ -397,59 +403,65 @@ export function OrderDetail({
       {/* 订单核心信息卡片 */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1">
+          <Layout flow="row" className="items-start justify-between gap-2">
+            <Layout className="space-y-1">
               <CardTitle>{courseDisplayName}</CardTitle>
               <CardDescription>
-                课程标识：<span className="font-mono">{order.courseId}</span>
+                课程标识：<Text className="font-mono">{order.courseId}</Text>
                 {order.policyVersion
                   ? ` · 退款政策版本 ${order.policyVersion}`
                   : ''}
               </CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">
+            </Layout>
+            <Layout className="text-right">
+              <Layout className="text-xs text-muted-foreground">
                 服务端核定金额
-              </div>
-              <div className="text-xl font-medium text-foreground">
+              </Layout>
+              <Layout className="text-xl font-medium text-foreground">
                 {formatPriceCny(order.amountMinor, false)}
-              </div>
-            </div>
-          </div>
+              </Layout>
+            </Layout>
+          </Layout>
         </CardHeader>
 
         <CardContent className="space-y-4 text-sm">
-          <div className="grid gap-4 rounded-lg bg-secondary p-4 sm:grid-cols-3">
-            <div>
-              <div className="text-xs text-muted-foreground">订单状态</div>
-              <div className="mt-1 font-medium text-foreground">
+          <Card className="grid gap-4 bg-secondary p-4 sm:grid-cols-3">
+            <Layout>
+              <Layout className="text-xs text-muted-foreground">
+                订单状态
+              </Layout>
+              <Layout className="mt-1 font-medium text-foreground">
                 {statusMeta.label}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">创建时间</div>
-              <div className="mt-1 text-foreground">
+              </Layout>
+            </Layout>
+            <Layout>
+              <Layout className="text-xs text-muted-foreground">
+                创建时间
+              </Layout>
+              <Layout className="mt-1 text-foreground">
                 {formatDateTime(order.createdAt)}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">支付确认时间</div>
-              <div className="mt-1 text-foreground">
+              </Layout>
+            </Layout>
+            <Layout>
+              <Layout className="text-xs text-muted-foreground">
+                支付确认时间
+              </Layout>
+              <Layout className="mt-1 text-foreground">
                 {order.paidAt ? formatDateTime(order.paidAt) : '尚未支付'}
-              </div>
-            </div>
-          </div>
+              </Layout>
+            </Layout>
+          </Card>
 
-          <div className="rounded-lg bg-secondary p-4 text-xs leading-6 text-muted-foreground">
-            <div className="font-medium text-foreground">
+          <Card className="bg-secondary p-4 text-xs leading-6 text-muted-foreground block">
+            <Layout className="font-medium text-foreground">
               7×24 小时全额原路退款政策说明
-            </div>
-            <p className="mt-1">
+            </Layout>
+            <Text as="p" className="mt-1">
               订单金额由服务端统一核定。支付经渠道确认后立即授予课程学习权益；自课程实际可访问起
               7×24 小时内，可申请全额原路退款。超出 7×24
               小时窗口后，如存在严重课程质量问题、交付不可用、重复扣款或法定退费权益，仍可提交人工异常退款审核。在原路退款渠道确认成功（channelState=success）前，您的既有学习权益保持有效。
-            </p>
-          </div>
+            </Text>
+          </Card>
         </CardContent>
       </Card>
 
@@ -463,11 +475,11 @@ export function OrderDetail({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="w-full sm:max-w-xs space-y-1.5">
-                <span className="text-xs font-medium text-foreground">
+            <Layout flow="stack" className="gap-3 sm:flex-row sm:items-end">
+              <Layout className="w-full sm:max-w-xs space-y-1.5">
+                <Text className="text-xs font-medium text-foreground">
                   支付渠道
-                </span>
+                </Text>
                 <Select
                   value={selectedChannel}
                   onValueChange={setSelectedChannel}
@@ -476,17 +488,19 @@ export function OrderDetail({
                     <SelectValue placeholder="选择支付渠道" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="alipay_cny">
-                      支付宝人民币结算（alipay_cny）
-                    </SelectItem>
-                    <SelectItem value="wechat_cny">
-                      微信支付人民币结算（wechat_cny）
-                    </SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="alipay_cny">
+                        支付宝人民币结算（alipay_cny）
+                      </SelectItem>
+                      <SelectItem value="wechat_cny">
+                        微信支付人民币结算（wechat_cny）
+                      </SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
-              </div>
+              </Layout>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <Layout flow="row" className="flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   disabled={initiatingPayment}
@@ -518,27 +532,30 @@ export function OrderDetail({
                   <XCircleIcon />
                   取消订单
                 </Button>
-              </div>
-            </div>
+              </Layout>
+            </Layout>
 
             {latestAttempt ? (
-              <div className="rounded-lg bg-secondary p-3.5 text-xs space-y-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">
+              <Card className="bg-secondary p-3.5 text-xs space-y-1.5 block">
+                <Layout
+                  flow="row"
+                  className="flex-wrap items-center justify-between gap-2"
+                >
+                  <Text className="font-medium text-foreground">
                     最近一次支付流水：
                     {latestAttempt.channelOrderId || latestAttempt.id}
-                  </span>
+                  </Text>
                   <Badge variant="secondary">
                     渠道：{latestAttempt.channel || '默认渠道'} · 状态：
                     {latestAttempt.status || 'initiated'}
                   </Badge>
-                </div>
+                </Layout>
                 {latestAttempt.paymentAction ? (
-                  <div className="text-muted-foreground break-all">
+                  <Layout className="text-muted-foreground break-all">
                     渠道受理指引：{latestAttempt.paymentAction}
-                  </div>
+                  </Layout>
                 ) : null}
-              </div>
+              </Card>
             ) : null}
           </CardContent>
         </Card>
@@ -548,57 +565,63 @@ export function OrderDetail({
       {isPaid || isRefunded ? (
         <Card>
           <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="space-y-1">
+            <Layout
+              flow="row"
+              className="flex-wrap items-start justify-between gap-2"
+            >
+              <Layout className="space-y-1">
                 <CardTitle>学习权益与退款售后</CardTitle>
                 <CardDescription>
                   {isRefunded
                     ? '该订单已完成全额原路退款，对应课程学习权益已同步撤销。'
                     : '您的课程学习权益当前处于有效状态。'}
                 </CardDescription>
-              </div>
+              </Layout>
               <Badge variant={isRefunded ? 'secondary' : 'default'}>
                 {isRefunded ? '权益已撤销（已退款）' : '学习权益生效中'}
               </Badge>
-            </div>
+            </Layout>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="grid gap-3 rounded-lg bg-secondary p-4 sm:grid-cols-2">
-              <div>
-                <div className="text-xs text-muted-foreground">
+            <Card className="grid gap-3 bg-secondary p-4 sm:grid-cols-2">
+              <Layout>
+                <Layout className="text-xs text-muted-foreground">
                   7×24 小时标准退款窗口
-                </div>
-                <div className="mt-1 font-medium text-foreground">
+                </Layout>
+                <Layout className="mt-1 font-medium text-foreground">
                   {withinStandardWindow
                     ? '当前处于 7×24 小时标准全额退款窗口内'
                     : '已超出 7×24 小时标准窗口（支持异常情形人工申请）'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">
+                </Layout>
+              </Layout>
+              <Layout>
+                <Layout className="text-xs text-muted-foreground">
                   标准退款窗口截止时间
-                </div>
-                <div className="mt-1 text-foreground">
+                </Layout>
+                <Layout className="mt-1 text-foreground">
                   {windowDeadline
                     ? formatDateTime(windowDeadline.toISOString())
                     : '以课程首次可访问起 7×24 小时计算'}
-                </div>
-              </div>
-            </div>
+                </Layout>
+              </Layout>
+            </Card>
           </CardContent>
           {isPaid ? (
             <CardFooter className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Layout
+                flow="row"
+                className="items-center gap-2 text-xs text-muted-foreground"
+              >
                 <ShieldCheckIcon className="size-4" />
-                <span>
+                <Text>
                   {activeRefund
                     ? '当前存在处理中的退款申请，原路到账前学习权益保持有效'
                     : withinStandardWindow
                       ? '可随时发起窗口内标准退款或异常退款申请'
                       : '可选择异常原因提交窗口外人工退款审核'}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="flex-wrap items-center gap-2">
                 {order.courseId ? (
                   <Button asChild size="sm">
                     <Link href={`/courses/${order.courseId}`}>
@@ -618,7 +641,7 @@ export function OrderDetail({
                     申请退款
                   </Button>
                 ) : null}
-              </div>
+              </Layout>
             </CardFooter>
           ) : null}
         </Card>
@@ -644,25 +667,31 @@ export function OrderDetail({
                 item.applicationState === 'pending';
 
               return (
-                <div
+                <Card
                   key={item.id}
-                  className="rounded-lg bg-secondary p-4 space-y-3 text-xs"
+                  className="bg-secondary p-4 space-y-3 text-xs block"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <div className="font-medium text-sm text-foreground">
-                        退款单号：<span className="font-mono">{item.id}</span>
-                      </div>
-                      <div className="text-muted-foreground">
+                  <Layout
+                    flow="row"
+                    className="flex-wrap items-center justify-between gap-2"
+                  >
+                    <Layout className="space-y-0.5">
+                      <Layout className="font-medium text-sm text-foreground">
+                        退款单号：<Text className="font-mono">{item.id}</Text>
+                      </Layout>
+                      <Layout className="text-muted-foreground">
                         申请时间：{formatDateTime(item.createdAt)} · 申请金额：
                         {formatPriceCny(
                           item.amountMinor ?? order.amountMinor,
                           false,
                         )}
-                      </div>
-                    </div>
+                      </Layout>
+                    </Layout>
 
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <Layout
+                      flow="row"
+                      className="flex-wrap items-center gap-1.5"
+                    >
                       <Badge variant="secondary">
                         {item.isOutOfWindow ? '窗口外人工申请' : '7×24h 窗口内'}
                       </Badge>
@@ -672,38 +701,38 @@ export function OrderDetail({
                       <Badge variant={channelMeta.variant}>
                         渠道：{channelMeta.label}
                       </Badge>
-                    </div>
-                  </div>
+                    </Layout>
+                  </Layout>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div>
-                      <span className="text-muted-foreground">申请类型：</span>
-                      <span className="text-foreground">
+                  <Layout flow="grid" className="gap-2 sm:grid-cols-2">
+                    <Layout>
+                      <Text className="text-muted-foreground">申请类型：</Text>
+                      <Text className="text-foreground">
                         {getRefundExceptionLabel(item.exceptionType)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">申请原因：</span>
-                      <span className="text-foreground">
+                      </Text>
+                    </Layout>
+                    <Layout>
+                      <Text className="text-muted-foreground">申请原因：</Text>
+                      <Text className="text-foreground">
                         {item.reason || '未填写'}
-                      </span>
-                    </div>
-                  </div>
+                      </Text>
+                    </Layout>
+                  </Layout>
 
                   {item.rejectionReason ? (
-                    <div className="rounded-md bg-destructive-surface p-2.5 text-foreground">
+                    <Layout className="rounded-md bg-destructive-surface p-2.5 text-foreground">
                       审核驳回原因：{item.rejectionReason}
-                    </div>
+                    </Layout>
                   ) : null}
 
                   {item.channelFailureReason ? (
-                    <div className="rounded-md bg-destructive-surface p-2.5 text-foreground">
+                    <Layout className="rounded-md bg-destructive-surface p-2.5 text-foreground">
                       渠道退款异常说明：{item.channelFailureReason}
-                    </div>
+                    </Layout>
                   ) : null}
 
                   {isPendingReview ? (
-                    <div className="flex justify-end pt-1">
+                    <Layout flow="row" className="justify-end pt-1">
                       <Button
                         type="button"
                         variant="secondary"
@@ -712,9 +741,9 @@ export function OrderDetail({
                       >
                         撤回退款申请
                       </Button>
-                    </div>
+                    </Layout>
                   ) : null}
-                </div>
+                </Card>
               );
             })}
           </CardContent>
@@ -833,7 +862,8 @@ export function OrderDetail({
             </DialogDescription>
           </DialogHeader>
 
-          <form
+          <Layout
+            as="form"
             onSubmit={(e) => void handleApplyRefundSubmit(e)}
             noValidate
             className="space-y-4"
@@ -852,12 +882,14 @@ export function OrderDetail({
                       <SelectValue placeholder="选择退款申请类型" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="standard">
-                        7×24 小时窗口内标准全额退款
-                      </SelectItem>
-                      <SelectItem value="exception">
-                        专项异常情形退款（质量问题 / 重复扣款等）
-                      </SelectItem>
+                      <SelectGroup>
+                        <SelectItem value="standard">
+                          7×24 小时窗口内标准全额退款
+                        </SelectItem>
+                        <SelectItem value="exception">
+                          专项异常情形退款（质量问题 / 重复扣款等）
+                        </SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
@@ -879,11 +911,13 @@ export function OrderDetail({
                       <SelectValue placeholder="请选择适用情形" />
                     </SelectTrigger>
                     <SelectContent>
-                      {REFUND_EXCEPTION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {REFUND_EXCEPTION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
@@ -928,7 +962,7 @@ export function OrderDetail({
                 {applyingRefund ? '提交中…' : '确认提交退款申请'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
 
@@ -964,6 +998,6 @@ export function OrderDetail({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Layout>
   );
 }

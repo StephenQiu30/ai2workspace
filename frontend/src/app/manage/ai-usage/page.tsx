@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {AiUsageView} from '@/features/assistant/ai_usage_view';
@@ -25,7 +26,7 @@ export default async function AiUsageManagePage() {
 
   if (!isAdmin(user)) {
     return (
-      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <ManageAccessGuard
           user={user}
@@ -42,7 +43,7 @@ export default async function AiUsageManagePage() {
               : '该模块仅对平台管理员开放，请先登录管理员账号。'
           }
         />
-      </section>
+      </Layout>
     );
   }
 
@@ -70,7 +71,7 @@ export default async function AiUsageManagePage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <AiUsageView
         initialSummary={initialSummary}
@@ -78,6 +79,6 @@ export default async function AiUsageManagePage() {
         initialReconciliations={initialReconciliations}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

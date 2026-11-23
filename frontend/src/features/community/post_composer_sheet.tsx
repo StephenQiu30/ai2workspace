@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading} from '@/components/layout/typography';
 import {useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -8,6 +10,8 @@ import {toast} from 'sonner';
 import {TiptapEditor} from '@/components/editor/tiptap_editor';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
+import {Card, CardHeader, CardContent} from '@/components/ui/card';
+import {ToggleGroup, ToggleGroupItem} from '@/components/ui/toggle-group';
 import {
   Field,
   FieldDescription,
@@ -19,6 +23,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -27,7 +32,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -58,6 +62,8 @@ export interface PostComposerSheetProps {
   defaultTopic?: string;
   initialPost?: EditablePostInput;
   returnPath: string;
+  inline?: boolean;
+  courseTitle?: string;
   onSuccess?: (post: CommunityApi.PostResponse, savedBody: string) => void;
 }
 
@@ -91,6 +97,8 @@ export function PostComposerSheet({
   user,
   defaultTopic = 'general',
   initialPost,
+  inline = false,
+  courseTitle,
   returnPath,
   onSuccess,
 }: PostComposerSheetProps) {
@@ -101,7 +109,9 @@ export function PostComposerSheet({
   const [topic, setTopic] = useState<string>(
     initialPost?.topic || resolvedDefaultTopic,
   );
-  const [title, setTitle] = useState<string>(initialPost?.title || '');
+  const [title, setTitle] = useState<string>(
+    initialPost?.title || (courseTitle ? `关于《${courseTitle}》` : ''),
+  );
   const [publicSummary, setPublicSummary] = useState<string>(
     initialPost?.publicSummary || '',
   );
@@ -201,7 +211,7 @@ export function PostComposerSheet({
           status: 'published',
           requestId,
         });
-        toast.success('讨论已发布');
+        toast.success('已发布');
         setTitle('');
         setPublicSummary('');
         setBody('');
@@ -226,86 +236,104 @@ export function PostComposerSheet({
     }
   }
 
-  const loginHref = buildLoginHref(returnPath);
+  const resumePath = new URL(returnPath, 'https://local.invalid');
+  if (inline) {
+    resumePath.pathname = '/';
+    resumePath.searchParams.set(
+      'compose',
+      topic === 'services' || topic === 'course-qa' ? topic : 'general',
+    );
+    if (courseTitle && topic === 'course-qa')
+      resumePath.searchParams.set('course', courseTitle);
+    else resumePath.searchParams.delete('course');
+  }
+  const loginHref = buildLoginHref(resumePath.pathname + resumePath.search);
   const registerHref = `${loginHref}${loginHref.includes('?') ? '&' : '?'}mode=register`;
 
-  return (
-    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full overflow-y-auto sm:max-w-2xl"
-      >
-        <SheetHeader>
-          <SheetTitle>
-            {mode === 'edit' ? '编辑讨论内容' : '发起社区讨论'}
-          </SheetTitle>
-          <SheetDescription>
-            独立公开摘要对游客和站内检索可见；正文与评论仅登录成员可见，不会从正文自动截取摘要。
-          </SheetDescription>
-        </SheetHeader>
-
-        {!user ? (
-          <div className="flex flex-col gap-4 px-6 pb-6">
-            <Alert>
-              <LockIcon />
-              <AlertTitle>请先登录学屿账号</AlertTitle>
-              <AlertDescription>
-                登录后即可发起讨论、发布图文内容与参与社区回复；完成登录后将自动返回当前页面。
-              </AlertDescription>
+  const intent =
+    topic === 'services' || topic === 'course-qa' ? topic : 'general';
+  const actionLabel =
+    intent === 'services'
+      ? '发布服务'
+      : intent === 'course-qa'
+        ? '发布咨询'
+        : '发布讨论';
+  const titleLabel =
+    intent === 'services'
+      ? '服务名称'
+      : intent === 'course-qa'
+        ? '想了解什么？'
+        : '讨论标题';
+  const content = (
+    <>
+      {!user ? (
+        <Layout flow="stack" className="gap-4 px-6 pb-6">
+          <Alert>
+            <LockIcon />
+            <AlertTitle>请先登录学屿账号</AlertTitle>
+            <AlertDescription>
+              登录后即可发起讨论、发布图文内容与参与社区回复；完成登录后将自动返回当前页面。
+            </AlertDescription>
+          </Alert>
+          <Layout flow="row" className="flex-wrap gap-2">
+            <Button asChild>
+              <Link href={loginHref} onClick={() => onOpenChange(false)}>
+                前往登录
+              </Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href={registerHref} onClick={() => onOpenChange(false)}>
+                注册新账号
+              </Link>
+            </Button>
+          </Layout>
+        </Layout>
+      ) : !user.emailVerified ? (
+        <Layout flow="stack" className="gap-4 px-6 pb-6">
+          <Alert>
+            <MailCheckIcon />
+            <AlertTitle>完成邮箱验证后即可发帖</AlertTitle>
+            <AlertDescription>
+              当前账号（{user.email}
+              ）尚未完成邮箱验证。为保障社区交流质量，请先前往账号中心完成邮箱验证。
+            </AlertDescription>
+          </Alert>
+          <Layout flow="row" className="flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/account" onClick={() => onOpenChange(false)}>
+                前往验证邮箱
+              </Link>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+            >
+              稍后再说
+            </Button>
+          </Layout>
+        </Layout>
+      ) : (
+        <Layout
+          as="form"
+          onSubmit={handleSubmit}
+          className={
+            inline
+              ? 'flex flex-col gap-4'
+              : 'flex flex-1 flex-col gap-5 px-6 pb-6'
+          }
+          noValidate
+        >
+          {submitError ? (
+            <Alert variant="destructive">
+              <AlertCircleIcon />
+              <AlertTitle>提交未完成</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
             </Alert>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href={loginHref} onClick={() => onOpenChange(false)}>
-                  前往登录
-                </Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link href={registerHref} onClick={() => onOpenChange(false)}>
-                  注册新账号
-                </Link>
-              </Button>
-            </div>
-          </div>
-        ) : !user.emailVerified ? (
-          <div className="flex flex-col gap-4 px-6 pb-6">
-            <Alert>
-              <MailCheckIcon />
-              <AlertTitle>完成邮箱验证后即可发帖</AlertTitle>
-              <AlertDescription>
-                当前账号（{user.email}
-                ）尚未完成邮箱验证。为保障社区交流质量，请先前往账号中心完成邮箱验证。
-              </AlertDescription>
-            </Alert>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href="/account" onClick={() => onOpenChange(false)}>
-                  前往验证邮箱
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
-                稍后再说
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-1 flex-col gap-5 px-6 pb-6"
-            noValidate
-          >
-            {submitError ? (
-              <Alert variant="destructive">
-                <AlertCircleIcon />
-                <AlertTitle>提交未完成</AlertTitle>
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
-            ) : null}
+          ) : null}
 
-            <FieldGroup>
+          <FieldGroup>
+            {(!inline || intent === 'general') && (
               <Field data-invalid={Boolean(fieldErrors.topic)}>
                 <FieldLabel htmlFor="composer-topic">讨论话题</FieldLabel>
                 <Select
@@ -324,111 +352,211 @@ export function PostComposerSheet({
                     <SelectValue placeholder="请选择所属话题" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SELECTABLE_TOPICS.map((item) => (
-                      <SelectItem key={item.slug} value={item.slug}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {SELECTABLE_TOPICS.map((item) => (
+                        <SelectItem key={item.slug} value={item.slug}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
-                <FieldDescription>
-                  选择最贴合讨论主题的分类，方便同好按话题浏览。
-                </FieldDescription>
+
                 {fieldErrors.topic ? (
                   <FieldError>{fieldErrors.topic}</FieldError>
                 ) : null}
               </Field>
+            )}
 
-              <Field data-invalid={Boolean(fieldErrors.title)}>
-                <FieldLabel htmlFor="composer-title">讨论标题</FieldLabel>
-                <Input
-                  id="composer-title"
-                  value={title}
-                  placeholder="用一句话概括你想交流的问题或实践主题"
-                  maxLength={120}
-                  disabled={submitting}
-                  aria-invalid={Boolean(fieldErrors.title)}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    setFieldErrors((prev) => ({...prev, title: undefined}));
-                  }}
-                />
-                {fieldErrors.title ? (
-                  <FieldError>{fieldErrors.title}</FieldError>
-                ) : null}
-              </Field>
-
-              <Field data-invalid={Boolean(fieldErrors.publicSummary)}>
-                <FieldLabel htmlFor="composer-summary">独立公开摘要</FieldLabel>
-                <Textarea
-                  id="composer-summary"
-                  value={publicSummary}
-                  placeholder="简要说明背景与核心要点（必填；游客和搜索仅能看到此摘要，看不到正文）"
-                  rows={3}
-                  maxLength={300}
-                  disabled={submitting}
-                  aria-invalid={Boolean(fieldErrors.publicSummary)}
-                  onChange={(e) => {
-                    setPublicSummary(e.target.value);
-                    setFieldErrors((prev) => ({
-                      ...prev,
-                      publicSummary: undefined,
-                    }));
-                  }}
-                />
-                <FieldDescription>
-                  请单独撰写摘要，避免包含受保护细节或完整答案。
-                </FieldDescription>
-                {fieldErrors.publicSummary ? (
-                  <FieldError>{fieldErrors.publicSummary}</FieldError>
-                ) : null}
-              </Field>
-
-              <Field data-invalid={Boolean(fieldErrors.body)}>
-                <FieldLabel>讨论正文</FieldLabel>
-                <TiptapEditor
-                  mode="article"
-                  value={body}
-                  disabled={submitting}
-                  invalid={Boolean(fieldErrors.body)}
-                  placeholder="编写完整过程、代码片段、参考链接或图文说明…"
-                  ariaLabel="讨论正文编辑区"
-                  onChange={(html) => {
-                    setBody(html);
-                    setFieldErrors((prev) => ({...prev, body: undefined}));
-                  }}
-                />
-                <FieldDescription>
-                  支持标题、列表、引用、链接、代码块与图片；仅登录成员可查阅完整正文。
-                </FieldDescription>
-                {fieldErrors.body ? (
-                  <FieldError>{fieldErrors.body}</FieldError>
-                ) : null}
-              </Field>
-            </FieldGroup>
-
-            <SheetFooter className="mt-2 flex-row justify-end px-0 pb-0">
-              <Button
-                type="button"
-                variant="secondary"
+            <Field data-invalid={Boolean(fieldErrors.title)}>
+              <FieldLabel htmlFor="composer-title">{titleLabel}</FieldLabel>
+              <Input
+                id="composer-title"
+                value={title}
+                autoFocus={inline}
+                placeholder={
+                  intent === 'services'
+                    ? '例如：短片分镜点评'
+                    : intent === 'course-qa'
+                      ? '例如：这门课适合零基础吗？'
+                      : '写下讨论标题'
+                }
+                maxLength={120}
                 disabled={submitting}
-                onClick={() => onOpenChange(false)}
-              >
-                取消
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? <Spinner data-icon="inline-start" /> : null}
-                {submitting
-                  ? mode === 'edit'
-                    ? '保存中…'
-                    : '发布中…'
-                  : mode === 'edit'
-                    ? '保存修改'
-                    : '发布讨论'}
-              </Button>
-            </SheetFooter>
-          </form>
+                aria-invalid={Boolean(fieldErrors.title)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setFieldErrors((prev) => ({...prev, title: undefined}));
+                }}
+              />
+              {fieldErrors.title ? (
+                <FieldError>{fieldErrors.title}</FieldError>
+              ) : null}
+            </Field>
+
+            <Field data-invalid={Boolean(fieldErrors.publicSummary)}>
+              <FieldLabel htmlFor="composer-summary">公开摘要</FieldLabel>
+              <Textarea
+                id="composer-summary"
+                value={publicSummary}
+                placeholder="这段内容会显示在首页"
+                rows={3}
+                maxLength={300}
+                disabled={submitting}
+                aria-invalid={Boolean(fieldErrors.publicSummary)}
+                onChange={(e) => {
+                  setPublicSummary(e.target.value);
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    publicSummary: undefined,
+                  }));
+                }}
+              />
+              <FieldDescription>游客可见。</FieldDescription>
+              {fieldErrors.publicSummary ? (
+                <FieldError>{fieldErrors.publicSummary}</FieldError>
+              ) : null}
+            </Field>
+
+            <Field data-invalid={Boolean(fieldErrors.body)}>
+              <FieldLabel>讨论正文</FieldLabel>
+              <TiptapEditor
+                mode="article"
+                minHeightClass={inline ? 'min-h-24' : undefined}
+                value={body}
+                disabled={submitting}
+                invalid={Boolean(fieldErrors.body)}
+                placeholder="写下正文…"
+                ariaLabel="讨论正文编辑区"
+                onChange={(html) => {
+                  setBody(html);
+                  setFieldErrors((prev) => ({...prev, body: undefined}));
+                }}
+              />
+              <FieldDescription>登录成员可见。</FieldDescription>
+              {fieldErrors.body ? (
+                <FieldError>{fieldErrors.body}</FieldError>
+              ) : null}
+            </Field>
+          </FieldGroup>
+
+          <Layout flow="row" className="flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={submitting}
+              onClick={() => onOpenChange(false)}
+            >
+              取消
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <Spinner data-icon="inline-start" /> : null}
+              {submitting
+                ? mode === 'edit'
+                  ? '保存中…'
+                  : '发布中…'
+                : mode === 'edit'
+                  ? '保存修改'
+                  : actionLabel}
+            </Button>
+          </Layout>
+        </Layout>
+      )}
+    </>
+  );
+  if (inline) {
+    return (
+      <Card
+        id="community-composer"
+        aria-label="社区发布区"
+        className="min-w-0 scroll-mt-24"
+      >
+        <CardHeader className="gap-4">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center justify-between gap-2"
+          >
+            <Heading level={1} size="section">
+              创作社区
+            </Heading>
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/courses">浏览课程</Link>
+            </Button>
+          </Layout>
+          <ToggleGroup
+            type="single"
+            variant="filter"
+            disabled={submitting}
+            className="flex-wrap *:min-h-11"
+            value={intent}
+            aria-label="发布类型"
+            onValueChange={(value) => {
+              if (value) {
+                setTopic(value);
+                setFieldErrors({});
+              }
+              onOpenChange(true);
+            }}
+          >
+            <ToggleGroupItem value="general">写讨论</ToggleGroupItem>
+            <ToggleGroupItem value="services">发服务</ToggleGroupItem>
+            <ToggleGroupItem value="course-qa">问课程</ToggleGroupItem>
+          </ToggleGroup>
+        </CardHeader>
+        <CardContent className={open ? 'w-full max-w-3xl' : undefined}>
+          {open ? (
+            content
+          ) : user?.emailVerified ? (
+            <Input
+              aria-label={titleLabel}
+              placeholder={
+                intent === 'services'
+                  ? '介绍你的服务与交付内容…'
+                  : intent === 'course-qa'
+                    ? '想了解哪门课程？'
+                    : '分享作品或提出问题…'
+              }
+              value={title}
+              onFocus={() => onOpenChange(true)}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          ) : (
+            <Button
+              variant="secondary"
+              className="min-h-14 w-full justify-start whitespace-normal text-left"
+              onClick={() => onOpenChange(true)}
+            >
+              {intent === 'services'
+                ? '介绍你的服务与交付内容…'
+                : intent === 'course-qa'
+                  ? '想了解哪门课程？'
+                  : '分享作品或提出问题…'}
+            </Button>
+          )}
+        </CardContent>
+        {!open && (
+          <Layout className="mt-auto px-5 md:hidden">
+            <Button asChild size="sm" variant="link" className="px-0">
+              <Link href="/topics/services">浏览全部服务</Link>
+            </Button>
+          </Layout>
         )}
+      </Card>
+    );
+  }
+  return (
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full overflow-y-auto sm:max-w-2xl"
+      >
+        <SheetHeader>
+          <SheetTitle>{mode === 'edit' ? '编辑讨论' : '发布讨论'}</SheetTitle>
+          <SheetDescription>
+            公开摘要会显示在社区，完整正文仅登录成员可见。
+          </SheetDescription>
+        </SheetHeader>
+        {content}
       </SheetContent>
     </Sheet>
   );

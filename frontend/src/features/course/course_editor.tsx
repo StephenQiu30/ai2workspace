@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -52,11 +54,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import {Field, FieldDescription, FieldLabel} from '@/components/ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -585,10 +593,13 @@ export function CourseEditor({
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col justify-between gap-4 rounded-xl bg-canvas-soft p-5 sm:flex-row sm:items-center">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-2">
+    <Layout flow="stack" className="gap-6">
+      <Card
+        surface="muted"
+        className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center"
+      >
+        <Layout flow="stack" className="gap-1.5">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
             <Badge variant={combinedMeta.variant}>{combinedMeta.label}</Badge>
             <Badge variant="secondary">草稿 v{currentVersion}</Badge>
             {course?.publishedVersion ? (
@@ -601,22 +612,22 @@ export function CourseEditor({
                 ? '免费公开课'
                 : `买断定价：${formatPriceCny(priceMinor, false)}`}
             </Badge>
-          </div>
-          <h2 className="text-[20px] leading-[30px] font-medium text-foreground">
+          </Layout>
+          <Heading level={2} size="section" className="text-foreground">
             {title || '新建课程草稿'}
-          </h2>
+          </Heading>
           {course?.reviewReason ? (
-            <p className="text-xs text-muted-foreground">
+            <Text as="p" className="text-xs text-muted-foreground">
               最近审核意见：{course.reviewReason}
-            </p>
+            </Text>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <Text as="p" className="text-xs text-muted-foreground">
               {combinedMeta.description}
-            </p>
+            </Text>
           )}
-        </div>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Button asChild variant="secondary" size="sm">
             <Link href="/manage/courses">
               <ArrowLeftIcon data-icon="inline-start" />
@@ -631,8 +642,8 @@ export function CourseEditor({
               </Link>
             </Button>
           ) : null}
-        </div>
-      </div>
+        </Layout>
+      </Card>
 
       {errorMessage ? (
         <Alert variant="destructive">
@@ -654,181 +665,183 @@ export function CourseEditor({
         </TabsList>
 
         <TabsContent value="basic">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-7">
+          <Layout flow="grid" className="grid-cols-1 gap-6 lg:grid-cols-12">
+            <Layout className="lg:col-span-7">
               <Card>
                 <CardHeader>
                   <CardTitle>课程基础信息</CardTitle>
-                  <CardDescription>
-                    设置课程标题、学科分类、简介及免费/付费售卖形态。
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form
+                  <Layout
+                    as="form"
+                    flow="stack"
                     onSubmit={(e) => void handleSaveBasicInfo(e)}
-                    className="flex flex-col gap-5"
+                    className="gap-5"
                   >
-                    <Field>
-                      <FieldLabel htmlFor="course-editor-title">
-                        课程标题
-                      </FieldLabel>
-                      <Input
-                        id="course-editor-title"
-                        placeholder="例如：Next.js 与 Go 微服务工程实战"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                      />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel htmlFor="course-editor-category">
-                        课程分类
-                      </FieldLabel>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="course-editor-category">
-                          <SelectValue placeholder="选择学科分类" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SELECTABLE_CATEGORIES.map((item) => (
-                            <SelectItem key={item.slug} value={item.slug}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FieldDescription>
-                        公开课程目录支持按此分类筛选。
-                      </FieldDescription>
-                    </Field>
-
-                    <Field>
-                      <FieldLabel htmlFor="course-editor-desc">
-                        课程简介
-                      </FieldLabel>
-                      <Textarea
-                        id="course-editor-desc"
-                        rows={4}
-                        placeholder="介绍课程的适用对象、核心模块与实战交付产出…"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                      />
-                    </Field>
-
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        id="course-editor-free"
-                        checked={isFree}
-                        onCheckedChange={(checked) =>
-                          setIsFree(checked === true)
-                        }
-                      />
-                      <div className="flex flex-col gap-0.5">
-                        <FieldLabel htmlFor="course-editor-free">
-                          标记为免费公开课程
-                        </FieldLabel>
-                        <FieldDescription>
-                          开启后学员登录即可免费报名学习；关闭则需按管理员核定的人民币买断价格购买。
-                        </FieldDescription>
-                      </div>
-                    </Field>
-
-                    <div className="flex items-center gap-3 pt-2">
-                      <Button type="submit" disabled={loading}>
-                        {loading ? (
-                          <Spinner data-icon="inline-start" />
-                        ) : (
-                          <SaveIcon data-icon="inline-start" />
-                        )}
-                        {courseId ? '保存基本信息' : '创建课程草稿'}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-5">
-              <Card>
-                <CardHeader>
-                  <CardTitle>人民币（CNY）单课买断定价</CardTitle>
-                  <CardDescription>
-                    付费课程由平台管理员统一核定人民币售价，订单结算金额以服务端定价为准。
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <div className="rounded-xl bg-canvas-soft p-4">
-                    <div className="text-xs text-muted-foreground">
-                      当前生效价格
-                    </div>
-                    <div className="mt-1 text-2xl font-medium text-foreground">
-                      {formatPriceCny(priceMinor, isFree)}
-                    </div>
-                  </div>
-
-                  {isFree ? (
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      当前课程已设为“免费公开课程”，无需设置买断金额。若要改为付费买断课，请先在左侧取消勾选免费开关并保存。
-                    </p>
-                  ) : admin && courseId ? (
-                    <form
-                      onSubmit={(e) => void handleSaveCoursePrice(e)}
-                      className="flex flex-col gap-4"
-                    >
+                    <FieldGroup>
                       <Field>
-                        <FieldLabel htmlFor="course-price-yuan">
-                          买断价格（人民币元）
+                        <FieldLabel htmlFor="course-editor-title">
+                          课程标题
                         </FieldLabel>
                         <Input
-                          id="course-price-yuan"
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          placeholder="例如：199"
-                          value={priceYuan}
-                          onChange={(e) => setPriceYuan(e.target.value)}
+                          id="course-editor-title"
+                          placeholder="例如：AI 短漫剧分镜"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
                           required
                         />
-                        <FieldDescription>
-                          支持精确到分（例如 99 或 199.00），单位为 CNY。
-                        </FieldDescription>
                       </Field>
-                      <Button
-                        type="submit"
-                        variant="secondary"
-                        disabled={savingPrice}
-                      >
-                        {savingPrice ? (
-                          <Spinner data-icon="inline-start" />
-                        ) : null}
-                        {savingPrice ? '正在保存定价…' : '更新课程售价'}
-                      </Button>
-                    </form>
+
+                      <Field>
+                        <FieldLabel htmlFor="course-editor-category">
+                          课程分类
+                        </FieldLabel>
+                        <Select value={category} onValueChange={setCategory}>
+                          <SelectTrigger id="course-editor-category">
+                            <SelectValue placeholder="选择学科分类" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {SELECTABLE_CATEGORIES.map((item) => (
+                                <SelectItem key={item.slug} value={item.slug}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+
+                      <Field>
+                        <FieldLabel htmlFor="course-editor-desc">
+                          课程简介
+                        </FieldLabel>
+                        <Textarea
+                          id="course-editor-desc"
+                          rows={4}
+                          placeholder="学员将完成什么作品？"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                      </Field>
+
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          id="course-editor-free"
+                          checked={isFree}
+                          onCheckedChange={(checked) =>
+                            setIsFree(checked === true)
+                          }
+                        />
+                        <Layout flow="stack" className="gap-0.5">
+                          <FieldLabel htmlFor="course-editor-free">
+                            免费课程
+                          </FieldLabel>
+                          <FieldDescription>
+                            免费课登录后即可加入。付费课由管理员设置售价。
+                          </FieldDescription>
+                        </Layout>
+                      </Field>
+
+                      <Layout flow="row" className="items-center gap-3 pt-2">
+                        <Button type="submit" disabled={loading}>
+                          {loading ? (
+                            <Spinner data-icon="inline-start" />
+                          ) : (
+                            <SaveIcon data-icon="inline-start" />
+                          )}
+                          {courseId ? '保存基本信息' : '创建课程草稿'}
+                        </Button>
+                      </Layout>
+                    </FieldGroup>
+                  </Layout>
+                </CardContent>
+              </Card>
+            </Layout>
+
+            <Layout className="lg:col-span-5">
+              <Card>
+                <CardHeader>
+                  <CardTitle>单课定价</CardTitle>
+                  <CardDescription>保存后对新订单生效。</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <Card surface="muted" className="p-4 block">
+                    <Layout className="text-xs text-muted-foreground">
+                      当前生效价格
+                    </Layout>
+                    <Layout className="mt-1 text-xl/7 font-medium text-foreground">
+                      {formatPriceCny(priceMinor, isFree)}
+                    </Layout>
+                  </Card>
+
+                  {isFree ? (
+                    <Text as="p" variant="meta">
+                      先取消“免费课程”并保存，即可定价。
+                    </Text>
+                  ) : admin && courseId ? (
+                    <Layout
+                      as="form"
+                      flow="stack"
+                      onSubmit={(e) => void handleSaveCoursePrice(e)}
+                      className="gap-4"
+                    >
+                      <FieldGroup>
+                        <Field>
+                          <FieldLabel htmlFor="course-price-yuan">
+                            售价（元）
+                          </FieldLabel>
+                          <Input
+                            id="course-price-yuan"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="例如：199"
+                            value={priceYuan}
+                            onChange={(e) => setPriceYuan(e.target.value)}
+                            required
+                          />
+                          <FieldDescription>最多两位小数。</FieldDescription>
+                        </Field>
+                        <Button
+                          type="submit"
+                          variant="secondary"
+                          disabled={savingPrice}
+                        >
+                          {savingPrice ? (
+                            <Spinner data-icon="inline-start" />
+                          ) : null}
+                          {savingPrice ? '正在保存定价…' : '更新课程售价'}
+                        </Button>
+                      </FieldGroup>
+                    </Layout>
                   ) : (
-                    <p className="text-xs leading-5 text-muted-foreground">
+                    <Text as="p" variant="meta">
                       讲师负责课程内容与试看配置；提交审核后，平台管理员将在此处核定并配置人民币买断售价。
-                    </p>
+                    </Text>
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Layout>
+          </Layout>
         </TabsContent>
 
         <TabsContent value="curriculum">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="flex flex-col gap-4 lg:col-span-5">
+          <Layout flow="grid" className="grid-cols-1 gap-6 lg:grid-cols-12">
+            <Layout flow="stack" className="gap-4 lg:col-span-5">
               <Card>
                 <CardHeader>
-                  <CardTitle>章节与课时树</CardTitle>
+                  <CardTitle>章节与课时</CardTitle>
                   <CardDescription>
                     先新增章节，再在章节下创建或点击编辑视频/图文课时。
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">
-                  <form
+                  <Layout
+                    as="form"
+                    flow="row"
                     onSubmit={(e) => void handleAddSection(e)}
-                    className="flex items-end gap-2"
+                    className="items-end gap-2"
                   >
                     <Field className="flex-1">
                       <FieldLabel htmlFor="add-section-title">
@@ -850,7 +863,7 @@ export function CourseEditor({
                       <PlusIcon data-icon="inline-start" />
                       添加章节
                     </Button>
-                  </form>
+                  </Layout>
 
                   {sortedSections.length === 0 ? (
                     <Empty className="bg-canvas-soft py-10">
@@ -883,14 +896,17 @@ export function CourseEditor({
                             className="rounded-xl bg-canvas-soft px-3.5 py-1 not-last:border-b-0"
                           >
                             <AccordionTrigger className="py-3 text-sm font-medium text-foreground hover:no-underline">
-                              <span className="truncate pr-2 text-left">
+                              <Text className="truncate pr-2 text-left">
                                 第 {sIdx + 1} 章 · {sec.title}（{lessons.length}
                                 ）
-                              </span>
+                              </Text>
                             </AccordionTrigger>
                             <AccordionContent className="flex flex-col gap-3 pb-3">
                               {isEditingThisSection && sec.id ? (
-                                <div className="flex items-center gap-2">
+                                <Layout
+                                  flow="row"
+                                  className="items-center gap-2"
+                                >
                                   <Input
                                     value={editingSectionTitle}
                                     onChange={(e) =>
@@ -918,9 +934,12 @@ export function CourseEditor({
                                   >
                                     取消
                                   </Button>
-                                </div>
+                                </Layout>
                               ) : (
-                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                <Layout
+                                  flow="row"
+                                  className="flex-wrap items-center justify-between gap-2"
+                                >
                                   <Button
                                     type="button"
                                     variant="secondary"
@@ -930,7 +949,10 @@ export function CourseEditor({
                                     <PlusIcon data-icon="inline-start" />
                                     在本章新增课时
                                   </Button>
-                                  <div className="flex items-center gap-1">
+                                  <Layout
+                                    flow="row"
+                                    className="items-center gap-1"
+                                  >
                                     <Button
                                       type="button"
                                       variant="ghost"
@@ -955,46 +977,57 @@ export function CourseEditor({
                                         删除章
                                       </Button>
                                     ) : null}
-                                  </div>
-                                </div>
+                                  </Layout>
+                                </Layout>
                               )}
 
                               {lessons.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
+                                <Text
+                                  as="p"
+                                  className="text-xs text-muted-foreground"
+                                >
                                   本章暂无课时。
-                                </p>
+                                </Text>
                               ) : (
-                                <ul className="flex flex-col gap-1">
+                                <Layout as="ul" flow="stack" className="gap-1">
                                   {lessons.map((lsn, lIdx) => {
                                     const isSelected =
                                       selectedLessonId === lsn.id;
                                     const isVideo = lsn.type !== 'article';
                                     return (
-                                      <li key={lsn.id ?? `${secId}-${lIdx}`}>
-                                        <div
+                                      <Layout
+                                        as="li"
+                                        key={lsn.id ?? `${secId}-${lIdx}`}
+                                      >
+                                        <Layout
                                           className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
                                             isSelected
                                               ? 'bg-primary text-primary-foreground'
                                               : 'bg-background text-foreground hover:bg-secondary'
                                           }`}
                                         >
-                                          <button
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
                                             type="button"
                                             onClick={() =>
                                               startEditLesson(lsn, sec.id)
                                             }
-                                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                            className="min-w-0 flex-1 justify-start"
                                           >
                                             {isVideo ? (
                                               <PlayCircleIcon className="size-3.5 shrink-0" />
                                             ) : (
                                               <FileTextIcon className="size-3.5 shrink-0" />
                                             )}
-                                            <span className="truncate font-medium">
+                                            <Text className="truncate font-medium">
                                               {sIdx + 1}.{lIdx + 1} {lsn.title}
-                                            </span>
-                                          </button>
-                                          <div className="flex shrink-0 items-center gap-1.5">
+                                            </Text>
+                                          </Button>
+                                          <Layout
+                                            flow="row"
+                                            className="shrink-0 items-center gap-1.5"
+                                          >
                                             {lsn.isTrial ? (
                                               <Badge variant="secondary">
                                                 试看
@@ -1015,12 +1048,12 @@ export function CourseEditor({
                                                 <Trash2Icon />
                                               </Button>
                                             ) : null}
-                                          </div>
-                                        </div>
-                                      </li>
+                                          </Layout>
+                                        </Layout>
+                                      </Layout>
                                     );
                                   })}
-                                </ul>
+                                </Layout>
                               )}
                             </AccordionContent>
                           </AccordionItem>
@@ -1030,13 +1063,16 @@ export function CourseEditor({
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </Layout>
 
-            <div className="flex flex-col gap-6 lg:col-span-7">
+            <Layout flow="stack" className="gap-6 lg:col-span-7">
               <Card>
                 <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
+                  <Layout
+                    flow="row"
+                    className="flex-wrap items-center justify-between gap-2"
+                  >
+                    <Layout>
                       <CardTitle>
                         {selectedLessonId ? '编辑课时内容' : '新建课时'}
                       </CardTitle>
@@ -1044,7 +1080,7 @@ export function CourseEditor({
                         支持视频录播（H.264/HLS）与 Tiptap
                         富文本图文讲义两种课时形态。
                       </CardDescription>
-                    </div>
+                    </Layout>
                     {selectedLessonId ? (
                       <Button
                         type="button"
@@ -1056,14 +1092,19 @@ export function CourseEditor({
                         切换到新建课时
                       </Button>
                     ) : null}
-                  </div>
+                  </Layout>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">
-                  <form
+                  <Layout
+                    as="form"
+                    flow="stack"
                     onSubmit={(e) => void handleSaveLesson(e)}
-                    className="flex flex-col gap-5"
+                    className="gap-5"
                   >
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Layout
+                      flow="grid"
+                      className="grid-cols-1 gap-4 sm:grid-cols-2"
+                    >
                       <Field>
                         <FieldLabel htmlFor="lesson-section-select">
                           所属章节
@@ -1077,13 +1118,15 @@ export function CourseEditor({
                             <SelectValue placeholder="请先在左侧添加章节" />
                           </SelectTrigger>
                           <SelectContent>
-                            {sortedSections.map((sec, idx) =>
-                              sec.id ? (
-                                <SelectItem key={sec.id} value={sec.id}>
-                                  第 {idx + 1} 章 · {sec.title}
-                                </SelectItem>
-                              ) : null,
-                            )}
+                            <SelectGroup>
+                              {sortedSections.map((sec, idx) =>
+                                sec.id ? (
+                                  <SelectItem key={sec.id} value={sec.id}>
+                                    第 {idx + 1} 章 · {sec.title}
+                                  </SelectItem>
+                                ) : null,
+                              )}
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </Field>
@@ -1102,16 +1145,18 @@ export function CourseEditor({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="video">
-                              视频课时 (video)
-                            </SelectItem>
-                            <SelectItem value="article">
-                              图文课时 (article)
-                            </SelectItem>
+                            <SelectGroup>
+                              <SelectItem value="video">
+                                视频课时 (video)
+                              </SelectItem>
+                              <SelectItem value="article">
+                                图文课时 (article)
+                              </SelectItem>
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </Field>
-                    </div>
+                    </Layout>
 
                     <Field>
                       <FieldLabel htmlFor="lesson-title-input">
@@ -1134,14 +1179,14 @@ export function CourseEditor({
                           setIsTrial(checked === true)
                         }
                       />
-                      <div className="flex flex-col gap-0.5">
+                      <Layout flow="stack" className="gap-0.5">
                         <FieldLabel htmlFor="lesson-trial-checkbox">
                           设为免费试看 / 试读课时
                         </FieldLabel>
                         <FieldDescription>
                           开启后未购课学员与游客可直接打开本课时体验。
                         </FieldDescription>
-                      </div>
+                      </Layout>
                     </Field>
 
                     {lessonType === 'article' ? (
@@ -1157,7 +1202,7 @@ export function CourseEditor({
                       </Field>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <Layout flow="row" className="flex-wrap items-center gap-3">
                       <Button
                         type="submit"
                         disabled={loading || sortedSections.length === 0}
@@ -1169,8 +1214,8 @@ export function CourseEditor({
                         )}
                         {selectedLessonId ? '保存课时修改' : '创建课时'}
                       </Button>
-                    </div>
-                  </form>
+                    </Layout>
+                  </Layout>
 
                   {lessonType === 'video' ? (
                     selectedLessonId ? (
@@ -1184,21 +1229,24 @@ export function CourseEditor({
                         }}
                       />
                     ) : (
-                      <div className="rounded-xl bg-canvas-soft p-4 text-xs text-muted-foreground">
+                      <Card
+                        surface="muted"
+                        className="p-4 text-xs text-muted-foreground block"
+                      >
                         请先填写课时名称并点击“创建课时”，生成课时记录后即可上传并绑定
                         MP4 视频素材。
-                      </div>
+                      </Card>
                     )
                   ) : null}
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Layout>
+          </Layout>
         </TabsContent>
 
         <TabsContent value="governance">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-6">
+          <Layout flow="grid" className="grid-cols-1 gap-6 lg:grid-cols-12">
+            <Layout className="lg:col-span-6">
               <Card>
                 <CardHeader>
                   <CardTitle>课程状态与讲师提审</CardTitle>
@@ -1207,49 +1255,57 @@ export function CourseEditor({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl bg-canvas-soft p-3.5">
-                      <div className="text-xs text-muted-foreground">
+                  <Layout
+                    flow="grid"
+                    className="grid-cols-1 gap-3 sm:grid-cols-3"
+                  >
+                    <Card surface="muted" className="p-3.5 block">
+                      <Layout className="text-xs text-muted-foreground">
                         制作审核状态
-                      </div>
-                      <div className="mt-1.5">
+                      </Layout>
+                      <Layout className="mt-1.5">
                         <Badge variant={prodMeta.variant}>
                           {prodMeta.label}
                         </Badge>
-                      </div>
-                    </div>
-                    <div className="rounded-xl bg-canvas-soft p-3.5">
-                      <div className="text-xs text-muted-foreground">
+                      </Layout>
+                    </Card>
+                    <Card surface="muted" className="p-3.5 block">
+                      <Layout className="text-xs text-muted-foreground">
                         售卖状态
-                      </div>
-                      <div className="mt-1.5">
+                      </Layout>
+                      <Layout className="mt-1.5">
                         <Badge variant={saleMeta.variant}>
                           {saleMeta.label}
                         </Badge>
-                      </div>
-                    </div>
-                    <div className="rounded-xl bg-canvas-soft p-3.5">
-                      <div className="text-xs text-muted-foreground">
+                      </Layout>
+                    </Card>
+                    <Card surface="muted" className="p-3.5 block">
+                      <Layout className="text-xs text-muted-foreground">
                         内容交付状态
-                      </div>
-                      <div className="mt-1.5">
+                      </Layout>
+                      <Layout className="mt-1.5">
                         <Badge variant={deliveryMeta.variant}>
                           {deliveryMeta.label}
                         </Badge>
-                      </div>
-                    </div>
-                  </div>
+                      </Layout>
+                    </Card>
+                  </Layout>
 
                   {course?.reviewReason ? (
-                    <div className="rounded-xl bg-secondary p-4 text-xs leading-5 text-body">
-                      <div className="font-medium text-foreground">
+                    <Card className="bg-secondary p-4 text-xs leading-5 text-body block">
+                      <Layout className="font-medium text-foreground">
                         管理员审核意见
-                      </div>
-                      <p className="mt-1">{course.reviewReason}</p>
-                    </div>
+                      </Layout>
+                      <Text as="p" className="mt-1">
+                        {course.reviewReason}
+                      </Text>
+                    </Card>
                   ) : null}
 
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Layout
+                    flow="row"
+                    className="flex-wrap items-center gap-3 pt-2"
+                  >
                     <Button
                       type="button"
                       disabled={loading || productionState === 'pending_review'}
@@ -1263,12 +1319,12 @@ export function CourseEditor({
                         ? '已提交审核，等待管理员处理'
                         : '提交管理员审核'}
                     </Button>
-                  </div>
+                  </Layout>
                 </CardContent>
               </Card>
-            </div>
+            </Layout>
 
-            <div className="lg:col-span-6">
+            <Layout className="lg:col-span-6">
               <Card>
                 <CardHeader>
                   <CardTitle>平台管理员审核与上下架治理</CardTitle>
@@ -1278,16 +1334,19 @@ export function CourseEditor({
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   {!admin ? (
-                    <p className="text-xs leading-5 text-muted-foreground">
+                    <Text as="p" variant="meta">
                       您当前以讲师身份登录。提交课程审核后，平台管理员将在此处完成审核发布或上下架处置。
-                    </p>
+                    </Text>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-2">
-                        <div className="text-xs font-medium text-foreground">
+                      <Layout flow="stack" className="gap-2">
+                        <Layout className="text-xs font-medium text-foreground">
                           1. 内容审核决议
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-2"
+                        >
                           <Button
                             type="button"
                             size="sm"
@@ -1313,14 +1372,17 @@ export function CourseEditor({
                             <XIcon data-icon="inline-start" />
                             退回讲师修改
                           </Button>
-                        </div>
-                      </div>
+                        </Layout>
+                      </Layout>
 
-                      <div className="flex flex-col gap-2 pt-2">
-                        <div className="text-xs font-medium text-foreground">
+                      <Layout flow="stack" className="gap-2 pt-2">
+                        <Layout className="text-xs font-medium text-foreground">
                           2. 售卖与交付状态处置
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-2"
+                        >
                           <Button
                             type="button"
                             variant="secondary"
@@ -1345,14 +1407,14 @@ export function CourseEditor({
                           >
                             撤回交付（全站下架）
                           </Button>
-                        </div>
-                      </div>
+                        </Layout>
+                      </Layout>
                     </>
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Layout>
+          </Layout>
         </TabsContent>
       </Tabs>
 
@@ -1491,6 +1553,6 @@ export function CourseEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Layout>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import {
   AlertCircleIcon,
@@ -74,6 +76,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -457,16 +460,19 @@ export function AccountManagement({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1.5">
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout className="space-y-6">
+      <Layout
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout className="space-y-1.5">
+          <Heading level={1} size="page" className="text-foreground">
             账号管理
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             管理平台账号状态、受控讲师资格与讲师邀请记录；停用账号不自动删除历史交易数据。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
         <Dialog
           open={inviteDialogOpen}
@@ -490,7 +496,8 @@ export function AccountManagement({
                 向指定邮箱发放讲师资格邀请。受邀人须使用该邮箱完成验证后，在账号页接受邀请。
               </DialogDescription>
             </DialogHeader>
-            <form
+            <Layout
+              as="form"
               onSubmit={(e) => void handleCreateInvite(e)}
               noValidate
               className="space-y-4"
@@ -528,17 +535,17 @@ export function AccountManagement({
                   {inviting ? '发送中…' : '确认发起邀请'}
                 </Button>
               </DialogFooter>
-            </form>
+            </Layout>
           </DialogContent>
         </Dialog>
-      </div>
+      </Layout>
 
       {errorBanner ? (
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>数据加载或操作异常</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-            <span>{errorBanner}</span>
+            <Text>{errorBanner}</Text>
             <Button
               type="button"
               variant="secondary"
@@ -570,17 +577,17 @@ export function AccountManagement({
           <CheckCircle2Icon />
           <AlertTitle>已创建讲师邀请（{lastCreatedInvite.email}）</AlertTitle>
           <AlertDescription className="space-y-2">
-            <div>
+            <Layout>
               邀请编号：
-              <span className="font-mono text-xs text-foreground">
+              <Text className="font-mono text-xs text-foreground">
                 {lastCreatedInvite.inviteId}
-              </span>
-            </div>
+              </Text>
+            </Layout>
             {lastCreatedInvite.token ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs text-foreground break-all">
+              <Layout flow="row" className="flex-wrap items-center gap-2">
+                <Text className="font-mono text-xs text-foreground break-all">
                   邀请令牌：{lastCreatedInvite.token}
-                </span>
+                </Text>
                 <Button
                   type="button"
                   variant="secondary"
@@ -605,7 +612,7 @@ export function AccountManagement({
                 >
                   复制接受路径
                 </Button>
-              </div>
+              </Layout>
             ) : null}
           </AlertDescription>
         </Alert>
@@ -632,8 +639,15 @@ export function AccountManagement({
 
         {/* Tab 1: 用户列表 */}
         <TabsContent value="accounts" className="space-y-5 pt-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <form onSubmit={handleSearchSubmit} className="w-full lg:max-w-md">
+          <Layout
+            flow="stack"
+            className="gap-3 lg:flex-row lg:items-center lg:justify-between"
+          >
+            <Layout
+              as="form"
+              onSubmit={handleSearchSubmit}
+              className="w-full lg:max-w-md"
+            >
               <InputGroup>
                 <InputGroupAddon align="inline-start">
                   <SearchIcon />
@@ -661,9 +675,9 @@ export function AccountManagement({
                   </InputGroupButton>
                 </InputGroupAddon>
               </InputGroup>
-            </form>
+            </Layout>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <Layout flow="row" className="flex-wrap items-center gap-2">
               <Select
                 value={statusFilter}
                 onValueChange={handleStatusFilterChange}
@@ -672,9 +686,11 @@ export function AccountManagement({
                   <SelectValue placeholder="账号状态" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="active">正常</SelectItem>
-                  <SelectItem value="suspended">已停用</SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="active">正常</SelectItem>
+                    <SelectItem value="suspended">已停用</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -683,10 +699,12 @@ export function AccountManagement({
                   <SelectValue placeholder="用户角色" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部角色</SelectItem>
-                  <SelectItem value="student">学员</SelectItem>
-                  <SelectItem value="instructor">讲师</SelectItem>
-                  <SelectItem value="admin">管理员</SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="all">全部角色</SelectItem>
+                    <SelectItem value="student">学员</SelectItem>
+                    <SelectItem value="instructor">讲师</SelectItem>
+                    <SelectItem value="admin">管理员</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -709,16 +727,16 @@ export function AccountManagement({
                 />
                 刷新
               </Button>
-            </div>
-          </div>
+            </Layout>
+          </Layout>
 
           {loadingAccounts ? (
-            <div className="space-y-2.5">
+            <Layout className="space-y-2.5">
               <Skeleton className="h-12 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
-            </div>
+            </Layout>
           ) : accounts.length === 0 ? (
             <Card>
               <CardContent className="py-10">
@@ -763,7 +781,7 @@ export function AccountManagement({
           ) : (
             <>
               {/* 桌面表格 */}
-              <div className="hidden md:block">
+              <Layout className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -784,27 +802,30 @@ export function AccountManagement({
                       return (
                         <TableRow key={account.id}>
                           <TableCell>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2 font-medium text-foreground">
-                                <span>
+                            <Layout className="space-y-0.5">
+                              <Layout
+                                flow="row"
+                                className="items-center gap-2 font-medium text-foreground"
+                              >
+                                <Text>
                                   {account.nickname?.trim() ||
                                     account.email ||
                                     account.id}
-                                </span>
+                                </Text>
                                 {isSelf ? (
                                   <Badge variant="secondary">当前账号</Badge>
                                 ) : null}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
+                              </Layout>
+                              <Layout className="text-xs text-muted-foreground">
                                 {account.email}
-                              </div>
-                              <div className="font-mono text-[11px] text-muted-foreground">
+                              </Layout>
+                              <Layout className="font-mono text-[11px] text-muted-foreground">
                                 {account.id} · v{account.version ?? 1}
-                              </div>
-                            </div>
+                              </Layout>
+                            </Layout>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-1">
+                            <Layout flow="row" className="flex-wrap gap-1">
                               {roles.map((role) => (
                                 <Badge
                                   key={role}
@@ -815,7 +836,7 @@ export function AccountManagement({
                                   {getRoleLabel(role)}
                                 </Badge>
                               ))}
-                            </div>
+                            </Layout>
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">
@@ -835,7 +856,7 @@ export function AccountManagement({
                             {formatDateTime(account.createdAt)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="inline-flex flex-wrap justify-end gap-1.5">
+                            <Layout className="inline-flex flex-wrap justify-end gap-1.5">
                               {hasInstructor ? (
                                 <Button
                                   type="button"
@@ -876,17 +897,17 @@ export function AccountManagement({
                                   {isSuspended ? '恢复账号' : '停用账号'}
                                 </Button>
                               ) : null}
-                            </div>
+                            </Layout>
                           </TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
-              </div>
+              </Layout>
 
               {/* 移动端卡片 */}
-              <div className="grid gap-3 md:hidden">
+              <Layout flow="grid" className="gap-3 md:hidden">
                 {accounts.map((account) => {
                   const roles = account.roles ?? [];
                   const isSelf = account.id === currentUser.id;
@@ -895,24 +916,27 @@ export function AccountManagement({
                   return (
                     <Card key={account.id} size="sm">
                       <CardHeader>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 space-y-0.5">
+                        <Layout
+                          flow="row"
+                          className="items-start justify-between gap-2"
+                        >
+                          <Layout className="min-w-0 space-y-0.5">
                             <CardTitle className="truncate">
                               {account.nickname?.trim() || account.email}
                             </CardTitle>
                             <CardDescription className="truncate text-xs">
                               {account.email}
                             </CardDescription>
-                          </div>
+                          </Layout>
                           <Badge
                             variant={isSuspended ? 'destructive' : 'secondary'}
                           >
                             {getAccountStatusLabel(account.status)}
                           </Badge>
-                        </div>
+                        </Layout>
                       </CardHeader>
                       <CardContent className="space-y-3 text-xs">
-                        <div className="flex flex-wrap gap-1.5">
+                        <Layout flow="row" className="flex-wrap gap-1.5">
                           {roles.map((role) => (
                             <Badge key={role} variant="secondary">
                               {getRoleLabel(role)}
@@ -921,11 +945,11 @@ export function AccountManagement({
                           <Badge variant="secondary">
                             {account.emailVerified ? '已验证' : '未验证'}
                           </Badge>
-                        </div>
-                        <div className="text-muted-foreground">
+                        </Layout>
+                        <Layout className="text-muted-foreground">
                           注册时间：{formatDateTime(account.createdAt)}
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-1">
+                        </Layout>
+                        <Layout flow="row" className="flex-wrap gap-2 pt-1">
                           {hasInstructor ? (
                             <Button
                               type="button"
@@ -960,12 +984,12 @@ export function AccountManagement({
                               {isSuspended ? '恢复账号' : '停用账号'}
                             </Button>
                           ) : null}
-                        </div>
+                        </Layout>
                       </CardContent>
                     </Card>
                   );
                 })}
-              </div>
+              </Layout>
 
               {accountTotalPages > 1 ? (
                 <Pagination>
@@ -989,10 +1013,10 @@ export function AccountManagement({
                       </Button>
                     </PaginationItem>
                     <PaginationItem>
-                      <span className="px-3 text-xs text-muted-foreground">
+                      <Text className="px-3 text-xs text-muted-foreground">
                         第 {accountsPage} / {accountTotalPages} 页（共{' '}
                         {accountsTotal} 位）
-                      </span>
+                      </Text>
                     </PaginationItem>
                     <PaginationItem>
                       <Button
@@ -1023,7 +1047,10 @@ export function AccountManagement({
 
         {/* Tab 2: 讲师邀请 */}
         <TabsContent value="invitations" className="space-y-5 pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center justify-between gap-3"
+          >
             <Select
               value={inviteStatusFilter}
               onValueChange={handleInviteStatusFilterChange}
@@ -1032,11 +1059,13 @@ export function AccountManagement({
                 <SelectValue placeholder="邀请状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部邀请状态</SelectItem>
-                <SelectItem value="pending">待接受</SelectItem>
-                <SelectItem value="accepted">已接受</SelectItem>
-                <SelectItem value="cancelled">已撤销</SelectItem>
-                <SelectItem value="expired">已过期</SelectItem>
+                <SelectGroup>
+                  <SelectItem value="all">全部邀请状态</SelectItem>
+                  <SelectItem value="pending">待接受</SelectItem>
+                  <SelectItem value="accepted">已接受</SelectItem>
+                  <SelectItem value="cancelled">已撤销</SelectItem>
+                  <SelectItem value="expired">已过期</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
 
@@ -1057,14 +1086,14 @@ export function AccountManagement({
               />
               刷新列表
             </Button>
-          </div>
+          </Layout>
 
           {loadingInvitations ? (
-            <div className="space-y-2.5">
+            <Layout className="space-y-2.5">
               <Skeleton className="h-12 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
-            </div>
+            </Layout>
           ) : invitations.length === 0 ? (
             <Card>
               <CardContent className="py-10">
@@ -1083,7 +1112,7 @@ export function AccountManagement({
             </Card>
           ) : (
             <>
-              <div className="hidden md:block">
+              <Layout className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1098,14 +1127,14 @@ export function AccountManagement({
                     {invitations.map((inv) => (
                       <TableRow key={inv.id}>
                         <TableCell>
-                          <div className="space-y-0.5">
-                            <div className="font-medium text-foreground">
+                          <Layout className="space-y-0.5">
+                            <Layout className="font-medium text-foreground">
                               {inv.email}
-                            </div>
-                            <div className="font-mono text-[11px] text-muted-foreground">
+                            </Layout>
+                            <Layout className="font-mono text-[11px] text-muted-foreground">
                               {inv.id} · v{inv.version ?? 1}
-                            </div>
-                          </div>
+                            </Layout>
+                          </Layout>
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -1133,30 +1162,33 @@ export function AccountManagement({
                               撤销邀请
                             </Button>
                           ) : (
-                            <span className="text-xs text-muted-foreground">
+                            <Text className="text-xs text-muted-foreground">
                               —
-                            </span>
+                            </Text>
                           )}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </Layout>
 
-              <div className="grid gap-3 md:hidden">
+              <Layout flow="grid" className="gap-3 md:hidden">
                 {invitations.map((inv) => (
                   <Card key={inv.id} size="sm">
                     <CardHeader>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 space-y-0.5">
+                      <Layout
+                        flow="row"
+                        className="items-start justify-between gap-2"
+                      >
+                        <Layout className="min-w-0 space-y-0.5">
                           <CardTitle className="truncate">
                             {inv.email}
                           </CardTitle>
                           <CardDescription className="font-mono text-[11px]">
                             {inv.id}
                           </CardDescription>
-                        </div>
+                        </Layout>
                         <Badge
                           variant={
                             inv.status === 'pending' ? 'default' : 'secondary'
@@ -1164,13 +1196,13 @@ export function AccountManagement({
                         >
                           {getInvitationStatusLabel(inv.status)}
                         </Badge>
-                      </div>
+                      </Layout>
                     </CardHeader>
                     <CardContent className="space-y-2 text-xs text-muted-foreground">
-                      <div>创建时间：{formatDateTime(inv.createdAt)}</div>
-                      <div>有效期至：{formatDateTime(inv.expiresAt)}</div>
+                      <Layout>创建时间：{formatDateTime(inv.createdAt)}</Layout>
+                      <Layout>有效期至：{formatDateTime(inv.expiresAt)}</Layout>
                       {inv.status === 'pending' ? (
-                        <div className="pt-1">
+                        <Layout className="pt-1">
                           <Button
                             type="button"
                             variant="secondary"
@@ -1179,12 +1211,12 @@ export function AccountManagement({
                           >
                             撤销邀请
                           </Button>
-                        </div>
+                        </Layout>
                       ) : null}
                     </CardContent>
                   </Card>
                 ))}
-              </div>
+              </Layout>
 
               {invitationTotalPages > 1 ? (
                 <Pagination>
@@ -1206,10 +1238,10 @@ export function AccountManagement({
                       </Button>
                     </PaginationItem>
                     <PaginationItem>
-                      <span className="px-3 text-xs text-muted-foreground">
+                      <Text className="px-3 text-xs text-muted-foreground">
                         第 {invitationsPage} / {invitationTotalPages} 页（共{' '}
                         {invitationsTotal} 条）
-                      </span>
+                      </Text>
                     </PaginationItem>
                     <PaginationItem>
                       <Button
@@ -1391,6 +1423,6 @@ export function AccountManagement({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Layout>
   );
 }

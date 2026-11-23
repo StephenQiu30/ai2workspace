@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
@@ -44,7 +45,7 @@ export default async function OrderDetailPage({params}: OrderDetailPageProps) {
 
   if (!user) {
     return (
-      <section className="mx-auto w-full max-w-4xl space-y-6">
+      <Layout as="section" className="w-full space-y-6">
         <Card>
           <CardContent className="py-12">
             <Empty>
@@ -70,7 +71,7 @@ export default async function OrderDetailPage({params}: OrderDetailPageProps) {
             </Empty>
           </CardContent>
         </Card>
-      </section>
+      </Layout>
     );
   }
 
@@ -97,12 +98,12 @@ export default async function OrderDetailPage({params}: OrderDetailPageProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6">
+    <Layout as="section" className="w-full space-y-6">
       <OrderDetail
         order={order}
         initialRefunds={initialRefunds}
         initialAttempts={initialAttempts}
       />
-    </section>
+    </Layout>
   );
 }

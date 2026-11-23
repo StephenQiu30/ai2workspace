@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {AgentManageList} from '@/features/assistant/agent_manage_list';
@@ -24,7 +25,7 @@ export default async function AgentManagePage() {
   // Strictly enforce R-28: only admin can configure Agent instances; instructors are explicitly denied.
   if (!isAdmin(user)) {
     return (
-      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <ManageAccessGuard
           user={user}
@@ -41,7 +42,7 @@ export default async function AgentManagePage() {
               : '该模块仅对平台管理员开放，请先登录管理员账号。'
           }
         />
-      </section>
+      </Layout>
     );
   }
 
@@ -71,7 +72,7 @@ export default async function AgentManagePage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <AgentManageList
         initialAgents={initialAgents}
@@ -79,6 +80,6 @@ export default async function AgentManagePage() {
         initialKnowledgeBases={initialKnowledgeBases}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

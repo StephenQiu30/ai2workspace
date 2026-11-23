@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {KnowledgeManageList} from '@/features/assistant/knowledge_manage_list';
@@ -20,7 +21,7 @@ export default async function KnowledgeManagePage() {
 
   if (!canManageKnowledge(user)) {
     return (
-      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <ManageAccessGuard
           user={user}
@@ -28,7 +29,7 @@ export default async function KnowledgeManagePage() {
           requiredRoleLabel="讲师或管理员"
           title={user ? '需要讲师或管理员权限' : '请先登录后访问知识库管理'}
         />
-      </section>
+      </Layout>
     );
   }
 
@@ -46,12 +47,12 @@ export default async function KnowledgeManagePage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <KnowledgeManageList
         initialBases={initialBases}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

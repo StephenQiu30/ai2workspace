@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {usePathname, useRouter} from 'next/navigation';
@@ -11,7 +13,6 @@ import {
   Settings2Icon,
   UserIcon,
 } from 'lucide-react';
-import {cn} from 'cn';
 import {toast} from 'sonner';
 import {LearnisLogo} from '@/components/brand/learnis_logo';
 import {Avatar, AvatarFallback} from '@/components/ui/avatar';
@@ -49,7 +50,7 @@ import {
 import {buildLoginHref, getErrorMessage} from '@/lib/format';
 import {identityLogout} from '@/services/generated/identity/sessions';
 
-export interface SiteHeaderProps {
+interface NavbarProps {
   initialUser: SessionUser | null;
 }
 
@@ -58,12 +59,19 @@ const PRIMARY_NAV = [
     href: '/',
     label: '社区',
     match: (p: string) =>
-      p === '/' || p.startsWith('/community') || p.startsWith('/topics'),
+      p === '/' ||
+      p.startsWith('/community') ||
+      (p.startsWith('/topics') && p !== '/topics/services'),
   },
   {
     href: '/courses',
     label: '课程',
     match: (p: string) => p.startsWith('/courses'),
+  },
+  {
+    href: '/topics/services',
+    label: '线上服务',
+    match: (p: string) => p === '/topics/services',
   },
   {
     href: '/learning',
@@ -72,7 +80,66 @@ const PRIMARY_NAV = [
   },
 ] as const;
 
-export function SiteHeader({initialUser}: SiteHeaderProps) {
+function PrimaryNavigation({
+  pathname,
+  user,
+  onNavigate,
+}: {
+  pathname: string;
+  user: SessionUser | null;
+  onNavigate?: () => void;
+}) {
+  const mobile = Boolean(onNavigate);
+  return (
+    <NavigationMenu
+      viewport={false}
+      aria-label={mobile ? '移动主导航' : '主导航'}
+      orientation={mobile ? 'vertical' : 'horizontal'}
+      className={
+        mobile
+          ? 'w-full max-w-none flex-none justify-start [&>div]:w-full'
+          : 'hidden flex-none justify-start md:flex'
+      }
+    >
+      <NavigationMenuList
+        className={
+          mobile ? 'w-full flex-col items-stretch gap-1' : 'justify-start gap-1'
+        }
+      >
+        {PRIMARY_NAV.map((item) => {
+          const active = item.match(pathname);
+          return (
+            <NavigationMenuItem key={item.href}>
+              <NavigationMenuLink
+                asChild
+                active={active}
+                className={
+                  mobile
+                    ? 'min-h-11 justify-center px-3'
+                    : 'min-h-10 justify-center px-3.5'
+                }
+              >
+                <Link
+                  href={
+                    item.href === '/learning' && !user
+                      ? buildLoginHref('/learning')
+                      : item.href
+                  }
+                  aria-current={active ? 'page' : undefined}
+                  onNavigate={onNavigate}
+                >
+                  {item.label}
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          );
+        })}
+      </NavigationMenuList>
+    </NavigationMenu>
+  );
+}
+
+export function Navbar({initialUser}: NavbarProps) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(initialUser);
@@ -101,49 +168,25 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur-xs">
-      <div className="mx-auto flex h-16 max-w-[1920px] items-center justify-between gap-4 px-4 md:h-20 md:px-6 xl:px-16">
-        <div className="flex items-center gap-8">
-          <Link
-            href="/"
-            aria-label="学屿首页"
-            className="inline-flex items-center rounded-md py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <LearnisLogo variant="lockup" markSize={28} />
-          </Link>
+    <Layout
+      as="header"
+      className="layout-container sticky top-0 z-40 bg-background/95 backdrop-blur-xs"
+    >
+      <Layout
+        flow="row"
+        className="h-16 w-full items-center gap-4 md:h-[68px] md:gap-6"
+      >
+        <Link
+          href="/"
+          aria-label="学屿首页"
+          className="inline-flex w-fit items-center rounded-md py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <LearnisLogo variant="lockup" markSize={28} />
+        </Link>
 
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList className="gap-1">
-              {PRIMARY_NAV.map((item) => {
-                const active = item.match(pathname);
-                const targetHref =
-                  item.href === '/learning' && !user
-                    ? buildLoginHref('/learning')
-                    : item.href;
-                return (
-                  <NavigationMenuItem key={item.href}>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href={targetHref}
-                        aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          'inline-flex h-10 items-center rounded-md px-3.5 text-[14px] font-medium transition-colors duration-120 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                          active
-                            ? 'bg-secondary text-foreground'
-                            : 'text-muted-foreground hover:bg-canvas-soft hover:text-foreground',
-                        )}
-                      >
-                        {item.label}
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                );
-              })}
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
+        <PrimaryNavigation pathname={pathname} user={user} />
 
-        <div className="flex items-center gap-2">
+        <Layout flow="row" className="ml-auto items-center gap-2">
           {user ? (
             <>
               <Button
@@ -164,7 +207,6 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
                     aria-label={`打开 ${user.nickname} 的账号菜单`}
                   >
                     <Avatar className="size-9">
@@ -176,12 +218,12 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
-                    <span className="truncate text-sm font-medium text-foreground">
+                    <Text className="truncate text-sm font-medium text-foreground">
                       {user.nickname}
-                    </span>
-                    <span className="truncate text-xs font-normal text-muted-foreground">
+                    </Text>
+                    <Text className="truncate text-xs font-normal text-muted-foreground">
                       {user.email}
-                    </span>
+                    </Text>
                   </DropdownMenuLabel>
                   <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
@@ -259,7 +301,7 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
               </DropdownMenu>
             </>
           ) : (
-            <div className="hidden items-center gap-2 md:flex">
+            <Layout className="hidden items-center gap-2 md:flex">
               <Button variant="ghost" asChild>
                 <Link href={buildLoginHref(pathname)}>登录</Link>
               </Button>
@@ -270,7 +312,7 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                   注册账号
                 </Link>
               </Button>
-            </div>
+            </Layout>
           )}
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -290,131 +332,123 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                   <LearnisLogo variant="lockup" markSize={24} />
                 </SheetTitle>
               </SheetHeader>
-              <nav aria-label="移动主导航" className="flex flex-col gap-1 px-4">
-                {PRIMARY_NAV.map((item) => {
-                  const active = item.match(pathname);
-                  const targetHref =
-                    item.href === '/learning' && !user
-                      ? buildLoginHref('/learning')
-                      : item.href;
-                  return (
-                    <SheetClose asChild key={item.href}>
-                      <Link
-                        href={targetHref}
-                        aria-current={active ? 'page' : undefined}
-                        className={cn(
-                          'flex h-11 items-center rounded-md px-3 text-sm font-medium',
-                          active
-                            ? 'bg-secondary text-foreground'
-                            : 'text-body hover:bg-canvas-soft hover:text-foreground',
-                        )}
-                      >
-                        {item.label}
-                      </Link>
-                    </SheetClose>
-                  );
-                })}
+              <Layout flow="stack" className="gap-1 px-4">
+                <PrimaryNavigation
+                  pathname={pathname}
+                  user={user}
+                  onNavigate={() => setMobileOpen(false)}
+                />
                 {user ? (
                   <>
-                    <div className="mt-4 px-3 text-xs font-medium text-muted-foreground">
+                    <Layout className="mt-4 px-3 text-xs font-medium text-muted-foreground">
                       个人空间
-                    </div>
+                    </Layout>
                     <SheetClose asChild>
-                      <Link
-                        href="/account"
-                        className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="min-h-11 justify-start"
                       >
-                        本人账号
-                      </Link>
+                        <Link href="/account">本人账号</Link>
+                      </Button>
                     </SheetClose>
                     <SheetClose asChild>
-                      <Link
-                        href="/orders"
-                        className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="min-h-11 justify-start"
                       >
-                        我的订单
-                      </Link>
+                        <Link href="/orders">我的订单</Link>
+                      </Button>
                     </SheetClose>
                     <SheetClose asChild>
-                      <Link
-                        href="/notifications"
-                        className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="min-h-11 justify-start"
                       >
-                        站内通知
-                      </Link>
+                        <Link href="/notifications">站内通知</Link>
+                      </Button>
                     </SheetClose>
                     {hasAnyManageAccess ? (
                       <>
-                        <div className="mt-4 px-3 text-xs font-medium text-muted-foreground">
+                        <Layout className="mt-4 px-3 text-xs font-medium text-muted-foreground">
                           管理工作台
-                        </div>
+                        </Layout>
                         {courseManager ? (
                           <SheetClose asChild>
-                            <Link
-                              href="/manage/courses"
-                              className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                            <Button
+                              asChild
+                              variant="ghost"
+                              className="min-h-11 justify-start"
                             >
-                              课程管理
-                            </Link>
+                              <Link href="/manage/courses">课程管理</Link>
+                            </Button>
                           </SheetClose>
                         ) : null}
                         {knowledgeManager ? (
                           <SheetClose asChild>
-                            <Link
-                              href="/manage/knowledge"
-                              className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                            <Button
+                              asChild
+                              variant="ghost"
+                              className="min-h-11 justify-start"
                             >
-                              知识库管理
-                            </Link>
+                              <Link href="/manage/knowledge">知识库管理</Link>
+                            </Button>
                           </SheetClose>
                         ) : null}
                         {adminUser ? (
                           <>
                             <SheetClose asChild>
-                              <Link
-                                href="/manage/accounts"
-                                className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                              <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 justify-start"
                               >
-                                账号管理
-                              </Link>
+                                <Link href="/manage/accounts">账号管理</Link>
+                              </Button>
                             </SheetClose>
                             <SheetClose asChild>
-                              <Link
-                                href="/manage/refunds"
-                                className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                              <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 justify-start"
                               >
-                                退款处理
-                              </Link>
+                                <Link href="/manage/refunds">退款处理</Link>
+                              </Button>
                             </SheetClose>
                             <SheetClose asChild>
-                              <Link
-                                href="/manage/reports"
-                                className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                              <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 justify-start"
                               >
-                                内容举报
-                              </Link>
+                                <Link href="/manage/reports">内容举报</Link>
+                              </Button>
                             </SheetClose>
                             <SheetClose asChild>
-                              <Link
-                                href="/manage/agents"
-                                className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                              <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 justify-start"
                               >
-                                Agent 管理
-                              </Link>
+                                <Link href="/manage/agents">Agent 管理</Link>
+                              </Button>
                             </SheetClose>
                             <SheetClose asChild>
-                              <Link
-                                href="/manage/ai-usage"
-                                className="flex h-11 items-center rounded-md px-3 text-sm text-body hover:bg-canvas-soft hover:text-foreground"
+                              <Button
+                                asChild
+                                variant="ghost"
+                                className="min-h-11 justify-start"
                               >
-                                模型与费用
-                              </Link>
+                                <Link href="/manage/ai-usage">模型与费用</Link>
+                              </Button>
                             </SheetClose>
                           </>
                         ) : null}
                       </>
                     ) : null}
-                    <div className="mt-4 px-3">
+                    <Layout className="mt-4 px-3">
                       <Button
                         variant="secondary"
                         className="w-full"
@@ -423,10 +457,10 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                       >
                         {loggingOut ? '正在退出…' : '退出登录'}
                       </Button>
-                    </div>
+                    </Layout>
                   </>
                 ) : (
-                  <div className="mt-4 flex flex-col gap-2 px-3">
+                  <Layout flow="stack" className="mt-4 gap-2 px-3">
                     <SheetClose asChild>
                       <Button asChild className="w-full">
                         <Link href={buildLoginHref(pathname)}>登录账号</Link>
@@ -437,13 +471,13 @@ export function SiteHeader({initialUser}: SiteHeaderProps) {
                         <Link href="/account?mode=register">注册新账号</Link>
                       </Button>
                     </SheetClose>
-                  </div>
+                  </Layout>
                 )}
-              </nav>
+              </Layout>
             </SheetContent>
           </Sheet>
-        </div>
-      </div>
-    </header>
+        </Layout>
+      </Layout>
+    </Layout>
   );
 }

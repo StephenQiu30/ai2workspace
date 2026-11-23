@@ -1,7 +1,10 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
+import {CourseCover} from './course_cover';
 import {useRouter} from 'next/navigation';
 import {
   AlertCircleIcon,
@@ -30,6 +33,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -222,7 +226,7 @@ export function CourseDetailClient({
   function renderPrimaryCtaArea() {
     if (isWithdrawn) {
       return (
-        <div className="flex flex-wrap items-center gap-3">
+        <Layout flow="row" className="flex-wrap items-center gap-3">
           <Button asChild variant="secondary">
             <Link href="/courses">浏览其他课程</Link>
           </Button>
@@ -231,25 +235,25 @@ export function CourseDetailClient({
               <Link href="/orders">查看我的订单</Link>
             </Button>
           ) : null}
-        </div>
+        </Layout>
       );
     }
 
     // 1. 已登录且已有访问权（已报名/已购/归属讲师/管理员）
     if (user && hasAccess) {
       return (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-sm text-body">
+        <Layout flow="stack" className="gap-3">
+          <Layout flow="row" className="items-center gap-2 text-sm text-body">
             <CheckCircle2Icon className="size-4 shrink-0 text-foreground" />
-            <span>
+            <Text>
               {accessSource === 'staff'
-                ? '您以讲师或管理员身份拥有本课程完整访问权限'
+                ? '可管理并学习此课程'
                 : accessSource === 'purchased'
-                  ? '您已购买本课程，享有持续学习权益'
-                  : '您已加入本免费课程'}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+                  ? '已购买'
+                  : '已加入'}
+            </Text>
+          </Layout>
+          <Layout flow="row" className="flex-wrap items-center gap-3">
             {resumeLessonId ? (
               <Button asChild size="lg">
                 <Link href={`/learn/${courseId}/${resumeLessonId}`}>
@@ -265,8 +269,8 @@ export function CourseDetailClient({
             <Button asChild variant="secondary">
               <Link href="/learning">前往我的学习</Link>
             </Button>
-          </div>
-        </div>
+          </Layout>
+        </Layout>
       );
     }
 
@@ -274,7 +278,7 @@ export function CourseDetailClient({
     if (!user) {
       const loginHref = buildLoginHref(`/courses/${courseId}`);
       return (
-        <div className="flex flex-wrap items-center gap-3">
+        <Layout flow="row" className="flex-wrap items-center gap-3">
           <Button asChild size="lg">
             <Link href={loginHref}>
               {isSalesClosed
@@ -289,18 +293,18 @@ export function CourseDetailClient({
             <Button asChild variant="secondary" size="lg">
               <Link href={`/learn/${courseId}/${firstTrialLesson.id}`}>
                 <PlayCircleIcon data-icon="inline-start" />
-                立即试看
+                免费试看
               </Link>
             </Button>
           ) : null}
-        </div>
+        </Layout>
       );
     }
 
     // 3. 已登录但无访问权且已停售
     if (isSalesClosed) {
       return (
-        <div className="flex flex-wrap items-center gap-3">
+        <Layout flow="row" className="flex-wrap items-center gap-3">
           <Button type="button" size="lg" disabled>
             课程已停售，暂不可新购
           </Button>
@@ -312,14 +316,14 @@ export function CourseDetailClient({
               </Link>
             </Button>
           ) : null}
-        </div>
+        </Layout>
       );
     }
 
     // 4. 已登录、免费课未加入
     if (isFree) {
       return (
-        <div className="flex flex-wrap items-center gap-3">
+        <Layout flow="row" className="flex-wrap items-center gap-3">
           <Button
             type="button"
             size="lg"
@@ -333,17 +337,17 @@ export function CourseDetailClient({
             <Button asChild variant="secondary" size="lg">
               <Link href={`/learn/${courseId}/${firstTrialLesson.id}`}>
                 <PlayCircleIcon data-icon="inline-start" />
-                立即试看
+                免费试看
               </Link>
             </Button>
           ) : null}
-        </div>
+        </Layout>
       );
     }
 
     // 5. 已登录、付费课未购且在售
     return (
-      <div className="flex flex-wrap items-center gap-3">
+      <Layout flow="row" className="flex-wrap items-center gap-3">
         <Button
           type="button"
           size="lg"
@@ -359,21 +363,21 @@ export function CourseDetailClient({
           <Button asChild variant="secondary" size="lg">
             <Link href={`/learn/${courseId}/${firstTrialLesson.id}`}>
               <PlayCircleIcon data-icon="inline-start" />
-              立即试看
+              免费试看
             </Link>
           </Button>
         ) : null}
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <Layout flow="stack" className="gap-8">
       {renderAccessStatusBanner()}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        <div className="flex flex-col gap-5 lg:col-span-8">
-          <div className="flex flex-wrap items-center gap-2">
+      <Layout flow="grid" className="grid-cols-1 gap-8 lg:grid-cols-12">
+        <Layout flow="stack" className="gap-5 lg:col-span-8">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
             <Badge variant="secondary">
               {getCourseCategoryLabel(course.category)}
             </Badge>
@@ -385,71 +389,89 @@ export function CourseDetailClient({
             ) : null}
             {isSalesClosed ? <Badge variant="destructive">已停售</Badge> : null}
             {isWithdrawn ? <Badge variant="destructive">已撤回</Badge> : null}
-          </div>
+          </Layout>
 
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+          <Heading level={1} size="page" className="text-foreground">
             {course.title}
-          </h1>
+          </Heading>
 
-          <p className="max-w-[760px] text-base leading-7 text-body">
+          <Text as="p" className="max-w-[760px] text-base leading-7 text-body">
             {course.description?.trim() || '讲师暂未补充课程简介。'}
-          </p>
+          </Text>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+          >
+            <Text className="inline-flex items-center gap-1.5">
               <UserIcon className="size-4" />
               讲师：{course.authorNickname?.trim() || '学屿讲师'}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
+            </Text>
+            <Text className="inline-flex items-center gap-1.5">
               <BookOpenIcon className="size-4" />共 {sortedSections.length} 章 ·{' '}
               {totalLessonCount} 课时
-            </span>
-          </div>
+            </Text>
+          </Layout>
 
-          <div className="pt-2">{renderPrimaryCtaArea()}</div>
-        </div>
+          <Button variant="secondary" asChild>
+            <Link
+              href={{
+                pathname: '/',
+                query: {compose: 'course-qa', course: course.title},
+                hash: 'community-composer',
+              }}
+            >
+              咨询这门课
+            </Link>
+          </Button>
+          <CourseCover category={course.category} coverUrl={course.coverUrl} />
+        </Layout>
 
-        <div className="lg:col-span-4">
+        <Layout className="lg:col-span-4">
           <Card>
             <CardHeader>
-              <CardDescription>课程售价与学习权益</CardDescription>
-              <CardTitle className="text-[28px] leading-[36px] font-medium">
+              <CardDescription>课程售价</CardDescription>
+              <CardTitle className="text-xl/7 tabular-nums font-medium">
                 {formatPriceCny(price?.amountMinor, isFree)}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm leading-6 text-body">
-              <div className="flex items-start gap-2.5">
+              <Layout flow="row" className="items-start gap-2.5">
                 <ShieldCheckIcon className="mt-1 size-4 shrink-0 text-foreground" />
-                <span>
+                <Text>
                   {isFree
-                    ? '免费公开课程，登录加入后即可记录跨设备学习进度并参与课程讨论。'
-                    : '单课一次性买断（CNY），支付成功后自动激活本课程全部课时及专属讨论区权限。'}
-                </span>
-              </div>
+                    ? '免费加入后可同步学习进度、参与讨论。'
+                    : '一次购买，供课期间可观看全部已发布课时并参与讨论。'}
+                </Text>
+              </Layout>
               {!isFree ? (
-                <div className="rounded-lg bg-secondary p-3 text-xs leading-5 text-body">
-                  7×24 小时退款保障：自课程首次可交付起 7×24
-                  小时内支持申请原路全额退款；超出窗口期的特殊情况可提交人工审核。
-                </div>
+                <Card className="bg-secondary p-3 text-xs leading-5 text-body block">
+                  课程首次可用起 7×24
+                  小时内可申请全额原路退款，超期异常可申请人工审核。
+                </Card>
               ) : null}
             </CardContent>
+            <CardFooter>{renderPrimaryCtaArea()}</CardFooter>
           </Card>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-[20px] leading-[30px] font-medium text-foreground">
+      <Layout as="section" flow="stack" className="gap-4">
+        <Layout
+          flow="row"
+          className="flex-wrap items-baseline justify-between gap-2"
+        >
+          <Heading level={2} size="section" className="text-foreground">
             课程大纲
-          </h2>
-          <span className="text-sm text-muted-foreground">
+          </Heading>
+          <Text className="text-sm text-muted-foreground">
             {firstTrialLesson
               ? '标注“试看”的课时可直接进入体验'
               : hasAccess
                 ? '点击任意课时即可开始学习'
                 : '加入或购买课程后可解锁全部课时'}
-          </span>
-        </div>
+          </Text>
+        </Layout>
 
         {sortedSections.length === 0 ? (
           <Empty className="bg-canvas-soft py-12">
@@ -480,22 +502,28 @@ export function CourseDetailClient({
                   className="rounded-xl bg-canvas-soft px-5 py-1 not-last:border-b-0"
                 >
                   <AccordionTrigger className="py-3.5 text-base font-medium text-foreground hover:no-underline">
-                    <div className="flex flex-wrap items-center gap-2 pr-4">
-                      <span>
+                    <Layout
+                      flow="row"
+                      className="flex-wrap items-center gap-2 pr-4"
+                    >
+                      <Text>
                         第 {sectionIndex + 1} 章 · {section.title}
-                      </span>
-                      <span className="text-xs font-normal text-muted-foreground">
+                      </Text>
+                      <Text className="text-xs font-normal text-muted-foreground">
                         （{lessons.length} 课时）
-                      </span>
-                    </div>
+                      </Text>
+                    </Layout>
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
                     {lessons.length === 0 ? (
-                      <p className="py-2 text-sm text-muted-foreground">
+                      <Text
+                        as="p"
+                        className="py-2 text-sm text-muted-foreground"
+                      >
                         本章节暂未添加课时。
-                      </p>
+                      </Text>
                     ) : (
-                      <ul className="flex flex-col gap-1.5">
+                      <Layout as="ul" flow="stack" className="gap-1.5">
                         {lessons.map((lesson, lessonIndex) => {
                           const canOpen =
                             !isWithdrawn &&
@@ -504,18 +532,24 @@ export function CourseDetailClient({
                           const isVideo = lesson.type === 'video';
                           const rowContent = (
                             <>
-                              <div className="flex min-w-0 items-center gap-3">
+                              <Layout
+                                flow="row"
+                                className="min-w-0 items-center gap-3"
+                              >
                                 {isVideo ? (
                                   <PlayCircleIcon className="size-4 shrink-0 text-foreground" />
                                 ) : (
                                   <FileTextIcon className="size-4 shrink-0 text-foreground" />
                                 )}
-                                <span className="truncate text-sm font-medium text-foreground">
+                                <Text className="truncate text-sm font-medium text-foreground">
                                   {sectionIndex + 1}.{lessonIndex + 1}{' '}
                                   {lesson.title}
-                                </span>
-                              </div>
-                              <div className="flex shrink-0 items-center gap-2">
+                                </Text>
+                              </Layout>
+                              <Layout
+                                flow="row"
+                                className="shrink-0 items-center gap-2"
+                              >
                                 <Badge variant="secondary">
                                   {isVideo ? '视频' : '图文'}
                                 </Badge>
@@ -525,24 +559,25 @@ export function CourseDetailClient({
                                   <Badge variant="secondary">付费</Badge>
                                 ) : null}
                                 {canOpen ? (
-                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
+                                  <Text className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
                                     {lesson.isTrial && !hasAccess
                                       ? '试看'
                                       : '去学习'}
                                     <ArrowRightIcon className="size-3.5" />
-                                  </span>
+                                  </Text>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Text className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                                     <LockIcon className="size-3.5" />
                                     {isWithdrawn ? '不可用' : '加入后可学'}
-                                  </span>
+                                  </Text>
                                 )}
-                              </div>
+                              </Layout>
                             </>
                           );
 
                           return (
-                            <li
+                            <Layout
+                              as="li"
                               key={lesson.id ?? `${sectionKey}-${lessonIndex}`}
                             >
                               {canOpen && lesson.id ? (
@@ -553,14 +588,17 @@ export function CourseDetailClient({
                                   {rowContent}
                                 </Link>
                               ) : (
-                                <div className="flex min-h-11 items-center justify-between gap-3 rounded-lg bg-background/60 px-3.5 py-2.5 opacity-80">
+                                <Layout
+                                  flow="row"
+                                  className="min-h-11 items-center justify-between gap-3 rounded-lg bg-background/60 px-3.5 py-2.5 opacity-80"
+                                >
                                   {rowContent}
-                                </div>
+                                </Layout>
                               )}
-                            </li>
+                            </Layout>
                           );
                         })}
-                      </ul>
+                      </Layout>
                     )}
                   </AccordionContent>
                 </AccordionItem>
@@ -568,51 +606,55 @@ export function CourseDetailClient({
             })}
           </Accordion>
         )}
-      </section>
+      </Layout>
 
       <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认购买课程</DialogTitle>
-            <DialogDescription>
-              创建订单后将前往订单详情页完成支付确认，所有金额以服务端定价为准。
-            </DialogDescription>
+            <DialogDescription>确认后前往订单页支付。</DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2 rounded-xl bg-canvas-soft p-4">
-              <div className="text-sm font-medium text-foreground">
+          <Layout flow="stack" className="gap-4">
+            <Card surface="muted" className="flex flex-col gap-2 p-4">
+              <Layout className="text-sm font-medium text-foreground">
                 {course.title}
-              </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>购买方式</span>
-                <span className="text-foreground">人民币单课买断（CNY）</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>应付金额</span>
-                <span className="text-lg font-medium text-foreground">
+              </Layout>
+              <Layout
+                flow="row"
+                className="items-center justify-between text-sm text-muted-foreground"
+              >
+                <Text>购买方式</Text>
+                <Text className="text-foreground">单课购买</Text>
+              </Layout>
+              <Layout
+                flow="row"
+                className="items-center justify-between text-sm text-muted-foreground"
+              >
+                <Text>应付金额</Text>
+                <Text className="text-lg font-medium text-foreground">
                   {formatPriceCny(price?.amountMinor, false)}
-                </span>
-              </div>
-            </div>
+                </Text>
+              </Layout>
+            </Card>
 
-            <div className="flex flex-col gap-1.5 rounded-xl bg-secondary p-4 text-xs leading-5 text-body">
-              <div className="font-medium text-foreground">
-                购买与 7×24 小时退款政策说明
-              </div>
-              <p>
+            <Card className="flex flex-col gap-1.5 bg-secondary p-4 text-xs leading-5 text-body">
+              <Layout className="font-medium text-foreground">
+                购买与退款
+              </Layout>
+              <Text as="p">
                 1.
                 支付经服务端确认成功后，系统将为您开通本课程的全部已发布课时与课程讨论区权限。
-              </p>
-              <p>
+              </Text>
+              <Text as="p">
                 2. 自课程首次可交付起 7×24
                 小时内，可随时在“我的订单”中发起全额退款；退款审核与渠道处理完成前保留学习权限，仅退款成功后撤销对应权益。
-              </p>
-              <p>
+              </Text>
+              <Text as="p">
                 3. 若超出 7×24
                 小时但存在交付不可用、重复扣款等情况，可通过订单详情页的窗口外人工审核入口申请处理。
-              </p>
-            </div>
+              </Text>
+            </Card>
 
             {orderError ? (
               <Alert variant="destructive">
@@ -621,7 +663,7 @@ export function CourseDetailClient({
                 <AlertDescription>{orderError}</AlertDescription>
               </Alert>
             ) : null}
-          </div>
+          </Layout>
 
           <DialogFooter>
             <Button
@@ -638,11 +680,11 @@ export function CourseDetailClient({
               onClick={() => void handleConfirmOrder()}
             >
               {creatingOrder ? <Spinner data-icon="inline-start" /> : null}
-              {creatingOrder ? '正在创建订单…' : '确认下单并前往支付'}
+              {creatingOrder ? '正在创建订单…' : '确认下单'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

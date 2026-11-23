@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
@@ -112,7 +113,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
     options = await getServerRequestOptions();
   } catch (err: unknown) {
     return (
-      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6">
+      <Layout flow="stack" className="w-full gap-6">
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>服务端配置不可用</AlertTitle>
@@ -120,7 +121,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
             {getErrorMessage(err, 'API_ORIGIN 未配置')}
           </AlertDescription>
         </Alert>
-      </div>
+      </Layout>
     );
   }
 
@@ -136,7 +137,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
     if (classified.kind === 'deleted' || classified.kind === 'hidden') {
       const isHidden = classified.kind === 'hidden';
       return (
-        <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8">
+        <Layout flow="stack" className="w-full gap-8">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -176,23 +177,23 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
               </Empty>
             </CardContent>
           </Card>
-        </div>
+        </Layout>
       );
     }
 
     return (
-      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6">
+      <Layout flow="stack" className="w-full gap-6">
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>无法加载讨论详情</AlertTitle>
           <AlertDescription>{classified.message}</AlertDescription>
         </Alert>
-        <div>
+        <Layout>
           <Button variant="secondary" asChild>
             <Link href="/">返回社区首页</Link>
           </Button>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
     );
   }
 
@@ -205,7 +206,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
   ) {
     const isHidden = post.status === 'hidden' || post.accessState === 'hidden';
     return (
-      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8">
+      <Layout flow="stack" className="w-full gap-8">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -249,7 +250,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
             </Empty>
           </CardContent>
         </Card>
-      </div>
+      </Layout>
     );
   }
 

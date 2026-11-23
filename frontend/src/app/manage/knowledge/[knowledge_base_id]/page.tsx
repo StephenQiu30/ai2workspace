@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {KnowledgeDetailView} from '@/features/assistant/knowledge_detail_view';
@@ -33,7 +34,7 @@ export default async function KnowledgeDetailPage({
 
   if (!canManageKnowledge(user)) {
     return (
-      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <ManageAccessGuard
           user={user}
@@ -41,7 +42,7 @@ export default async function KnowledgeDetailPage({
           requiredRoleLabel="讲师或管理员"
           title={user ? '需要讲师或管理员权限' : '请先登录后访问知识库详情'}
         />
-      </section>
+      </Layout>
     );
   }
 
@@ -64,7 +65,7 @@ export default async function KnowledgeDetailPage({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <KnowledgeDetailView
         knowledgeBaseId={knowledgeBaseId}
@@ -72,6 +73,6 @@ export default async function KnowledgeDetailPage({
         initialSources={initialSources}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

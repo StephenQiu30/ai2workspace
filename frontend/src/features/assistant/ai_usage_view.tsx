@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import {
   AlertCircleIcon,
@@ -341,14 +343,17 @@ export function AiUsageView({
   const personalLimitCents = summary?.maxDailyCostCents ?? 0;
 
   return (
-    <div className="space-y-6">
+    <Layout className="space-y-6">
       {/* Top Global Status & Actions */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-start"
+      >
+        <Layout className="space-y-1.5">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
+            <Heading level={1} size="page">
               四家模型目录与 AI 费用治理
-            </h1>
+            </Heading>
             <Badge variant={summary?.paused ? 'destructive' : 'default'}>
               {summary?.paused ? '已暂停新增 AI 请求' : '平台准入运行正常'}
             </Badge>
@@ -358,18 +363,18 @@ export function AiUsageView({
             {summary?.monthlyAlertTriggered ? (
               <Badge variant="destructive">月预算 80% 预警触发</Badge>
             ) : null}
-          </div>
-          <p className="text-sm text-muted-foreground">
+          </Layout>
+          <Text as="p" className="text-sm text-muted-foreground">
             基于预占冻结与实耗结算机制，统一监控平台日月预算、后台入库子额度、四家提供商模型价目有效期与未知费用核对队列。
-          </p>
+          </Text>
           {summary?.paused && summary.pauseReason ? (
-            <p className="text-xs font-medium text-foreground">
+            <Text as="p" className="text-xs font-medium text-foreground">
               当前暂停原因：{summary.pauseReason}
-            </p>
+            </Text>
           ) : null}
-        </div>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Dialog open={budgetOpen} onOpenChange={setBudgetOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary" onClick={handleOpenBudgetDialog}>
@@ -385,12 +390,16 @@ export function AiUsageView({
                   待核对未知费用达到上限时，将自动阻断新请求。
                 </DialogDescription>
               </DialogHeader>
-              <form
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleSaveBudget(e)}
                 className="space-y-5"
               >
                 <FieldGroup>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Layout
+                    flow="grid"
+                    className="grid-cols-1 gap-4 sm:grid-cols-2"
+                  >
                     <Field>
                       <FieldLabel htmlFor="b-platform-daily">
                         平台日预算上限（分）
@@ -427,9 +436,12 @@ export function AiUsageView({
                         折合 {formatCentsToYuan(Number(platformMonthlyCents))}
                       </FieldDescription>
                     </Field>
-                  </div>
+                  </Layout>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Layout
+                    flow="grid"
+                    className="grid-cols-1 gap-4 sm:grid-cols-2"
+                  >
                     <Field>
                       <FieldLabel htmlFor="b-bg-daily">
                         后台知识入库日预算子额度（分）
@@ -468,9 +480,12 @@ export function AiUsageView({
                         默认 80% 触发高水位预警徽标。
                       </FieldDescription>
                     </Field>
-                  </div>
+                  </Layout>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Layout
+                    flow="grid"
+                    className="grid-cols-1 gap-4 sm:grid-cols-2"
+                  >
                     <Field>
                       <FieldLabel htmlFor="b-user-daily-cents">
                         单账号日预算上限（分）
@@ -505,7 +520,7 @@ export function AiUsageView({
                         失败或取消的请求不扣除成功次数。
                       </FieldDescription>
                     </Field>
-                  </div>
+                  </Layout>
                 </FieldGroup>
                 <DialogFooter>
                   <Button
@@ -520,7 +535,7 @@ export function AiUsageView({
                     {savingBudget ? '保存中...' : '保存预算限额'}
                   </Button>
                 </DialogFooter>
-              </form>
+              </Layout>
             </DialogContent>
           </Dialog>
 
@@ -580,8 +595,8 @@ export function AiUsageView({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {errorMsg ? (
         <Alert variant="destructive">
@@ -600,177 +615,180 @@ export function AiUsageView({
       ) : null}
 
       {/* 4 Core Governance Metric Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Layout
+        flow="grid"
+        className="grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {/* Card 1: Platform Daily Budget */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
+            <Layout flow="row" className="items-center justify-between gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
                 平台日预算（{summary?.date || '今日'}）
-              </span>
+              </Text>
               {summary?.dailyAlertTriggered || dailyPct >= 80 ? (
                 <Badge variant="destructive">80% 预警</Badge>
               ) : (
-                <Badge variant="outline">{dailyPct}%</Badge>
+                <Badge variant="ghost">{dailyPct}%</Badge>
               )}
-            </div>
-            <CardTitle className="text-xl font-semibold">
+            </Layout>
+            <CardTitle className="text-base/6 font-medium">
               {formatCentsToYuan(dailyUsedTotal)}
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              <Text className="ml-1.5 text-xs font-normal text-muted-foreground">
                 / 上限 {formatCentsToYuan(dailyLimit)}
-              </span>
+              </Text>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
             <Progress value={dailyPct} />
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>已确认实耗：</span>
-                <span className="font-mono text-foreground">
+            <Layout className="space-y-1 text-xs text-muted-foreground">
+              <Layout flow="row" className="justify-between">
+                <Text>已确认实耗：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(dailyConfirmed)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>在途预占冻结：</span>
-                <span className="font-mono text-foreground">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="justify-between">
+                <Text>在途预占冻结：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(dailyReserved)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>待核对未知费用：</span>
-                <span className="font-mono text-foreground">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="justify-between">
+                <Text>待核对未知费用：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(dailyUnknown)}
-                </span>
-              </div>
-            </div>
+                </Text>
+              </Layout>
+            </Layout>
           </CardContent>
         </Card>
 
         {/* Card 2: Platform Monthly Budget */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
+            <Layout flow="row" className="items-center justify-between gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
                 平台月预算（{summary?.month || '本月'}）
-              </span>
+              </Text>
               {summary?.monthlyAlertTriggered || monthlyPct >= 80 ? (
                 <Badge variant="destructive">80% 预警</Badge>
               ) : (
-                <Badge variant="outline">{monthlyPct}%</Badge>
+                <Badge variant="ghost">{monthlyPct}%</Badge>
               )}
-            </div>
-            <CardTitle className="text-xl font-semibold">
+            </Layout>
+            <CardTitle className="text-base/6 font-medium">
               {formatCentsToYuan(monthlyUsedTotal)}
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              <Text className="ml-1.5 text-xs font-normal text-muted-foreground">
                 / 上限 {formatCentsToYuan(monthlyLimit)}
-              </span>
+              </Text>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
             <Progress value={monthlyPct} />
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>月度已确认实耗：</span>
-                <span className="font-mono text-foreground">
+            <Layout className="space-y-1 text-xs text-muted-foreground">
+              <Layout flow="row" className="justify-between">
+                <Text>月度已确认实耗：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(monthlyConfirmed)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>月度在途预占：</span>
-                <span className="font-mono text-foreground">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="justify-between">
+                <Text>月度在途预占：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(monthlyReserved)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>待核对记录数：</span>
-                <span className="font-mono text-foreground">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="justify-between">
+                <Text>待核对记录数：</Text>
+                <Text className="font-mono text-foreground">
                   {summary?.pendingReconciliations ?? 0} 条
-                </span>
-              </div>
-            </div>
+                </Text>
+              </Layout>
+            </Layout>
           </CardContent>
         </Card>
 
         {/* Card 3: Background Indexing Sub-budget */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
+            <Layout flow="row" className="items-center justify-between gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
                 后台入库子额度（今日）
-              </span>
-              <Badge variant="outline">{bgPct}%</Badge>
-            </div>
-            <CardTitle className="text-xl font-semibold">
+              </Text>
+              <Badge variant="ghost">{bgPct}%</Badge>
+            </Layout>
+            <CardTitle className="text-base/6 font-medium">
               {formatCentsToYuan(bgUsedTotal)}
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              <Text className="ml-1.5 text-xs font-normal text-muted-foreground">
                 / 子额度 {formatCentsToYuan(bgLimit)}
-              </span>
+              </Text>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
             <Progress value={bgPct} />
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>入库已确认实耗：</span>
-                <span className="font-mono text-foreground">
+            <Layout className="space-y-1 text-xs text-muted-foreground">
+              <Layout flow="row" className="justify-between">
+                <Text>入库已确认实耗：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(bgConfirmed)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>入库在途预占：</span>
-                <span className="font-mono text-foreground">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="justify-between">
+                <Text>入库在途预占：</Text>
+                <Text className="font-mono text-foreground">
                   {formatCentsToYuan(bgReserved)}
-                </span>
-              </div>
-              <p className="pt-0.5 text-[11px] text-muted-foreground">
+                </Text>
+              </Layout>
+              <Text as="p" className="pt-0.5 text-[11px] text-muted-foreground">
                 达到子额度上限时仅暂停后台切片作业（paused_budget）
-              </p>
-            </div>
+              </Text>
+            </Layout>
           </CardContent>
         </Card>
 
         {/* Card 4: Concurrency & Personal Today Stats */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
+            <Layout flow="row" className="items-center justify-between gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
                 当前并发与本人今日统计
-              </span>
+              </Text>
               <Badge variant="secondary">
                 平台并发 {summary?.platformActiveRequests ?? 0}
               </Badge>
-            </div>
-            <CardTitle className="text-xl font-semibold">
+            </Layout>
+            <CardTitle className="text-base/6 font-medium">
               {summary?.questionsCount ?? 0}
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              <Text className="ml-1.5 text-xs font-normal text-muted-foreground">
                 / {summary?.maxDailyQuestions ?? 0} 次本人今日问答
-              </span>
+              </Text>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>本人今日在途请求：</span>
-              <span className="font-mono text-foreground">
+            <Layout flow="row" className="justify-between">
+              <Text>本人今日在途请求：</Text>
+              <Text className="font-mono text-foreground">
                 {summary?.activeRequests ?? 0} 个（待结算{' '}
                 {summary?.pendingQuestionsCount ?? 0}）
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>本人今日费用占用：</span>
-              <span className="font-mono text-foreground">
+              </Text>
+            </Layout>
+            <Layout flow="row" className="justify-between">
+              <Text>本人今日费用占用：</Text>
+              <Text className="font-mono text-foreground">
                 {formatCentsToYuan(personalUsedCents)} /{' '}
                 {formatCentsToYuan(personalLimitCents)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>全平台当前活跃并发：</span>
-              <span className="font-mono text-foreground">
+              </Text>
+            </Layout>
+            <Layout flow="row" className="justify-between">
+              <Text>全平台当前活跃并发：</Text>
+              <Text className="font-mono text-foreground">
                 {summary?.platformActiveRequests ?? 0} 路运行中
-              </span>
-            </div>
+              </Text>
+            </Layout>
           </CardContent>
         </Card>
-      </div>
+      </Layout>
 
       {/* Tabs: Four-Provider Model Catalog & Unknown Cost Reconciliation Queue */}
       <Tabs defaultValue="models" className="w-full space-y-4">
@@ -791,10 +809,10 @@ export function AiUsageView({
               <CardTitle className="text-base">
                 受控模型目录（DeepSeek / OpenRouter / 火山引擎 / OpenAI）
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <Text as="p" className="text-xs text-muted-foreground">
                 仅处于「允许调用」且价目版本在有效期内（未过期）的模型可被 Agent
                 调用。任何模型停用或价目过期将自动在准入阶段拦截。
-              </p>
+              </Text>
             </CardHeader>
             <CardContent>
               {models.length === 0 ? (
@@ -830,23 +848,26 @@ export function AiUsageView({
                       return (
                         <TableRow key={`${m.providerId}:${m.modelId}`}>
                           <TableCell>
-                            <div className="font-medium text-foreground">
+                            <Layout className="font-medium text-foreground">
                               {getProviderLabel(m.providerId)}
-                            </div>
-                            <div className="font-mono text-xs text-muted-foreground">
+                            </Layout>
+                            <Layout className="font-mono text-xs text-muted-foreground">
                               {m.providerId}
-                            </div>
+                            </Layout>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium text-foreground">
+                            <Layout className="font-medium text-foreground">
                               {m.displayName || m.modelId}
-                            </div>
-                            <div className="font-mono text-xs text-muted-foreground">
+                            </Layout>
+                            <Layout className="font-mono text-xs text-muted-foreground">
                               {m.modelId}
-                            </div>
+                            </Layout>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap items-center gap-1.5">
+                            <Layout
+                              flow="row"
+                              className="flex-wrap items-center gap-1.5"
+                            >
                               <Badge
                                 variant={
                                   isActive
@@ -862,7 +883,7 @@ export function AiUsageView({
                                     ? '价目已过期'
                                     : '允许调用'}
                               </Badge>
-                            </div>
+                            </Layout>
                           </TableCell>
                           <TableCell className="font-mono text-xs">
                             {formatPricePerK(m.promptPricePerK, m.currency)}
@@ -871,16 +892,19 @@ export function AiUsageView({
                             {formatPricePerK(m.completionPricePerK, m.currency)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <Badge variant="outline">
+                            <Layout
+                              flow="row"
+                              className="items-center gap-1.5 text-xs"
+                            >
+                              <Badge variant="ghost">
                                 {m.priceVersion || 'v1'}
                               </Badge>
-                              <span className="text-muted-foreground">
+                              <Text className="text-muted-foreground">
                                 {m.expiresAt
                                   ? `有效期至 ${formatDateTime(m.expiresAt)}`
                                   : '长期有效'}
-                              </span>
-                            </div>
+                              </Text>
+                            </Layout>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -908,11 +932,11 @@ export function AiUsageView({
               <CardTitle className="text-base">
                 未知费用（Unknown Cost）核对队列
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <Text as="p" className="text-xs text-muted-foreground">
                 当上游供应商响应超时或未返回精确 Token
                 用量时，该笔请求的预占金额不会静默记为
                 0，而是转入此队列继续占用日/月预算，直至自动对账或管理员人工核对结清。
-              </p>
+              </Text>
             </CardHeader>
             <CardContent>
               {reconciliations.length === 0 ? (
@@ -944,31 +968,31 @@ export function AiUsageView({
                     {reconciliations.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <div className="font-mono text-xs font-medium text-foreground">
+                          <Layout className="font-mono text-xs font-medium text-foreground">
                             #{item.id}
-                          </div>
+                          </Layout>
                           {item.reservationId ? (
-                            <div className="font-mono text-[11px] text-muted-foreground">
+                            <Layout className="font-mono text-[11px] text-muted-foreground">
                               预占: {item.reservationId}
-                            </div>
+                            </Layout>
                           ) : null}
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {item.userId || 'system'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">
+                          <Badge variant="ghost">
                             {getPurposeLabel(item.purpose)}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="font-mono text-xs text-foreground">
+                          <Layout className="font-mono text-xs text-foreground">
                             冻结: {formatCentsToYuan(item.unknownCents)}
-                          </div>
+                          </Layout>
                           {item.state === 'resolved' ? (
-                            <div className="font-mono text-xs text-muted-foreground">
+                            <Layout className="font-mono text-xs text-muted-foreground">
                               核定: {formatCentsToYuan(item.resolvedCents)}
-                            </div>
+                            </Layout>
                           ) : null}
                         </TableCell>
                         <TableCell>
@@ -983,18 +1007,18 @@ export function AiUsageView({
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="max-w-xs truncate text-xs text-foreground">
+                          <Layout className="max-w-xs truncate text-xs text-foreground">
                             {item.reason || '上游未返回有效用量回执'}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">
+                          </Layout>
+                          <Layout className="text-[11px] text-muted-foreground">
                             {formatDateTime(item.createdAt)}
-                          </div>
+                          </Layout>
                         </TableCell>
                         <TableCell className="text-right">
                           {item.state === 'resolved' ? (
-                            <span className="text-xs text-muted-foreground">
+                            <Text className="text-xs text-muted-foreground">
                               已结清（{item.resolutionNote || '已核对'}）
-                            </span>
+                            </Text>
                           ) : (
                             <Button
                               variant="secondary"
@@ -1035,17 +1059,21 @@ export function AiUsageView({
               输入/输出单价（分）、价目版本号及到期时间。
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => void handleSaveModel(e)} className="space-y-5">
+          <Layout
+            as="form"
+            onSubmit={(e) => void handleSaveModel(e)}
+            className="space-y-5"
+          >
             <FieldGroup>
               <Field>
-                <label className="flex cursor-pointer items-center gap-2.5 rounded-lg bg-canvas-soft p-3 text-sm font-medium">
+                <FieldLabel className="flex cursor-pointer items-center gap-2.5 rounded-lg bg-canvas-soft p-3 text-sm font-medium">
                   <Checkbox
                     checked={modelEnabled}
                     onCheckedChange={(val) => setModelEnabled(val === true)}
                     disabled={savingModel}
                   />
-                  <span>允许在平台与 Agent 实例中调用该模型</span>
-                </label>
+                  <Text>允许在平台与 Agent 实例中调用该模型</Text>
+                </FieldLabel>
               </Field>
 
               <Field>
@@ -1059,7 +1087,7 @@ export function AiUsageView({
                 />
               </Field>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Layout flow="grid" className="grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="m-prompt-price">
                     输入单价（分 / 千 Token）
@@ -1090,9 +1118,9 @@ export function AiUsageView({
                     required
                   />
                 </Field>
-              </div>
+              </Layout>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Layout flow="grid" className="grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="m-price-ver">价目版本号</FieldLabel>
                   <Input
@@ -1115,7 +1143,7 @@ export function AiUsageView({
                     disabled={savingModel}
                   />
                 </Field>
-              </div>
+              </Layout>
             </FieldGroup>
             <DialogFooter>
               <Button
@@ -1130,7 +1158,7 @@ export function AiUsageView({
                 {savingModel ? '保存中...' : '保存模型配置'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
 
@@ -1153,7 +1181,8 @@ export function AiUsageView({
               分）。核定实际消耗金额后，差额将释放回对应周期的可用预算池。
             </DialogDescription>
           </DialogHeader>
-          <form
+          <Layout
+            as="form"
             onSubmit={(e) => void handleResolveReconciliation(e)}
             className="space-y-5"
           >
@@ -1201,9 +1230,9 @@ export function AiUsageView({
                 {resolving ? '提交核对中...' : '确认结清该笔费用'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

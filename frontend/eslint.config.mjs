@@ -3,6 +3,15 @@ import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 import prettier from 'eslint-config-prettier';
 
+const namedExportRule = {
+  selector: 'ExportDefaultDeclaration',
+  message: '手写业务模块使用命名导出。',
+};
+const componentElementRule = {
+  selector: 'JSXOpeningElement[name.type="JSXIdentifier"][name.name=/^[a-z]/]',
+  message: '展示与交互请组合 shadcn/ui，布局与文字使用 Layout、Heading、Text。',
+};
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -17,13 +26,48 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ['src/lib/**/*.ts', 'src/features/**/*.tsx'],
+    files: ['src/lib/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', namedExportRule],
+    },
+  },
+  {
+    files: ['src/app/**/*.tsx', 'src/components/**/*.tsx'],
+    ignores: [
+      'src/components/ui/**',
+      'src/app/layout.tsx',
+      'src/components/media/course_video.tsx',
+    ],
+    rules: {'no-restricted-syntax': ['error', componentElementRule]},
+  },
+  {
+    files: ['src/features/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': ['error', namedExportRule, componentElementRule],
+    },
+  },
+  {
+    files: ['src/app/layout.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
-          selector: 'ExportDefaultDeclaration',
-          message: '手写业务模块使用命名导出。',
+          ...componentElementRule,
+          selector:
+            componentElementRule.selector +
+            ':not([name.name="html"]):not([name.name="body"])',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/media/course_video.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          ...componentElementRule,
+          selector: componentElementRule.selector + ':not([name.name="video"])',
         },
       ],
     },

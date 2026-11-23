@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {AgentConfigView} from '@/features/assistant/agent_config_view';
@@ -35,7 +36,7 @@ export default async function AgentConfigPage({params}: AgentConfigPageProps) {
   // Strictly enforce R-28: only admin can configure Agent instances.
   if (!isAdmin(user)) {
     return (
-      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <ManageAccessGuard
           user={user}
@@ -52,7 +53,7 @@ export default async function AgentConfigPage({params}: AgentConfigPageProps) {
               : '该模块仅对平台管理员开放，请先登录管理员账号。'
           }
         />
-      </section>
+      </Layout>
     );
   }
 
@@ -92,7 +93,7 @@ export default async function AgentConfigPage({params}: AgentConfigPageProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <AgentConfigView
         agentParam={agentParam}
@@ -101,6 +102,6 @@ export default async function AgentConfigPage({params}: AgentConfigPageProps) {
         initialKnowledgeBases={initialKnowledgeBases}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

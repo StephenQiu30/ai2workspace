@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {ShieldAlertIcon} from 'lucide-react';
@@ -34,7 +35,7 @@ export default async function ManageAccountsPage() {
 
   if (!isAdmin(user)) {
     return (
-      <section className="mx-auto w-full max-w-4xl">
+      <Layout as="section" className="w-full">
         <ManageNav user={user} />
         <Card>
           <CardContent className="py-12">
@@ -66,7 +67,7 @@ export default async function ManageAccountsPage() {
             </Empty>
           </CardContent>
         </Card>
-      </section>
+      </Layout>
     );
   }
 
@@ -97,7 +98,7 @@ export default async function ManageAccountsPage() {
   }
 
   return (
-    <section className="w-full">
+    <Layout as="section" className="w-full">
       <ManageNav user={user} />
       <AccountManagement
         currentUser={user!}
@@ -105,6 +106,6 @@ export default async function ManageAccountsPage() {
         initialInvitations={initialInvitations}
         initialError={initialError}
       />
-    </section>
+    </Layout>
   );
 }

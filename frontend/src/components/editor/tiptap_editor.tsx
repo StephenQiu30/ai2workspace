@@ -1,5 +1,6 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
 import {useEffect, useState} from 'react';
 import {EditorContent, useEditor} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -201,17 +202,18 @@ export function TiptapEditor({
       : '正文';
 
   return (
-    <div
+    <Layout
       className={cn(
         'overflow-hidden rounded-xl bg-control-surface transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
         invalid && 'bg-destructive-surface ring-2 ring-ring/40',
         disabled && 'opacity-60',
       )}
     >
-      <div
+      <Layout
+        flow="row"
         role="toolbar"
         aria-label="编辑工具栏"
-        className="flex flex-wrap items-center gap-1 overflow-x-auto bg-canvas-soft px-2.5 py-2"
+        className="flex-wrap items-center gap-1 overflow-x-auto bg-canvas-soft px-2.5 py-2"
       >
         {mode === 'article' ? (
           <DropdownMenu>
@@ -374,7 +376,7 @@ export function TiptapEditor({
             </Button>
           </>
         ) : null}
-      </div>
+      </Layout>
 
       <EditorContent editor={editor} />
 
@@ -424,7 +426,7 @@ export function TiptapEditor({
               填写可公开或受控访问的 HTTPS 图片地址与替代说明文本。
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4">
+          <Layout flow="stack" className="gap-4">
             <Field data-invalid={Boolean(imageError)}>
               <FieldLabel htmlFor="tiptap-image-url">图片地址</FieldLabel>
               <Input
@@ -450,7 +452,7 @@ export function TiptapEditor({
                 onChange={(e) => setImageAlt(e.target.value)}
               />
             </Field>
-          </div>
+          </Layout>
           <DialogFooter>
             <Button
               type="button"
@@ -465,6 +467,6 @@ export function TiptapEditor({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

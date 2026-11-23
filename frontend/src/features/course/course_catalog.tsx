@@ -1,7 +1,10 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
+import {CourseCover} from './course_cover';
 import {useRouter} from 'next/navigation';
 import {
   AlertCircleIcon,
@@ -47,6 +50,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -151,11 +155,16 @@ export function CourseCatalog({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <form
+    <Layout flow="stack" className="gap-8">
+      <Layout
+        flow="stack"
+        className="gap-3 md:flex-row md:items-center md:justify-between"
+      >
+        <Layout
+          as="form"
+          flow="stack"
           onSubmit={handleSearchSubmit}
-          className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:max-w-2xl"
+          className="w-full gap-3 sm:flex-row sm:items-center md:max-w-2xl"
           role="search"
           aria-label="筛选公开课程"
         >
@@ -165,7 +174,7 @@ export function CourseCatalog({
             </InputGroupAddon>
             <InputGroupInput
               type="search"
-              placeholder="按课程标题或关键字搜索…"
+              placeholder="搜索课程标题"
               aria-label="搜索课程标题"
               value={queryInput}
               onChange={(e) => setQueryInput(e.target.value)}
@@ -199,17 +208,22 @@ export function CourseCatalog({
               <SelectValue placeholder="全部分类" />
             </SelectTrigger>
             <SelectContent>
-              {COURSE_CATEGORIES.map((category) => (
-                <SelectItem key={category.slug} value={category.slug}>
-                  {category.label}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                {COURSE_CATEGORIES.map((category) => (
+                  <SelectItem key={category.slug} value={category.slug}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
-        </form>
+        </Layout>
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>共 {total} 门课程</span>
+        <Layout
+          flow="row"
+          className="items-center gap-3 text-sm text-muted-foreground"
+        >
+          {!loadFailed && <Text>{total} 门课程</Text>}
           {hasActiveFilter ? (
             <Button
               type="button"
@@ -220,15 +234,15 @@ export function CourseCatalog({
               重置筛选
             </Button>
           ) : null}
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {loadFailed ? (
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>课程目录加载失败</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>课程服务暂时不可用，请稍后重新尝试获取课程列表。</span>
+            <Text>请稍后重试。</Text>
             <Button
               type="button"
               variant="secondary"
@@ -252,8 +266,8 @@ export function CourseCatalog({
             </EmptyTitle>
             <EmptyDescription>
               {hasActiveFilter
-                ? '可以尝试调整搜索关键字或切换到其他课程分类。'
-                : '讲师创建并通过审核的课程将在此处展示。'}
+                ? '试试其他标题或分类。'
+                : '课程发布后会显示在这里。'}
             </EmptyDescription>
           </EmptyHeader>
           {hasActiveFilter ? (
@@ -271,7 +285,10 @@ export function CourseCatalog({
       ) : null}
 
       {initialCourses.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Layout
+          flow="grid"
+          className="grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        >
           {initialCourses.map((course) => {
             const isSalesClosed = course.saleState === 'sales_closed';
             const lessonsCount = course.lessonsCount ?? 0;
@@ -281,8 +298,12 @@ export function CourseCatalog({
                 key={course.id}
                 className="flex h-full flex-col justify-between transition-colors duration-120 hover:bg-secondary/60"
               >
+                <CourseCover
+                  category={course.category}
+                  coverUrl={course.coverUrl}
+                />
                 <CardHeader className="gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <Layout flow="row" className="flex-wrap items-center gap-2">
                     <Badge variant="secondary">
                       {getCourseCategoryLabel(course.category)}
                     </Badge>
@@ -292,7 +313,7 @@ export function CourseCatalog({
                     {isSalesClosed ? (
                       <Badge variant="destructive">已停售</Badge>
                     ) : null}
-                  </div>
+                  </Layout>
                   <CardTitle className="line-clamp-2">
                     <Link
                       href={`/courses/${course.id}`}
@@ -307,22 +328,25 @@ export function CourseCatalog({
                 </CardHeader>
 
                 <CardContent className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
+                  <Layout
+                    flow="row"
+                    className="flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+                  >
+                    <Text className="inline-flex items-center gap-1.5">
                       <UserIcon className="size-3.5" />
-                      <span>{course.authorNickname?.trim() || '学屿讲师'}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
+                      <Text>{course.authorNickname?.trim() || '学屿讲师'}</Text>
+                    </Text>
+                    <Text className="inline-flex items-center gap-1.5">
                       <BookOpenIcon className="size-3.5" />
-                      <span>共 {lessonsCount} 课时</span>
-                    </span>
-                  </div>
+                      <Text>共 {lessonsCount} 课时</Text>
+                    </Text>
+                  </Layout>
                 </CardContent>
 
                 <CardFooter className="mt-auto items-center justify-between pt-1">
-                  <div className="text-base font-medium text-foreground">
+                  <Layout className="text-base font-medium text-foreground">
                     {formatPriceCny(course.priceAmountMinor, course.isFree)}
-                  </div>
+                  </Layout>
                   <Button asChild variant="secondary" size="sm">
                     <Link href={`/courses/${course.id}`}>
                       查看详情
@@ -333,7 +357,7 @@ export function CourseCatalog({
               </Card>
             );
           })}
-        </div>
+        </Layout>
       ) : null}
 
       {totalPages > 1 ? (
@@ -378,6 +402,6 @@ export function CourseCatalog({
           </PaginationContent>
         </Pagination>
       ) : null}
-    </div>
+    </Layout>
   );
 }

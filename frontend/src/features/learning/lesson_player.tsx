@@ -1,7 +1,10 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
+import {CourseVideo} from '@/components/media/course_video';
 import {
   AlertCircleIcon,
   ArrowLeftIcon,
@@ -308,9 +311,9 @@ export function LessonPlayer({
   function renderOutlineContent(onSelectLesson?: () => void) {
     if (sortedSections.length === 0) {
       return (
-        <p className="py-4 text-sm text-muted-foreground">
+        <Text as="p" className="py-4 text-sm text-muted-foreground">
           当前课程暂无其他章节目录。
-        </p>
+        </Text>
       );
     }
 
@@ -330,17 +333,17 @@ export function LessonPlayer({
               className="rounded-xl bg-canvas-soft px-3.5 py-0.5 not-last:border-b-0"
             >
               <AccordionTrigger className="py-3 text-sm font-medium text-foreground hover:no-underline">
-                <span className="truncate pr-2 text-left">
+                <Text className="truncate pr-2 text-left">
                   第 {sIdx + 1} 章 · {sec.title}
-                </span>
+                </Text>
               </AccordionTrigger>
               <AccordionContent className="pb-3">
-                <ul className="flex flex-col gap-1">
+                <Layout as="ul" flow="stack" className="gap-1">
                   {lessons.map((lsn, lIdx) => {
                     const isCurrent = lsn.id === lessonId;
                     const lsnIsVideo = lsn.type !== 'article';
                     return (
-                      <li key={lsn.id ?? `${secKey}-${lIdx}`}>
+                      <Layout as="li" key={lsn.id ?? `${secKey}-${lIdx}`}>
                         <Link
                           href={`/learn/${courseId}/${lsn.id}`}
                           onClick={onSelectLesson}
@@ -351,16 +354,19 @@ export function LessonPlayer({
                               : 'bg-background text-body hover:bg-secondary hover:text-foreground'
                           }`}
                         >
-                          <div className="flex min-w-0 items-center gap-2">
+                          <Layout
+                            flow="row"
+                            className="min-w-0 items-center gap-2"
+                          >
                             {lsnIsVideo ? (
                               <PlayCircleIcon className="size-3.5 shrink-0" />
                             ) : (
                               <FileTextIcon className="size-3.5 shrink-0" />
                             )}
-                            <span className="truncate">
+                            <Text className="truncate">
                               {sIdx + 1}.{lIdx + 1} {lsn.title}
-                            </span>
-                          </div>
+                            </Text>
+                          </Layout>
                           {lsn.isTrial ? (
                             <Badge
                               variant={isCurrent ? 'secondary' : 'default'}
@@ -369,10 +375,10 @@ export function LessonPlayer({
                             </Badge>
                           ) : null}
                         </Link>
-                      </li>
+                      </Layout>
                     );
                   })}
-                </ul>
+                </Layout>
               </AccordionContent>
             </AccordionItem>
           );
@@ -395,7 +401,10 @@ export function LessonPlayer({
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <Layout
+              flow="row"
+              className="flex-wrap items-center justify-center gap-3"
+            >
               {!user ? (
                 <Button asChild>
                   <Link href={buildLoginHref(`/learn/${courseId}/${lessonId}`)}>
@@ -406,7 +415,7 @@ export function LessonPlayer({
               <Button asChild variant={user ? 'default' : 'secondary'}>
                 <Link href={`/courses/${courseId}`}>前往课程详情获取权限</Link>
               </Button>
-            </div>
+            </Layout>
           </EmptyContent>
         </Empty>
       );
@@ -417,16 +426,16 @@ export function LessonPlayer({
       return (
         <Card>
           <CardHeader className="gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <Layout flow="row" className="flex-wrap items-center gap-2">
               <Badge variant="secondary">图文课时</Badge>
               {isTrial ? <Badge variant="default">免费试读</Badge> : null}
               {progressSyncNote ? (
-                <span className="text-xs text-muted-foreground">
+                <Text className="text-xs text-muted-foreground">
                   {progressSyncNote}
-                </span>
+                </Text>
               ) : null}
-            </div>
-            <CardTitle className="text-[22px] leading-[32px] font-medium">
+            </Layout>
+            <CardTitle className="text-xl/7 font-medium">
               {lessonTitle}
             </CardTitle>
           </CardHeader>
@@ -455,26 +464,35 @@ export function LessonPlayer({
     }
 
     return (
-      <div className="flex flex-col gap-3">
-        <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground">
+      <Layout flow="stack" className="gap-3">
+        <Layout
+          flow="row"
+          className="relative aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground"
+        >
           {isLoading ? (
-            <div className="flex flex-col items-center gap-3 text-sm">
+            <Layout flow="stack" className="items-center gap-3 text-sm">
               <Spinner className="size-6" />
-              <span>正在校验课时权限并准备受保护媒体流…</span>
-            </div>
+              <Text>正在校验课时权限并准备受保护媒体流…</Text>
+            </Layout>
           ) : null}
 
           {!isLoading && mediaNotReady ? (
-            <div className="flex max-w-md flex-col items-center gap-3 px-6 text-center">
+            <Layout
+              flow="stack"
+              className="max-w-md items-center gap-3 px-6 text-center"
+            >
               <PlayCircleIcon className="size-8 opacity-80" />
-              <div className="text-base font-medium">
+              <Layout className="text-base font-medium">
                 课时视频正在转码或尚未发布媒体版本
-              </div>
-              <p className="text-xs leading-5 opacity-80">
+              </Layout>
+              <Text as="p" className="text-xs leading-5 opacity-80">
                 {errorMessage ||
                   '讲师上传的视频完成 H.264/HLS 转码并显式发布后，即可在此处正常播放。'}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              </Text>
+              <Layout
+                flow="row"
+                className="flex-wrap items-center justify-center gap-2 pt-1"
+              >
                 <Button
                   type="button"
                   size="sm"
@@ -487,15 +505,20 @@ export function LessonPlayer({
                 <Button asChild size="sm" variant="secondary">
                   <Link href={`/courses/${courseId}`}>返回课程大纲</Link>
                 </Button>
-              </div>
-            </div>
+              </Layout>
+            </Layout>
           ) : null}
 
           {!isLoading && !mediaNotReady && errorMessage ? (
-            <div className="flex max-w-md flex-col items-center gap-3 px-6 text-center">
+            <Layout
+              flow="stack"
+              className="max-w-md items-center gap-3 px-6 text-center"
+            >
               <AlertCircleIcon className="size-8 opacity-80" />
-              <div className="text-base font-medium">视频加载失败</div>
-              <p className="text-xs leading-5 opacity-80">{errorMessage}</p>
+              <Layout className="text-base font-medium">视频加载失败</Layout>
+              <Text as="p" className="text-xs leading-5 opacity-80">
+                {errorMessage}
+              </Text>
               <Button
                 type="button"
                 size="sm"
@@ -505,37 +528,29 @@ export function LessonPlayer({
                 <RefreshCwIcon data-icon="inline-start" />
                 重试加载
               </Button>
-            </div>
+            </Layout>
           ) : null}
 
           {!isLoading && !mediaNotReady && !errorMessage && playbackUrl ? (
-            <div className="relative h-full w-full">
-              <video
-                ref={videoRef}
-                src={playbackUrl}
-                controls
-                onTimeUpdate={handleTimeUpdate}
-                className="h-full w-full object-contain"
-              />
-              {savedPosition > 0 ? (
-                <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2 rounded-full bg-background/95 px-3.5 py-1.5 text-xs text-foreground shadow-sm">
-                  <span>上次学习到 {formatDurationSeconds(savedPosition)}</span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onClick={handleResumePosition}
-                  >
-                    跳转继续
-                  </Button>
-                </div>
-              ) : null}
-            </div>
+            <CourseVideo
+              src={playbackUrl}
+              videoRef={videoRef}
+              resumeTime={
+                savedPosition > 0
+                  ? formatDurationSeconds(savedPosition)
+                  : undefined
+              }
+              onTimeUpdate={handleTimeUpdate}
+              onResume={handleResumePosition}
+            />
           ) : null}
-        </div>
+        </Layout>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <div className="flex flex-wrap items-center gap-2">
+        <Layout
+          flow="row"
+          className="flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"
+        >
+          <Layout flow="row" className="flex-wrap items-center gap-2">
             <Badge variant="secondary">视频课时</Badge>
             {isTrial ? (
               <Badge variant="default">公开试看</Badge>
@@ -547,10 +562,10 @@ export function LessonPlayer({
                 {q}
               </Badge>
             ))}
-          </div>
-          {progressSyncNote ? <span>{progressSyncNote}</span> : null}
-        </div>
-      </div>
+          </Layout>
+          {progressSyncNote ? <Text>{progressSyncNote}</Text> : null}
+        </Layout>
+      </Layout>
     );
   }
 
@@ -560,9 +575,12 @@ export function LessonPlayer({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex flex-col gap-1.5">
+    <Layout flow="stack" className="w-full gap-6">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-center"
+      >
+        <Layout flow="stack" className="gap-1.5">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -583,14 +601,14 @@ export function LessonPlayer({
             </BreadcrumbList>
           </Breadcrumb>
 
-          <h1 className="text-[22px] leading-[32px] font-medium text-foreground">
+          <Heading level={1} size="page" className="text-foreground">
             {currentFlat
               ? `${currentFlat.sectionIndex + 1}.${currentFlat.lessonIndex + 1} ${lessonTitle}`
               : lessonTitle}
-          </h1>
-        </div>
+          </Heading>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Sheet open={mobileOutlineOpen} onOpenChange={setMobileOutlineOpen}>
             <SheetTrigger asChild>
               <Button
@@ -608,9 +626,9 @@ export function LessonPlayer({
                 <SheetTitle>章节与课时目录</SheetTitle>
                 <SheetDescription>{courseTitle}</SheetDescription>
               </SheetHeader>
-              <div className="overflow-y-auto px-4 pb-6">
+              <Layout className="overflow-y-auto px-4 pb-6">
                 {renderOutlineContent(() => setMobileOutlineOpen(false))}
-              </div>
+              </Layout>
             </SheetContent>
           </Sheet>
 
@@ -627,14 +645,17 @@ export function LessonPlayer({
           <Button asChild variant="ghost" size="sm">
             <Link href={`/courses/${courseId}`}>返回课程详情</Link>
           </Button>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        <div className="flex flex-col gap-6 lg:col-span-8">
+      <Layout flow="grid" className="grid-cols-1 gap-8 lg:grid-cols-12">
+        <Layout flow="stack" className="gap-6 lg:col-span-8">
           {renderStageArea()}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-canvas-soft p-3.5">
+          <Card
+            surface="muted"
+            className="flex flex-wrap items-center justify-between gap-3 p-3.5"
+          >
             {prevLesson?.id ? (
               <Button asChild variant="secondary" size="sm">
                 <Link href={`/learn/${courseId}/${prevLesson.id}`}>
@@ -643,9 +664,9 @@ export function LessonPlayer({
                 </Link>
               </Button>
             ) : (
-              <span className="text-xs text-muted-foreground">
+              <Text className="text-xs text-muted-foreground">
                 已是第一节课时
-              </span>
+              </Text>
             )}
 
             {nextLesson?.id ? (
@@ -656,14 +677,17 @@ export function LessonPlayer({
                 </Link>
               </Button>
             ) : (
-              <span className="text-xs text-muted-foreground">
+              <Text className="text-xs text-muted-foreground">
                 已是最后一节课时
-              </span>
+              </Text>
             )}
-          </div>
+          </Card>
 
           <Tabs defaultValue="notes" className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <Layout
+              flow="row"
+              className="flex-wrap items-center justify-between gap-2"
+            >
               <TabsList>
                 <TabsTrigger value="notes">本课说明</TabsTrigger>
                 <TabsTrigger value="discussions">
@@ -679,7 +703,7 @@ export function LessonPlayer({
                 <SparklesIcon data-icon="inline-start" />
                 召唤 AI 助教解析本课
               </Button>
-            </div>
+            </Layout>
 
             <TabsContent value="notes">
               <Card>
@@ -694,10 +718,10 @@ export function LessonPlayer({
                   {lessonContent && lessonContent.trim() ? (
                     <TiptapRenderer content={lessonContent} />
                   ) : (
-                    <p className="text-sm leading-6 text-body">
+                    <Text as="p" variant="body">
                       {course.description?.trim() ||
                         '本课时暂未附加额外图文讲义。遇到疑问可随时点击右上角“向学屿助手提问”，或在课程讨论区与讲师、同学交流。'}
-                    </p>
+                    </Text>
                   )}
                 </CardContent>
               </Card>
@@ -706,12 +730,12 @@ export function LessonPlayer({
             <TabsContent value="discussions">
               <Card>
                 <CardHeader className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                  <div className="flex flex-col gap-1">
+                  <Layout flow="stack" className="gap-1">
                     <CardTitle>本课程讨论帖</CardTitle>
                     <CardDescription>
                       围绕《{courseTitle}》的答疑、笔记与实践经验交流
                     </CardDescription>
-                  </div>
+                  </Layout>
                   <Button asChild variant="secondary" size="sm">
                     <Link
                       href={`/community?scope=course&course_id=${encodeURIComponent(courseId)}`}
@@ -744,62 +768,68 @@ export function LessonPlayer({
                       </EmptyContent>
                     </Empty>
                   ) : (
-                    <ul className="flex flex-col gap-2.5">
+                    <Layout as="ul" flow="stack" className="gap-2.5">
                       {discussions.map((post, idx) => (
-                        <li key={post.id ?? `post-${idx}`}>
+                        <Layout as="li" key={post.id ?? `post-${idx}`}>
                           <Link
                             href={
                               post.id ? `/community/${post.id}` : '/community'
                             }
                             className="flex flex-col gap-1.5 rounded-xl bg-canvas-soft p-4 transition-colors duration-120 outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium text-foreground">
+                            <Layout
+                              flow="row"
+                              className="items-center justify-between gap-2"
+                            >
+                              <Text className="text-sm font-medium text-foreground">
                                 {post.title || '无标题讨论'}
-                              </span>
-                              <span className="shrink-0 text-xs text-muted-foreground">
+                              </Text>
+                              <Text className="shrink-0 text-xs text-muted-foreground">
                                 {formatDateTime(post.createdAt)}
-                              </span>
-                            </div>
+                              </Text>
+                            </Layout>
                             {post.publicSummary ? (
-                              <p className="line-clamp-2 text-xs leading-5 text-body">
+                              <Text
+                                as="p"
+                                className="line-clamp-2 text-xs leading-5 text-body"
+                              >
                                 {post.publicSummary}
-                              </p>
+                              </Text>
                             ) : null}
-                            <div className="text-xs text-muted-foreground">
+                            <Layout className="text-xs text-muted-foreground">
                               作者：{post.authorNickname?.trim() || '学屿学员'}
-                            </div>
+                            </Layout>
                           </Link>
-                        </li>
+                        </Layout>
                       ))}
-                    </ul>
+                    </Layout>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
+        </Layout>
 
-        <aside className="hidden lg:col-span-4 lg:block">
+        <Layout as="aside" className="hidden lg:col-span-4 lg:block">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between gap-2">
+              <Layout flow="row" className="items-center justify-between gap-2">
                 <CardTitle className="inline-flex items-center gap-2">
                   <BookOpenIcon className="size-4" />
-                  <span>课程目录</span>
+                  <Text>课程目录</Text>
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">
+                <Text className="text-xs text-muted-foreground">
                   共 {allLessons.length} 课时
-                </span>
-              </div>
+                </Text>
+              </Layout>
               <CardDescription className="line-clamp-1">
                 {courseTitle}
               </CardDescription>
             </CardHeader>
             <CardContent>{renderOutlineContent()}</CardContent>
           </Card>
-        </aside>
-      </div>
+        </Layout>
+      </Layout>
 
       {course.deliveryState === 'withdrawn' ? (
         <Alert variant="destructive">
@@ -810,6 +840,6 @@ export function LessonPlayer({
           </AlertDescription>
         </Alert>
       ) : null}
-    </div>
+    </Layout>
   );
 }

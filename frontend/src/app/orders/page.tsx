@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {
@@ -56,16 +58,16 @@ export default async function OrdersPage() {
 
   if (!user) {
     return (
-      <section className="mx-auto w-full max-w-4xl space-y-6">
-        <header className="space-y-1.5">
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+      <Layout as="section" className="w-full space-y-6">
+        <Layout as="header" className="space-y-1.5">
+          <Heading level={1} size="page" className="text-foreground">
             我的订单
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             查看您在 ai2workspace
             购买的所有课程订单、权益生效状态与退款售后进度。
-          </p>
-        </header>
+          </Text>
+        </Layout>
 
         <Card>
           <CardContent className="py-12">
@@ -91,7 +93,7 @@ export default async function OrdersPage() {
             </Empty>
           </CardContent>
         </Card>
-      </section>
+      </Layout>
     );
   }
 
@@ -107,24 +109,27 @@ export default async function OrdersPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1.5">
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout as="section" className="w-full space-y-6">
+      <Layout
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout className="space-y-1.5">
+          <Heading level={1} size="page" className="text-foreground">
             我的订单
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             查看您在 ai2workspace 购买的所有课程订单、支付核验与 7×24
             小时退款进度。
-          </p>
-        </div>
+          </Text>
+        </Layout>
         <Button asChild variant="secondary" size="sm">
           <Link href="/courses">
             浏览更多课程
             <ArrowRightIcon />
           </Link>
         </Button>
-      </div>
+      </Layout>
 
       {loadError ? (
         <Alert variant="destructive">
@@ -158,7 +163,7 @@ export default async function OrdersPage() {
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block">
+          <Layout className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,16 +186,16 @@ export default async function OrdersPage() {
                         {order.id}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-0.5">
-                          <div className="font-medium text-foreground">
+                        <Layout className="space-y-0.5">
+                          <Layout className="font-medium text-foreground">
                             {titleText}
-                          </div>
+                          </Layout>
                           {order.courseTitle && order.courseId ? (
-                            <div className="font-mono text-[11px] text-muted-foreground">
+                            <Layout className="font-mono text-[11px] text-muted-foreground">
                               {order.courseId}
-                            </div>
+                            </Layout>
                           ) : null}
-                        </div>
+                        </Layout>
                       </TableCell>
                       <TableCell className="font-medium text-foreground whitespace-nowrap">
                         {formatPriceCny(order.amountMinor, false)}
@@ -213,10 +218,10 @@ export default async function OrdersPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
+          </Layout>
 
           {/* 移动端无边框卡片 */}
-          <div className="grid gap-3 md:hidden">
+          <Layout flow="grid" className="gap-3 md:hidden">
             {orders.map((order) => {
               const statusMeta = getOrderStatusMeta(order.status);
               const titleText =
@@ -224,31 +229,34 @@ export default async function OrdersPage() {
               return (
                 <Card key={order.id} size="sm">
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 space-y-0.5">
+                    <Layout
+                      flow="row"
+                      className="items-start justify-between gap-2"
+                    >
+                      <Layout className="min-w-0 space-y-0.5">
                         <CardTitle className="truncate">{titleText}</CardTitle>
                         <CardDescription className="truncate font-mono text-xs">
                           订单号：{order.id}
                         </CardDescription>
-                      </div>
+                      </Layout>
                       <Badge variant={statusMeta.variant}>
                         {statusMeta.label}
                       </Badge>
-                    </div>
+                    </Layout>
                   </CardHeader>
                   <CardContent className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">订单金额</span>
-                      <span className="text-sm font-medium text-foreground">
+                    <Layout flow="row" className="items-center justify-between">
+                      <Text className="text-muted-foreground">订单金额</Text>
+                      <Text className="text-sm font-medium text-foreground">
                         {formatPriceCny(order.amountMinor, false)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">创建时间</span>
-                      <span className="text-muted-foreground">
+                      </Text>
+                    </Layout>
+                    <Layout flow="row" className="items-center justify-between">
+                      <Text className="text-muted-foreground">创建时间</Text>
+                      <Text className="text-muted-foreground">
                         {formatDateTime(order.createdAt)}
-                      </span>
-                    </div>
+                      </Text>
+                    </Layout>
                   </CardContent>
                   <CardFooter className="justify-end">
                     <Button asChild variant="secondary" size="sm">
@@ -258,9 +266,9 @@ export default async function OrdersPage() {
                 </Card>
               );
             })}
-          </div>
+          </Layout>
         </>
       )}
-    </section>
+    </Layout>
   );
 }

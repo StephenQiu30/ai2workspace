@@ -359,7 +359,7 @@ func TestCourseDiscussionAccessControl(t *testing.T) {
 func TestChronologicalPaginationAndTopics(t *testing.T) {
 	env := setupTestEnv()
 
-	topics := []string{"learning-method", "project-practice", "learning-method", "resources", "general"}
+	topics := []string{"learning-method", "services", "learning-method", "resources", "general"}
 	createdIDs := make([]string, 0, len(topics))
 	for i, topic := range topics {
 		w := env.doRequest(http.MethodPost, "/api/community/posts", "sess_alice", posts.CreatePostRequest{
@@ -419,7 +419,7 @@ func TestChronologicalPaginationAndTopics(t *testing.T) {
 	for _, item := range topicResp.Items {
 		counts[item.Slug] = item.PostCount
 	}
-	if counts["learning-method"] != 2 || counts["project-practice"] != 1 || counts["resources"] != 1 || counts["general"] != 1 || counts["course-qa"] != 0 {
+	if counts["learning-method"] != 2 || counts["services"] != 1 || counts["resources"] != 1 || counts["general"] != 1 || counts["course-qa"] != 0 {
 		t.Fatalf("unexpected topic counts: %+v", counts)
 	}
 }

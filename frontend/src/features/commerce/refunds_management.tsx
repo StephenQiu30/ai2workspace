@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useMemo, useState} from 'react';
 import {
   AlertCircleIcon,
@@ -57,6 +59,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -331,17 +334,20 @@ export function RefundsManagement({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1.5">
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout className="space-y-6">
+      <Layout
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout className="space-y-1.5">
+          <Heading level={1} size="page" className="text-foreground">
             退款处理
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             审核 7×24
             小时标准退款与窗口外人工申请，跟踪并登记原路退款渠道执行结果；仅在渠道确认成功（success）时撤销课程学习权益。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
         <Button
           type="button"
@@ -353,14 +359,14 @@ export function RefundsManagement({
           <RefreshCwIcon className={loading ? 'animate-spin' : undefined} />
           刷新列表
         </Button>
-      </div>
+      </Layout>
 
       {errorBanner ? (
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>加载或操作异常</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-            <span>{errorBanner}</span>
+            <Text>{errorBanner}</Text>
             <Button
               type="button"
               variant="secondary"
@@ -406,11 +412,11 @@ export function RefundsManagement({
 
         <TabsContent value={activeTab} className="space-y-4 pt-4">
           {loading ? (
-            <div className="space-y-2.5">
+            <Layout className="space-y-2.5">
               <Skeleton className="h-12 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
-            </div>
+            </Layout>
           ) : filteredRefunds.length === 0 ? (
             <Card>
               <CardContent className="py-12">
@@ -430,7 +436,7 @@ export function RefundsManagement({
           ) : (
             <>
               {/* 桌面端表格 */}
-              <div className="hidden md:block">
+              <Layout className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -455,10 +461,10 @@ export function RefundsManagement({
                       return (
                         <TableRow key={item.id}>
                           <TableCell className="font-mono text-xs text-foreground">
-                            <div>{item.id}</div>
-                            <div className="text-[11px] text-muted-foreground">
+                            <Layout>{item.id}</Layout>
+                            <Layout className="text-[11px] text-muted-foreground">
                               v{item.version ?? 1}
-                            </div>
+                            </Layout>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {item.orderId}
@@ -506,10 +512,10 @@ export function RefundsManagement({
                     })}
                   </TableBody>
                 </Table>
-              </div>
+              </Layout>
 
               {/* 移动端卡片 */}
-              <div className="grid gap-3 md:hidden">
+              <Layout flow="grid" className="gap-3 md:hidden">
                 {filteredRefunds.map((item) => {
                   const appMeta = getRefundApplicationStateMeta(
                     item.applicationState,
@@ -520,22 +526,25 @@ export function RefundsManagement({
                   return (
                     <Card key={item.id} size="sm">
                       <CardHeader>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 space-y-0.5">
+                        <Layout
+                          flow="row"
+                          className="items-start justify-between gap-2"
+                        >
+                          <Layout className="min-w-0 space-y-0.5">
                             <CardTitle className="truncate font-mono text-sm">
                               {item.id}
                             </CardTitle>
                             <CardDescription className="truncate font-mono text-xs">
                               订单：{item.orderId}
                             </CardDescription>
-                          </div>
+                          </Layout>
                           <Badge variant={appMeta.variant}>
                             {appMeta.label}
                           </Badge>
-                        </div>
+                        </Layout>
                       </CardHeader>
                       <CardContent className="space-y-2 text-xs">
-                        <div className="flex flex-wrap gap-1.5">
+                        <Layout flow="row" className="flex-wrap gap-1.5">
                           <Badge
                             variant={
                               item.isOutOfWindow ? 'default' : 'secondary'
@@ -548,23 +557,29 @@ export function RefundsManagement({
                           <Badge variant={channelMeta.variant}>
                             渠道：{channelMeta.label}
                           </Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="items-center justify-between"
+                        >
+                          <Text className="text-muted-foreground">
                             退款金额
-                          </span>
-                          <span className="font-medium text-foreground">
+                          </Text>
+                          <Text className="font-medium text-foreground">
                             {formatPriceCny(item.amountMinor, false)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
+                          </Text>
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="items-center justify-between"
+                        >
+                          <Text className="text-muted-foreground">
                             申请时间
-                          </span>
-                          <span className="text-muted-foreground">
+                          </Text>
+                          <Text className="text-muted-foreground">
                             {formatDateTime(item.createdAt)}
-                          </span>
-                        </div>
+                          </Text>
+                        </Layout>
                       </CardContent>
                       <CardFooter className="justify-end">
                         <Button
@@ -579,7 +594,7 @@ export function RefundsManagement({
                     </Card>
                   );
                 })}
-              </div>
+              </Layout>
             </>
           )}
         </TabsContent>
@@ -596,8 +611,8 @@ export function RefundsManagement({
           </SheetHeader>
 
           {selectedRefund ? (
-            <div className="space-y-5 px-6 py-2 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
+            <Layout className="space-y-5 px-6 py-2 text-sm">
+              <Layout flow="row" className="flex-wrap items-center gap-2">
                 <Badge
                   variant={
                     selectedRefund.isOutOfWindow ? 'default' : 'secondary'
@@ -630,113 +645,130 @@ export function RefundsManagement({
                   渠道：
                   {getRefundChannelStateMeta(selectedRefund.channelState).label}
                 </Badge>
-              </div>
+              </Layout>
 
-              <div className="grid gap-3 rounded-lg bg-secondary p-4 text-xs sm:grid-cols-2">
-                <div>
-                  <div className="text-muted-foreground">退款单号</div>
-                  <div className="mt-0.5 font-mono font-medium text-foreground">
+              <Card className="grid gap-3 bg-secondary p-4 text-xs sm:grid-cols-2">
+                <Layout>
+                  <Layout className="text-muted-foreground">退款单号</Layout>
+                  <Layout className="mt-0.5 font-mono font-medium text-foreground">
                     {selectedRefund.id}（v{selectedRefund.version ?? 1}）
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">关联订单号</div>
-                  <div className="mt-0.5 font-mono text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">关联订单号</Layout>
+                  <Layout className="mt-0.5 font-mono text-foreground">
                     {selectedRefund.orderId}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">申请人用户 ID</div>
-                  <div className="mt-0.5 font-mono text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    申请人用户 ID
+                  </Layout>
+                  <Layout className="mt-0.5 font-mono text-foreground">
                     {selectedRefund.userId || '—'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">申请退款金额</div>
-                  <div className="mt-0.5 text-sm font-medium text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    申请退款金额
+                  </Layout>
+                  <Layout className="mt-0.5 text-sm font-medium text-foreground">
                     {formatPriceCny(selectedRefund.amountMinor, false)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">首次可访问时间</div>
-                  <div className="mt-0.5 text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    首次可访问时间
+                  </Layout>
+                  <Layout className="mt-0.5 text-foreground">
                     {selectedRefund.firstAvailableAt
                       ? formatDateTime(selectedRefund.firstAvailableAt)
                       : '—'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
                     7×24h 窗口截止时间
-                  </div>
-                  <div className="mt-0.5 text-foreground">
+                  </Layout>
+                  <Layout className="mt-0.5 text-foreground">
                     {selectedRefund.deadline
                       ? formatDateTime(selectedRefund.deadline)
                       : '—'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">申请提交时间</div>
-                  <div className="mt-0.5 text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    申请提交时间
+                  </Layout>
+                  <Layout className="mt-0.5 text-foreground">
                     {formatDateTime(selectedRefund.createdAt)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">最近审核时间</div>
-                  <div className="mt-0.5 text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    最近审核时间
+                  </Layout>
+                  <Layout className="mt-0.5 text-foreground">
                     {selectedRefund.reviewedAt
                       ? formatDateTime(selectedRefund.reviewedAt)
                       : '尚未审核'}
-                  </div>
-                </div>
-              </div>
+                  </Layout>
+                </Layout>
+              </Card>
 
-              <div className="space-y-3 rounded-lg bg-secondary p-4 text-xs">
-                <div>
-                  <div className="text-muted-foreground">申请情形类型</div>
-                  <div className="mt-0.5 font-medium text-foreground">
+              <Card className="space-y-3 bg-secondary p-4 text-xs block">
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    申请情形类型
+                  </Layout>
+                  <Layout className="mt-0.5 font-medium text-foreground">
                     {getRefundExceptionLabel(selectedRefund.exceptionType)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">申请人填写原因</div>
-                  <div className="mt-0.5 leading-relaxed text-foreground">
+                  </Layout>
+                </Layout>
+                <Layout>
+                  <Layout className="text-muted-foreground">
+                    申请人填写原因
+                  </Layout>
+                  <Layout className="mt-0.5 leading-relaxed text-foreground">
                     {selectedRefund.reason || '未填写'}
-                  </div>
-                </div>
+                  </Layout>
+                </Layout>
                 {selectedRefund.rejectionReason ? (
-                  <div className="rounded-md bg-destructive-surface p-2.5 text-foreground">
+                  <Layout className="rounded-md bg-destructive-surface p-2.5 text-foreground">
                     审核驳回原因：{selectedRefund.rejectionReason}
-                  </div>
+                  </Layout>
                 ) : null}
                 {selectedRefund.channelRefundId ? (
-                  <div>
-                    <span className="text-muted-foreground">
+                  <Layout>
+                    <Text className="text-muted-foreground">
                       渠道退款流水号：
-                    </span>
-                    <span className="font-mono text-foreground">
+                    </Text>
+                    <Text className="font-mono text-foreground">
                       {selectedRefund.channelRefundId}
-                    </span>
-                  </div>
+                    </Text>
+                  </Layout>
                 ) : null}
                 {selectedRefund.channelFailureReason ? (
-                  <div className="rounded-md bg-destructive-surface p-2.5 text-foreground">
+                  <Layout className="rounded-md bg-destructive-surface p-2.5 text-foreground">
                     渠道执行异常原因：{selectedRefund.channelFailureReason}
-                  </div>
+                  </Layout>
                 ) : null}
-              </div>
+              </Card>
 
               {/* 待审核处置区 */}
               {isPendingReviewRefund(selectedRefund) ? (
-                <div className="space-y-3 rounded-lg bg-secondary p-4">
-                  <div className="text-xs font-medium text-foreground">
+                <Card className="space-y-3 bg-secondary p-4 block">
+                  <Layout className="text-xs font-medium text-foreground">
                     第一步：管理员审核申请（pending_review）
-                  </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  </Layout>
+                  <Text
+                    as="p"
+                    className="text-xs leading-relaxed text-muted-foreground"
+                  >
                     批准后退款单将进入“已批准 /
                     渠道提交中（submitting）”，此时学员课程学习权益仍保持有效，直至渠道退款确认成功。
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+                  </Text>
+                  <Layout flow="row" className="flex-wrap gap-2">
                     <Button
                       type="button"
                       size="sm"
@@ -758,27 +790,30 @@ export function RefundsManagement({
                       <XCircleIcon />
                       拒绝退款
                     </Button>
-                  </div>
-                </div>
+                  </Layout>
+                </Card>
               ) : null}
 
               {/* 已批准待渠道确认处置区 */}
               {isChannelProcessingRefund(selectedRefund) ? (
-                <div className="space-y-3 rounded-lg bg-secondary p-4">
-                  <div className="text-xs font-medium text-foreground">
+                <Card className="space-y-3 bg-secondary p-4 block">
+                  <Layout className="text-xs font-medium text-foreground">
                     第二步：登记渠道原路退款结果（channelState=
                     {selectedRefund.channelState}）
-                  </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  </Layout>
+                  <Text
+                    as="p"
+                    className="text-xs leading-relaxed text-muted-foreground"
+                  >
                     请根据支付渠道回调或对账单登记渠道退款结果。仅当登记为
-                    <span className="font-mono text-foreground"> success </span>
+                    <Text className="font-mono text-foreground"> success </Text>
                     时，系统才会将该笔订单标记为“已退款”并撤销对应学习权益；若为
-                    <span className="font-mono text-foreground"> failed </span>
+                    <Text className="font-mono text-foreground"> failed </Text>
                     或
-                    <span className="font-mono text-foreground"> unknown</span>
+                    <Text className="font-mono text-foreground"> unknown</Text>
                     ，学习权益继续保留并可再次核实登记。
-                  </p>
-                  <div>
+                  </Text>
+                  <Layout>
                     <Button
                       type="button"
                       size="sm"
@@ -786,10 +821,10 @@ export function RefundsManagement({
                     >
                       登记渠道退款结果
                     </Button>
-                  </div>
-                </div>
+                  </Layout>
+                </Card>
               ) : null}
-            </div>
+            </Layout>
           ) : null}
 
           <SheetFooter>
@@ -896,12 +931,13 @@ export function RefundsManagement({
             <DialogDescription>
               更新退款单（{channelTarget?.id}
               ）的渠道执行状态（channelState）。请注意：仅当选择
-              <span className="font-mono text-foreground"> success </span>
+              <Text className="font-mono text-foreground"> success </Text>
               时，系统才会撤销该笔订单对应的课程学习权益并将订单标记为已退款。
             </DialogDescription>
           </DialogHeader>
 
-          <form
+          <Layout
+            as="form"
             onSubmit={(e) => void handleConfirmChannelSubmit(e)}
             noValidate
             className="space-y-4"
@@ -921,19 +957,21 @@ export function RefundsManagement({
                     <SelectValue placeholder="选择渠道执行状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="success">
-                      success — 原路退款成功（立即撤销该笔订单学习权益）
-                    </SelectItem>
-                    <SelectItem value="failed">
-                      failed — 渠道退款失败（保留学习权益，待人工重发或核查）
-                    </SelectItem>
-                    <SelectItem value="unknown">
-                      unknown — 渠道状态未知/超时（保留学习权益，待对账确认）
-                    </SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="success">
+                        success — 原路退款成功（立即撤销该笔订单学习权益）
+                      </SelectItem>
+                      <SelectItem value="failed">
+                        failed — 渠道退款失败（保留学习权益，待人工重发或核查）
+                      </SelectItem>
+                      <SelectItem value="unknown">
+                        unknown — 渠道状态未知/超时（保留学习权益，待对账确认）
+                      </SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FieldDescription>
-                  仅 <span className="font-mono">success</span>{' '}
+                  仅 <Text className="font-mono">success</Text>{' '}
                   会触发权益撤销与订单退款终态。
                 </FieldDescription>
               </Field>
@@ -982,9 +1020,9 @@ export function RefundsManagement({
                 {submittingChannel ? '提交中…' : '确认登记渠道结果'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

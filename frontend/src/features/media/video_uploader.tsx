@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import {
   AlertCircleIcon,
@@ -178,17 +180,20 @@ export function VideoUploader({
   return (
     <Card className="bg-canvas-soft">
       <CardHeader className="gap-1.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <Layout
+          flow="row"
+          className="flex-wrap items-center justify-between gap-2"
+        >
           <CardTitle className="inline-flex items-center gap-2 text-base">
             <FilmIcon className="size-4" />
-            <span>视频课时素材受控直传</span>
+            <Text>视频课时素材受控直传</Text>
           </CardTitle>
           {currentMediaVersionId ? (
             <Badge variant="secondary">线上媒体：{currentMediaVersionId}</Badge>
           ) : (
             <Badge variant="secondary">尚未绑定媒体</Badge>
           )}
-        </div>
+        </Layout>
         <CardDescription>
           规格约束：MP4 (H.264 / AAC)、单文件 ≤ 2 GiB、时长 ≤ 120 分钟、分辨率 ≤
           1920×1080、帧率 ≤ 30 fps。
@@ -196,7 +201,7 @@ export function VideoUploader({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Layout flow="stack" className="gap-3 sm:flex-row sm:items-end">
           <Field className="flex-1">
             <FieldLabel htmlFor={`video-file-${lessonId}`}>
               选择 MP4 视频文件
@@ -234,20 +239,23 @@ export function VideoUploader({
                 ? 'HLS 转码校验中…'
                 : '上传并转码'}
           </Button>
-        </div>
+        </Layout>
 
         {status === 'uploading' || status === 'processing' ? (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
+          <Layout flow="stack" className="gap-1.5">
+            <Layout
+              flow="row"
+              className="items-center justify-between text-xs text-muted-foreground"
+            >
+              <Text>
                 {status === 'uploading'
                   ? '正在直传原始 MP4 素材…'
                   : '服务端正在探测编码并生成多清晰度 HLS 切片…'}
-              </span>
-              <span>{progressValue}%</span>
-            </div>
+              </Text>
+              <Text>{progressValue}%</Text>
+            </Layout>
             <Progress value={progressValue} aria-label="视频上传与转码进度" />
-          </div>
+          </Layout>
         ) : null}
 
         {errorMessage ? (
@@ -259,25 +267,33 @@ export function VideoUploader({
         ) : null}
 
         {status === 'ready' && readyVersionId ? (
-          <div className="flex flex-col gap-3 rounded-xl bg-secondary p-4 text-xs text-body">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
+          <Card className="flex flex-col gap-3 bg-secondary p-4 text-xs text-body">
+            <Layout
+              flow="row"
+              className="flex-wrap items-center justify-between gap-2"
+            >
+              <Layout
+                flow="row"
+                className="items-center gap-1.5 font-medium text-foreground"
+              >
                 <CheckCircle2Icon className="size-4" />
-                <span>受保护 HLS 媒体已就绪</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
+                <Text>受保护 HLS 媒体已就绪</Text>
+              </Layout>
+              <Layout flow="row" className="flex-wrap items-center gap-1.5">
                 {qualities.map((q) => (
                   <Badge key={q} variant="default">
                     {q}
                   </Badge>
                 ))}
-              </div>
-            </div>
-            <div className="text-muted-foreground">
+              </Layout>
+            </Layout>
+            <Layout className="text-muted-foreground">
               候选媒体版本 ID：
-              <code className="font-mono">{readyVersionId}</code>
-            </div>
-            <div>
+              <Text as="code" className="font-mono">
+                {readyVersionId}
+              </Text>
+            </Layout>
+            <Layout>
               <Button
                 type="button"
                 size="sm"
@@ -285,8 +301,8 @@ export function VideoUploader({
               >
                 显式发布此视频版本到课时
               </Button>
-            </div>
-          </div>
+            </Layout>
+          </Card>
         ) : null}
 
         {status === 'published' && readyVersionId ? (
@@ -294,7 +310,10 @@ export function VideoUploader({
             <CheckCircle2Icon />
             <AlertTitle>视频版本已生效</AlertTitle>
             <AlertDescription>
-              版本 <code className="font-mono">{readyVersionId}</code>{' '}
+              版本{' '}
+              <Text as="code" className="font-mono">
+                {readyVersionId}
+              </Text>{' '}
               已绑定到当前课时，学员播放时将签发此版本的受保护 HLS 授权。
             </AlertDescription>
           </Alert>

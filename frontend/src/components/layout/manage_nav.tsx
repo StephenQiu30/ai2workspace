@@ -1,8 +1,9 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {cn} from 'cn';
+import {Button} from '@/components/ui/button';
 import {
   canManageCourses,
   canManageKnowledge,
@@ -39,29 +40,28 @@ export function ManageNav({user}: ManageNavProps) {
   }
 
   return (
-    <nav
+    <Layout
+      as="nav"
+      flow="row"
       aria-label="管理区域导航"
-      className="mb-8 flex flex-wrap items-center gap-1.5"
+      className="mb-8 flex-wrap items-center gap-1.5"
     >
       {visibleItems.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
-          <Link
+          <Button
             key={item.href}
-            href={item.href}
-            aria-current={active ? 'page' : undefined}
-            className={cn(
-              'inline-flex h-9 items-center rounded-md px-3 text-sm font-medium transition-colors duration-120 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              active
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-control-hover',
-            )}
+            asChild
+            size="sm"
+            variant={active ? 'default' : 'secondary'}
           >
-            {item.label}
-          </Link>
+            <Link href={item.href} aria-current={active ? 'page' : undefined}>
+              {item.label}
+            </Link>
+          </Button>
         );
       })}
-    </nav>
+    </Layout>
   );
 }

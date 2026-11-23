@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import {
   CourseCatalog,
@@ -95,15 +97,12 @@ export default async function CoursesPage({searchParams}: CoursesPageProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <section className="flex flex-col gap-2">
-        <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout flow="stack" className="w-full gap-8">
+      <Layout as="section" flow="stack" className="gap-2">
+        <Heading level={1} size="page" className="text-foreground">
           课程目录
-        </h1>
-        <p className="text-sm leading-6 text-body">
-          浏览已通过审核的公开课程，支持免费试看、单课买断与跨设备学习进度记录。
-        </p>
-      </section>
+        </Heading>
+      </Layout>
 
       <CourseCatalog
         initialCourses={initialCourses}
@@ -114,6 +113,6 @@ export default async function CoursesPage({searchParams}: CoursesPageProps) {
         initialCategory={category}
         loadFailed={loadFailed}
       />
-    </div>
+    </Layout>
   );
 }

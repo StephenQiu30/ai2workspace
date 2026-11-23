@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -542,7 +544,7 @@ export function AccountForm({
     const adminUser = isAdmin(user);
 
     return (
-      <div className="space-y-6">
+      <Layout className="space-y-6">
         {feedback ? (
           <Alert
             variant={feedback.kind === 'error' ? 'destructive' : 'default'}
@@ -571,23 +573,26 @@ export function AccountForm({
         {/* 个人资料总览 */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3.5">
+            <Layout
+              flow="stack"
+              className="gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <Layout flow="row" className="items-center gap-3.5">
                 <Avatar className="size-12">
                   <AvatarFallback className="bg-primary text-base font-medium text-primary-foreground">
                     {getUserInitials(user)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 space-y-1">
+                <Layout className="min-w-0 space-y-1">
                   <CardTitle className="truncate text-lg">
                     {user.nickname}
                   </CardTitle>
                   <CardDescription className="truncate">
                     {user.email}
                   </CardDescription>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
+                </Layout>
+              </Layout>
+              <Layout flow="row" className="flex-wrap items-center gap-1.5">
                 <Badge variant={user.emailVerified ? 'default' : 'secondary'}>
                   {user.emailVerified ? '邮箱已验证' : '邮箱未验证'}
                 </Badge>
@@ -598,31 +603,35 @@ export function AccountForm({
                 >
                   {getAccountStatusLabel(user.status)}
                 </Badge>
-              </div>
-            </div>
+              </Layout>
+            </Layout>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">角色权限</div>
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+            <Layout flow="grid" className="gap-4 sm:grid-cols-2">
+              <Layout className="space-y-1">
+                <Layout className="text-xs text-muted-foreground">
+                  角色权限
+                </Layout>
+                <Layout flow="row" className="flex-wrap gap-1.5 pt-0.5">
                   {user.roles.map((role) => (
                     <Badge key={role} variant="secondary">
                       {getRoleLabel(role)}
                     </Badge>
                   ))}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">账号标识</div>
-                <div className="font-mono text-[13px] text-body break-all">
+                </Layout>
+              </Layout>
+              <Layout className="space-y-1">
+                <Layout className="text-xs text-muted-foreground">
+                  账号标识
+                </Layout>
+                <Layout className="font-mono text-[13px] text-body break-all">
                   {user.id}
-                </div>
-              </div>
-            </div>
+                </Layout>
+              </Layout>
+            </Layout>
           </CardContent>
           <CardFooter className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <Layout flow="row" className="flex-wrap items-center gap-2">
               <Button asChild size="sm">
                 <Link href="/learning">
                   <BookOpenIcon />
@@ -648,7 +657,7 @@ export function AccountForm({
                   <Link href="/manage/accounts">账号管理</Link>
                 </Button>
               ) : null}
-            </div>
+            </Layout>
             <Button
               type="button"
               variant="ghost"
@@ -666,24 +675,24 @@ export function AccountForm({
         {!user.emailVerified ? (
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
+              <Layout flow="row" className="items-center gap-2">
                 <MailCheckIcon className="size-4 text-foreground" />
                 <CardTitle>完成邮箱验证</CardTitle>
-              </div>
+              </Layout>
               <CardDescription>
                 发布社区帖子、回复讨论、购买课程与接受讲师邀请前须先验证绑定邮箱。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-secondary p-3.5">
-                <div className="space-y-0.5 text-sm">
-                  <div className="font-medium text-foreground">
+              <Card className="flex flex-wrap items-center justify-between gap-3 bg-secondary p-3.5">
+                <Layout className="space-y-0.5 text-sm">
+                  <Layout className="font-medium text-foreground">
                     未收到验证邮件？
-                  </div>
-                  <div className="text-xs text-muted-foreground">
+                  </Layout>
+                  <Layout className="text-xs text-muted-foreground">
                     验证令牌单次有效，受控重发间隔为 60 秒。
-                  </div>
-                </div>
+                  </Layout>
+                </Layout>
                 <Button
                   type="button"
                   variant="secondary"
@@ -698,9 +707,10 @@ export function AccountForm({
                       ? `${resendCooldown} 秒后可重发`
                       : '重新发送验证邮件'}
                 </Button>
-              </div>
+              </Card>
 
-              <form
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleVerifyEmail(e, true)}
                 noValidate
                 className="space-y-4"
@@ -725,7 +735,7 @@ export function AccountForm({
                   {verifyingSignedIn ? <Spinner /> : null}
                   {verifyingSignedIn ? '验证中…' : '提交邮箱验证'}
                 </Button>
-              </form>
+              </Layout>
             </CardContent>
           </Card>
         ) : null}
@@ -739,7 +749,8 @@ export function AccountForm({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form
+            <Layout
+              as="form"
               onSubmit={(e) => void handleUpdateNickname(e)}
               noValidate
               className="space-y-4"
@@ -771,23 +782,23 @@ export function AccountForm({
                 {updatingProfile ? <Spinner /> : null}
                 {updatingProfile ? '保存中…' : '保存昵称'}
               </Button>
-            </form>
+            </Layout>
           </CardContent>
         </Card>
 
         {/* 接受讲师邀请 */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
+            <Layout flow="row" className="items-center justify-between gap-3">
+              <Layout className="space-y-1">
+                <Layout flow="row" className="items-center gap-2">
                   <UserCheckIcon className="size-4 text-foreground" />
                   <CardTitle>接受讲师邀请</CardTitle>
-                </div>
+                </Layout>
                 <CardDescription>
                   输入管理员发放的讲师邀请令牌，为当前已验证邮箱账号激活讲师权限。
                 </CardDescription>
-              </div>
+              </Layout>
               {!showInviteSection ? (
                 <Button
                   type="button"
@@ -798,7 +809,7 @@ export function AccountForm({
                   展开填写
                 </Button>
               ) : null}
-            </div>
+            </Layout>
           </CardHeader>
           {showInviteSection ? (
             <CardContent className="space-y-4">
@@ -812,7 +823,8 @@ export function AccountForm({
                 </Alert>
               ) : null}
 
-              <form
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleAcceptInvitation(e)}
                 noValidate
                 className="space-y-4"
@@ -845,26 +857,26 @@ export function AccountForm({
                   {acceptingInvite ? <Spinner /> : null}
                   {acceptingInvite ? '验证并接受中…' : '接受讲师邀请'}
                 </Button>
-              </form>
+              </Layout>
             </CardContent>
           ) : null}
         </Card>
-      </div>
+      </Layout>
     );
   }
 
   // 游客态：登录 / 注册 / 邮箱验证 / 找回密码 / 重置密码
   return (
-    <div className="space-y-5">
+    <Layout className="space-y-5">
       {safeNextPath !== '/' ? (
         <Alert>
           <ArrowRightIcon />
           <AlertTitle>登录后将返回原页面</AlertTitle>
           <AlertDescription>
             完成身份认证后会自动跳转回{' '}
-            <span className="font-mono text-xs text-foreground">
+            <Text className="font-mono text-xs text-foreground">
               {safeNextPath}
-            </span>{' '}
+            </Text>{' '}
             并核验最新访问权限。
           </AlertDescription>
         </Alert>
@@ -907,13 +919,14 @@ export function AccountForm({
             </TabsList>
 
             <TabsContent value="login" className="pt-5">
-              <div className="mb-5 space-y-1">
+              <Layout className="mb-5 space-y-1">
                 <CardTitle>登录学屿账号</CardTitle>
                 <CardDescription>
                   使用注册邮箱与密码登录，访问课程学习、订单与社区互动。
                 </CardDescription>
-              </div>
-              <form
+              </Layout>
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleLogin(e)}
                 noValidate
                 className="space-y-5"
@@ -948,7 +961,7 @@ export function AccountForm({
                   </Field>
                 </FieldGroup>
 
-                <div className="flex flex-col gap-2.5 pt-1">
+                <Layout flow="stack" className="gap-2.5 pt-1">
                   <Button
                     type="submit"
                     disabled={submitting}
@@ -957,7 +970,10 @@ export function AccountForm({
                     {submitting ? <Spinner /> : null}
                     {submitting ? '正在登录…' : '登录'}
                   </Button>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <Layout
+                    flow="row"
+                    className="items-center justify-between text-xs text-muted-foreground"
+                  >
                     <Button
                       type="button"
                       variant="ghost"
@@ -974,19 +990,20 @@ export function AccountForm({
                     >
                       忘记密码？
                     </Button>
-                  </div>
-                </div>
-              </form>
+                  </Layout>
+                </Layout>
+              </Layout>
             </TabsContent>
 
             <TabsContent value="register" className="pt-5">
-              <div className="mb-5 space-y-1">
+              <Layout className="mb-5 space-y-1">
                 <CardTitle>注册新账号</CardTitle>
                 <CardDescription>
                   注册后将发送验证邮件，完成邮箱验证即可参与社区互动与购课。
                 </CardDescription>
-              </div>
-              <form
+              </Layout>
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleRegister(e)}
                 noValidate
                 className="space-y-5"
@@ -1043,7 +1060,7 @@ export function AccountForm({
                   </Field>
                 </FieldGroup>
 
-                <div className="flex flex-col gap-2.5 pt-1">
+                <Layout flow="stack" className="gap-2.5 pt-1">
                   <Button
                     type="submit"
                     disabled={submitting}
@@ -1061,18 +1078,19 @@ export function AccountForm({
                   >
                     已有账号？返回登录
                   </Button>
-                </div>
-              </form>
+                </Layout>
+              </Layout>
             </TabsContent>
 
             <TabsContent value="verify" className="pt-5">
-              <div className="mb-5 space-y-1">
+              <Layout className="mb-5 space-y-1">
                 <CardTitle>邮箱验证</CardTitle>
                 <CardDescription>
                   输入邮件中的单次验证令牌以激活邮箱状态。
                 </CardDescription>
-              </div>
-              <form
+              </Layout>
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleVerifyEmail(e, false)}
                 noValidate
                 className="space-y-5"
@@ -1101,17 +1119,18 @@ export function AccountForm({
                   {submitting ? <Spinner /> : null}
                   {submitting ? '正在验证…' : '完成邮箱验证'}
                 </Button>
-              </form>
+              </Layout>
             </TabsContent>
 
             <TabsContent value="forgot" className="pt-5">
-              <div className="mb-5 space-y-1">
+              <Layout className="mb-5 space-y-1">
                 <CardTitle>找回密码</CardTitle>
                 <CardDescription>
                   输入注册邮箱，我们将向符合条件的账号发送重置令牌。
                 </CardDescription>
-              </div>
-              <form
+              </Layout>
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleForgotPassword(e)}
                 noValidate
                 className="space-y-5"
@@ -1136,17 +1155,18 @@ export function AccountForm({
                   {submitting ? <Spinner /> : null}
                   {submitting ? '正在发送…' : '发送重置说明'}
                 </Button>
-              </form>
+              </Layout>
             </TabsContent>
 
             <TabsContent value="reset" className="pt-5">
-              <div className="mb-5 space-y-1">
+              <Layout className="mb-5 space-y-1">
                 <CardTitle>重置登录密码</CardTitle>
                 <CardDescription>
                   输入邮件中的重置令牌并设置新密码，保存后既有会话将自动失效。
                 </CardDescription>
-              </div>
-              <form
+              </Layout>
+              <Layout
+                as="form"
                 onSubmit={(e) => void handleResetPassword(e)}
                 noValidate
                 className="space-y-5"
@@ -1184,11 +1204,11 @@ export function AccountForm({
                   {submitting ? <Spinner /> : null}
                   {submitting ? '正在重置…' : '保存新密码'}
                 </Button>
-              </form>
+              </Layout>
             </TabsContent>
           </Tabs>
         </CardHeader>
       </Card>
-    </div>
+    </Layout>
   );
 }

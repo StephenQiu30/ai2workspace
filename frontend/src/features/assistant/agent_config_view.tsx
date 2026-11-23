@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -44,6 +46,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -237,7 +240,7 @@ export function AgentConfigView({
   };
 
   return (
-    <div className="space-y-6">
+    <Layout className="space-y-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -252,12 +255,15 @@ export function AgentConfigView({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-start"
+      >
+        <Layout className="space-y-1.5">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
+            <Heading level={1} size="page">
               {agent?.name ? `配置 Agent：${agent.name}` : 'Agent 实例详细配置'}
-            </h1>
+            </Heading>
             {agent ? (
               <>
                 <Badge
@@ -271,7 +277,7 @@ export function AgentConfigView({
                 >
                   {getAgentStateLabel(agent.state)}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="ghost">
                   草稿版本 v{agent.draftVersion ?? 1}
                 </Badge>
                 <Badge variant="secondary">
@@ -282,13 +288,13 @@ export function AgentConfigView({
                 </Badge>
               </>
             ) : null}
-          </div>
-          <p className="text-sm text-muted-foreground">
+          </Layout>
+          <Text as="p" className="text-sm text-muted-foreground">
             调整角色提示词、受控模型绑定与多知识库检索授权。保存草稿不会影响线上已发布版本，确认无误后再执行发布。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Button variant="secondary" asChild>
             <Link href="/manage/agents">返回列表</Link>
           </Button>
@@ -376,8 +382,8 @@ export function AgentConfigView({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {errorMsg ? (
         <Alert variant="destructive">
@@ -407,7 +413,11 @@ export function AgentConfigView({
       </Alert>
 
       {agent ? (
-        <form onSubmit={(e) => void handleSaveDraft(e)} className="space-y-6">
+        <Layout
+          as="form"
+          onSubmit={(e) => void handleSaveDraft(e)}
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
@@ -416,7 +426,10 @@ export function AgentConfigView({
             </CardHeader>
             <CardContent>
               <FieldGroup>
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <Layout
+                  flow="grid"
+                  className="grid-cols-1 gap-5 sm:grid-cols-2"
+                >
                   <Field>
                     <FieldLabel htmlFor="cfg-agent-name">实例名称</FieldLabel>
                     <Input
@@ -447,7 +460,7 @@ export function AgentConfigView({
                       customer_support、course_tutor）。
                     </FieldDescription>
                   </Field>
-                </div>
+                </Layout>
 
                 <Field>
                   <FieldLabel htmlFor="cfg-agent-model">
@@ -462,25 +475,30 @@ export function AgentConfigView({
                       <SelectValue placeholder="选择允许的模型" />
                     </SelectTrigger>
                     <SelectContent>
-                      {models.map((m) => {
-                        const key = buildModelKey(m.providerId, m.modelId);
-                        const expired = isModelExpired(m.expiresAt);
-                        return (
-                          <SelectItem key={key} value={key}>
-                            {getProviderLabel(m.providerId)} ·{' '}
-                            {m.displayName || m.modelId} ({m.providerId}:
-                            {m.modelId}) · 输入{' '}
-                            {formatPricePerK(m.promptPricePerK, m.currency)} /
-                            输出{' '}
-                            {formatPricePerK(m.completionPricePerK, m.currency)}
-                            {m.enabled === false
-                              ? ' [已停用]'
-                              : expired
-                                ? ' [价目已过期]'
-                                : ''}
-                          </SelectItem>
-                        );
-                      })}
+                      <SelectGroup>
+                        {models.map((m) => {
+                          const key = buildModelKey(m.providerId, m.modelId);
+                          const expired = isModelExpired(m.expiresAt);
+                          return (
+                            <SelectItem key={key} value={key}>
+                              {getProviderLabel(m.providerId)} ·{' '}
+                              {m.displayName || m.modelId} ({m.providerId}:
+                              {m.modelId}) · 输入{' '}
+                              {formatPricePerK(m.promptPricePerK, m.currency)} /
+                              输出{' '}
+                              {formatPricePerK(
+                                m.completionPricePerK,
+                                m.currency,
+                              )}
+                              {m.enabled === false
+                                ? ' [已停用]'
+                                : expired
+                                  ? ' [价目已过期]'
+                                  : ''}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
@@ -512,16 +530,16 @@ export function AgentConfigView({
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
+              <Layout>
                 <CardTitle className="text-base">
                   多选授权知识库（已选 {selectedKbIds.length} /{' '}
                   {knowledgeBases.length}）
                 </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <Text as="p" className="mt-1 text-xs text-muted-foreground">
                   可同时勾选多个授权知识库。问答检索时仅会召回已勾选知识库内处于「已发布」状态且提问者具备课程访问权限的切片。
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+                </Text>
+              </Layout>
+              <Layout flow="row" className="items-center gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -546,11 +564,14 @@ export function AgentConfigView({
                 >
                   清空
                 </Button>
-              </div>
+              </Layout>
             </CardHeader>
             <CardContent>
               {knowledgeBases.length === 0 ? (
-                <div className="rounded-lg bg-canvas-soft p-6 text-center text-sm text-muted-foreground">
+                <Card
+                  surface="muted"
+                  className="p-6 text-center text-sm text-muted-foreground block"
+                >
                   当前尚未创建任何知识库，请先前往{' '}
                   <Link
                     href="/manage/knowledge"
@@ -559,20 +580,23 @@ export function AgentConfigView({
                     知识库管理
                   </Link>{' '}
                   创建并发布来源。
-                </div>
+                </Card>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Layout
+                  flow="grid"
+                  className="grid-cols-1 gap-3 sm:grid-cols-2"
+                >
                   {knowledgeBases.map((kb) => {
                     if (!kb.id) {
                       return null;
                     }
                     const checked = selectedKbIds.includes(kb.id);
                     return (
-                      <label
+                      <FieldLabel
                         key={kb.id}
                         className="flex cursor-pointer items-start justify-between gap-3 rounded-lg bg-canvas-soft p-3.5 transition-colors hover:bg-secondary"
                       >
-                        <div className="flex items-start gap-3">
+                        <Layout flow="row" className="items-start gap-3">
                           <Checkbox
                             checked={checked}
                             onCheckedChange={(val) =>
@@ -581,21 +605,21 @@ export function AgentConfigView({
                             disabled={saving}
                             className="mt-0.5"
                           />
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium text-foreground">
+                          <Layout className="space-y-1">
+                            <Layout className="text-sm font-medium text-foreground">
                               {kb.name}
-                            </div>
+                            </Layout>
                             {kb.description ? (
-                              <div className="line-clamp-2 text-xs text-muted-foreground">
+                              <Layout className="line-clamp-2 text-xs text-muted-foreground">
                                 {kb.description}
-                              </div>
+                              </Layout>
                             ) : null}
-                            <div className="font-mono text-[11px] text-muted-foreground">
+                            <Layout className="font-mono text-[11px] text-muted-foreground">
                               ID: {kb.id} · 更新于{' '}
                               {formatDateTime(kb.updatedAt ?? kb.createdAt)}
-                            </div>
-                          </div>
-                        </div>
+                            </Layout>
+                          </Layout>
+                        </Layout>
                         <Badge
                           variant={
                             kb.visibility === 'public' ? 'default' : 'secondary'
@@ -603,15 +627,18 @@ export function AgentConfigView({
                         >
                           {getKnowledgeVisibilityLabel(kb.visibility)}
                         </Badge>
-                      </label>
+                      </FieldLabel>
                     );
                   })}
-                </div>
+                </Layout>
               )}
             </CardContent>
           </Card>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center justify-end gap-3"
+          >
             <Button variant="secondary" asChild>
               <Link href="/manage/agents">返回 Agent 列表</Link>
             </Button>
@@ -624,9 +651,9 @@ export function AgentConfigView({
                 ? '保存草稿中...'
                 : `保存草稿配置（当前 v${agent.draftVersion ?? 1}）`}
             </Button>
-          </div>
-        </form>
+          </Layout>
+        </Layout>
       ) : null}
-    </div>
+    </Layout>
   );
 }

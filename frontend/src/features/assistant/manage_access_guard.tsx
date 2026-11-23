@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import Link from 'next/link';
 import {ShieldAlertIcon} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -30,7 +31,7 @@ export function ManageAccessGuard({
   const isLoggedIn = Boolean(user);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col py-12">
+    <Layout flow="stack" className="mx-auto max-w-2xl py-12">
       <Empty className="bg-canvas-soft py-12">
         <EmptyHeader>
           <EmptyMedia variant="icon">
@@ -47,7 +48,10 @@ export function ManageAccessGuard({
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center justify-center gap-2"
+          >
             {isLoggedIn ? (
               <Button variant="secondary" asChild>
                 <Link href="/">返回首页</Link>
@@ -62,9 +66,9 @@ export function ManageAccessGuard({
                 </Button>
               </>
             )}
-          </div>
+          </Layout>
         </EmptyContent>
       </Empty>
-    </div>
+    </Layout>
   );
 }

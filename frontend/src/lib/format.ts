@@ -7,6 +7,21 @@ export interface CategoryOption {
 export const COURSE_CATEGORIES: readonly CategoryOption[] = [
   {slug: 'all', label: '全部分类', description: '浏览全部已发布课程'},
   {
+    slug: 'storyboard',
+    label: '剧本与分镜',
+    description: '剧本拆解、景别与镜头衔接',
+  },
+  {
+    slug: 'character-design',
+    label: '角色与画面',
+    description: '角色设定、造型与画面一致性',
+  },
+  {
+    slug: 'sound-editing',
+    label: '声音与剪辑',
+    description: '对白、音效与成片剪辑',
+  },
+  {
     slug: 'ai',
     label: 'AI 与智能体',
     description: '大模型应用、检索增强与 Agent 工程实践',
@@ -36,19 +51,24 @@ export const COURSE_CATEGORIES: readonly CategoryOption[] = [
 export const COMMUNITY_TOPICS: readonly CategoryOption[] = [
   {slug: 'all', label: '全部话题', description: '查看最新社区讨论'},
   {
+    slug: 'services',
+    label: '服务发布',
+    description: '创作服务、交付内容与合作咨询',
+  },
+  {
     slug: 'learning-method',
     label: '学习方法',
     description: '拆解学习路径、笔记整理与高效复盘经验',
   },
   {
     slug: 'course-qa',
-    label: '课程答疑',
-    description: '围绕课程内容、案例实操和知识点提问交流',
+    label: '课程咨询',
+    description: '选课、课程内容与学习问题',
   },
   {
     slug: 'project-practice',
     label: '项目实战',
-    description: '分享工程落地、代码架构和真实排障过程',
+    description: '分享作品制作、项目实践与复盘经验',
   },
   {
     slug: 'resources',

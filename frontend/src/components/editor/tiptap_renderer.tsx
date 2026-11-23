@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import {cn} from 'cn';
 
 const ALLOWED_TAGS = new Set([
@@ -120,7 +121,7 @@ export function TiptapRenderer({content, className}: TiptapRendererProps) {
     return null;
   }
   return (
-    <div
+    <Layout
       className={cn('learnis-prose', className)}
       dangerouslySetInnerHTML={{__html: safeHtml}}
     />

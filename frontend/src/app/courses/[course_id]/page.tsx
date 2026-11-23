@@ -1,3 +1,4 @@
+import {Layout} from '@/components/layout/layout';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
@@ -111,7 +112,7 @@ export default async function CourseDetailPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <Layout flow="stack" className="w-full gap-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -134,6 +135,6 @@ export default async function CourseDetailPage({
         accessSource={accessSource}
         lastLessonId={lastLessonId}
       />
-    </div>
+    </Layout>
   );
 }

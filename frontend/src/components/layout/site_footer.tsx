@@ -1,53 +1,42 @@
+import {Layout} from '@/components/layout/layout';
 import Link from 'next/link';
 import {LearnisLogo} from '@/components/brand/learnis_logo';
+import {Button} from '@/components/ui/button';
 
-export function SiteFooter() {
+const FOOTER_LINKS = [
+  {href: '/', label: '社区'},
+  {href: '/courses', label: '课程'},
+  {href: '/learning', label: '我的学习'},
+  {href: '/orders', label: '订单与退款'},
+  {href: '/account', label: '账号'},
+];
+
+export function Footer() {
   return (
-    <footer className="mt-16 w-full bg-background">
-      <div className="mx-auto flex min-h-[104px] max-w-[1920px] flex-col justify-between gap-6 px-4 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:px-6 xl:px-16">
-        <div className="flex flex-col gap-1.5">
-          <LearnisLogo variant="lockup" markSize={22} showEnglish />
-          <p className="text-xs leading-5 text-muted-foreground">
-            课程学习、交流社区与有来源的通用知识问答平台。
-          </p>
-        </div>
-
-        <nav
+    <Layout as="footer" className="bg-background">
+      <Layout
+        flow="stack"
+        className="layout-container gap-2 pt-4 pb-6 text-sm text-muted-foreground md:min-h-[84px] md:flex-row md:items-center md:justify-between md:gap-7 md:py-5"
+      >
+        <LearnisLogo variant="lockup" markSize={22} showEnglish />
+        <Layout
+          as="nav"
+          flow="row"
           aria-label="页脚导航"
-          className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"
+          className="flex-wrap items-center gap-x-4 pr-12 md:gap-x-5 md:pr-0"
         >
-          <Link
-            href="/"
-            className="text-body underline-offset-4 hover:text-foreground hover:underline"
-          >
-            社区首页
-          </Link>
-          <Link
-            href="/courses"
-            className="text-body underline-offset-4 hover:text-foreground hover:underline"
-          >
-            课程目录
-          </Link>
-          <Link
-            href="/learning"
-            className="text-body underline-offset-4 hover:text-foreground hover:underline"
-          >
-            我的学习
-          </Link>
-          <Link
-            href="/orders"
-            className="text-body underline-offset-4 hover:text-foreground hover:underline"
-          >
-            订单与退款规则
-          </Link>
-          <Link
-            href="/account"
-            className="text-body underline-offset-4 hover:text-foreground hover:underline"
-          >
-            账号与安全
-          </Link>
-        </nav>
-      </div>
-    </footer>
+          {FOOTER_LINKS.map(({href, label}) => (
+            <Button
+              key={href}
+              asChild
+              variant="link"
+              className="min-h-11 px-0 font-normal"
+            >
+              <Link href={href}>{label}</Link>
+            </Button>
+          ))}
+        </Layout>
+      </Layout>
+    </Layout>
   );
 }

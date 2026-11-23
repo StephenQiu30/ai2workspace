@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -40,6 +42,7 @@ import {buildLoginHref} from '@/lib/format';
 import type {TopicSummary} from './community_data';
 import {CommunityPagination} from './community_pagination';
 import {PostCard} from './post_card';
+import {TopicList} from './topic_list';
 import {PostComposerSheet} from './post_composer_sheet';
 
 export interface TopicDetailViewProps {
@@ -73,7 +76,7 @@ export function TopicDetailView({
   const loginHref = buildLoginHref(currentPath);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1792px] flex-col gap-8">
+    <Layout flow="stack" className="w-full gap-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -88,20 +91,28 @@ export function TopicDetailView({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-col gap-4 rounded-xl bg-canvas-soft p-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-heading text-[28px] leading-[40px] font-medium text-foreground">
+      <Layout
+        as="header"
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout flow="stack" className="gap-2">
+          <Layout flow="row" className="flex-wrap items-center gap-2">
+            <Heading
+              level={1}
+              size="page"
+              className="font-heading text-foreground"
+            >
               {topic.name}
-            </h1>
+            </Heading>
             <Badge variant="secondary">共 {postsTotal} 篇讨论</Badge>
-          </div>
-          <p className="max-w-2xl text-sm leading-6 text-body">
+          </Layout>
+          <Text as="p" variant="body" className="max-w-2xl">
             {topic.description}
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Button type="button" onClick={() => setComposerOpen(true)}>
             <MessageSquarePlusIcon data-icon="inline-start" />
             在本话题发起讨论
@@ -109,13 +120,18 @@ export function TopicDetailView({
           <Button variant="secondary" asChild>
             <Link href="/">返回首页</Link>
           </Button>
-        </div>
-      </header>
+        </Layout>
+      </Layout>
 
-      <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-16">
-        <section
+      <Layout
+        flow="grid"
+        className="grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-16"
+      >
+        <Layout
+          as="section"
+          flow="stack"
           aria-label={`${topic.name}讨论列表`}
-          className="flex min-w-0 flex-col gap-3"
+          className="min-w-0 gap-8"
         >
           {postsError ? (
             <Alert variant="destructive">
@@ -162,9 +178,14 @@ export function TopicDetailView({
               />
             </>
           )}
-        </section>
+        </Layout>
 
-        <aside aria-label="其他话题与入口" className="flex flex-col gap-6">
+        <Layout
+          as="aside"
+          flow="stack"
+          aria-label="其他话题与入口"
+          className="gap-6"
+        >
           {!user ? (
             <Card>
               <CardHeader>
@@ -183,47 +204,21 @@ export function TopicDetailView({
 
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
+              <Layout flow="row" className="items-center gap-2">
                 <CompassIcon
                   className="size-4 text-foreground"
                   aria-hidden="true"
                 />
                 <CardTitle>全部话题</CardTitle>
-              </div>
+              </Layout>
               <CardDescription>切换到其他主题浏览公开讨论</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-1.5">
-              {topics.map((item) => {
-                const isCurrent = item.slug === topic.slug;
-                return (
-                  <Link
-                    key={item.slug}
-                    href={`/topics/${item.slug}`}
-                    aria-current={isCurrent ? 'page' : undefined}
-                    className={`flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 transition-colors duration-120 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      isCurrent
-                        ? 'bg-control-hover text-foreground'
-                        : 'hover:bg-background'
-                    }`}
-                  >
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-sm leading-5 font-medium text-foreground">
-                        {item.name}
-                      </span>
-                      <span className="line-clamp-1 text-xs leading-5 text-muted-foreground">
-                        {item.description}
-                      </span>
-                    </div>
-                    <Badge variant="secondary" className="shrink-0">
-                      {item.postCount}
-                    </Badge>
-                  </Link>
-                );
-              })}
+            <CardContent>
+              <TopicList topics={topics} current={topic.slug} />
             </CardContent>
           </Card>
-        </aside>
-      </div>
+        </Layout>
+      </Layout>
 
       <PostComposerSheet
         mode="create"
@@ -233,6 +228,6 @@ export function TopicDetailView({
         defaultTopic={topic.slug}
         returnPath={currentPath}
       />
-    </div>
+    </Layout>
   );
 }

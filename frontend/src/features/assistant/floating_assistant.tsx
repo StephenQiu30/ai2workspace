@@ -1,5 +1,8 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
+import {Card} from '@/components/ui/card';
 import {
   useCallback,
   useEffect,
@@ -29,6 +32,18 @@ import {LearnisLogo} from '@/components/brand/learnis_logo';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
+import {Bubble, BubbleContent} from '@/components/ui/bubble';
+import {Marker, MarkerContent, MarkerIcon} from '@/components/ui/marker';
+import {Message, MessageContent} from '@/components/ui/message';
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerProvider,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerViewport,
+} from '@/components/ui/message-scroller';
+import {ToggleGroup, ToggleGroupItem} from '@/components/ui/toggle-group';
 import {
   Dialog,
   DialogContent,
@@ -67,6 +82,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import {Spinner} from '@/components/ui/spinner';
 import {useAssistantContext} from '@/features/assistant/assistant_context';
@@ -95,7 +111,7 @@ type EvidenceDetail =
   | {kind: 'citation'; data: AssistantApi.Citation}
   | {kind: 'web'; data: AssistantApi.SearchResultItem};
 
-function isSafeExternalHref(url?: string): boolean {
+function isSafeExternalHref(url?: string): url is string {
   if (!url) {
     return false;
   }
@@ -146,11 +162,8 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
     null,
   );
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isComposingRef = useRef(false);
-  const wasOpenRef = useRef(false);
   const hasBootstrappedRef = useRef(false);
 
   const publishedAgents = useMemo(
@@ -191,31 +204,6 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-
-  // Restore focus to trigger button when floating panel closes
-  useEffect(() => {
-    if (wasOpenRef.current && !open) {
-      window.requestAnimationFrame(() => {
-        triggerRef.current?.focus();
-      });
-    }
-    wasOpenRef.current = open;
-  }, [open]);
-
-  // Escape key closes desktop panel (when evidence detail dialog is not open)
-  useEffect(() => {
-    if (!open || isMobile) {
-      return;
-    }
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && !evidenceDetail) {
-        event.preventDefault();
-        setOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, isMobile, evidenceDetail, setOpen]);
 
   const refreshSummary = useCallback(async () => {
     if (!isVerifiedUser) {
@@ -308,14 +296,6 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
       void refreshSummary();
     }
   }, [open, isVerifiedUser, bootstrapAssistant, refreshSummary]);
-
-  // Auto-scroll to latest message
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-  }, [messages, asking, open]);
 
   const handleSelectSession = useCallback(
     async (session: AssistantApi.Session) => {
@@ -510,16 +490,25 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
   };
 
   const renderPanelContent = () => (
-    <div className="flex h-full min-h-0 flex-col bg-popover text-popover-foreground">
+    <Layout
+      flow="stack"
+      className="h-full min-h-0 bg-popover text-popover-foreground"
+    >
       {/* Panel Header */}
-      <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-4 pb-3">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <Layout
+        flow="row"
+        className="shrink-0 items-center justify-between gap-2 px-4 pt-4 pb-3"
+      >
+        <Layout flow="row" className="min-w-0 items-center gap-2.5">
           <LearnisLogo variant="mark" tone="ink" markSize={20} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-base leading-6 font-medium text-foreground">
+          <Layout className="min-w-0">
+            <Layout flow="row" className="items-center gap-2">
+              <Heading
+                level={2}
+                className="truncate text-base leading-6 font-medium text-foreground"
+              >
                 学屿助手
-              </h2>
+              </Heading>
               {courseContext ? (
                 <Badge
                   variant="secondary"
@@ -527,27 +516,29 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                   title={courseContext.courseTitle ?? courseContext.courseId}
                 >
                   <BookOpenIcon className="size-3 shrink-0" />
-                  <span className="truncate">
+                  <Text className="truncate">
                     {courseContext.courseTitle || '当前课程'}
-                  </span>
-                  <button
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     type="button"
                     onClick={() => setCourseContext(null)}
                     aria-label="清除当前课程上下文"
-                    className="ml-0.5 rounded-full hover:text-foreground"
+                    className="ml-0.5"
                   >
                     <XIcon className="size-3" />
-                  </button>
+                  </Button>
                 </Badge>
               ) : null}
-            </div>
-            <p className="text-xs text-muted-foreground">
+            </Layout>
+            <Text as="p" className="text-xs text-muted-foreground">
               关闭仅收起面板，不取消运行
-            </p>
-          </div>
-        </div>
+            </Text>
+          </Layout>
+        </Layout>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <Layout flow="row" className="shrink-0 items-center gap-1">
           {isVerifiedUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -565,14 +556,14 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                 <DropdownMenuGroup>
                   <DropdownMenuItem onSelect={handleStartNewSession}>
                     <PlusIcon />
-                    <span>开启新对话</span>
+                    <Text>开启新对话</Text>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 {sessions.length === 0 ? (
-                  <div className="px-2.5 py-3 text-xs text-muted-foreground">
+                  <Layout className="px-2.5 py-3 text-xs text-muted-foreground">
                     暂无历史对话记录
-                  </div>
+                  </Layout>
                 ) : (
                   <DropdownMenuGroup>
                     {sessions.slice(0, 15).map((session) => {
@@ -586,14 +577,14 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                             isCurrent ? 'bg-secondary font-medium' : '',
                           )}
                         >
-                          <span className="w-full truncate text-sm">
+                          <Text className="w-full truncate text-sm">
                             {getSessionLabel(session)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
+                          </Text>
+                          <Text className="text-xs text-muted-foreground">
                             {formatDateTime(
                               session.updatedAt ?? session.createdAt,
                             )}
-                          </span>
+                          </Text>
                         </DropdownMenuItem>
                       );
                     })}
@@ -612,12 +603,12 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
           >
             <XIcon />
           </Button>
-        </div>
-      </div>
+        </Layout>
+      </Layout>
 
       {/* Auth Gate: Guest */}
       {!user ? (
-        <div className="flex flex-1 flex-col justify-center px-6 py-8">
+        <Layout flow="stack" className="flex-1 justify-center px-6 py-8">
           <Empty className="bg-canvas-soft py-8">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -647,10 +638,10 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
               </Button>
             </EmptyContent>
           </Empty>
-        </div>
+        </Layout>
       ) : !user.emailVerified ? (
         /* Auth Gate: Unverified Email */
-        <div className="flex flex-1 flex-col justify-center gap-4 px-6 py-8">
+        <Layout flow="stack" className="flex-1 justify-center gap-4 px-6 py-8">
           <Empty className="bg-canvas-soft py-8">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -670,55 +661,70 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
               </Button>
             </EmptyContent>
           </Empty>
-        </div>
+        </Layout>
       ) : (
         /* Verified User Q&A Body */
         <>
           {/* Agent Switcher & Quota Strip */}
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 bg-canvas-soft px-4 py-2.5">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+          <Layout
+            flow="row"
+            className="shrink-0 flex-wrap items-center justify-between gap-2 bg-canvas-soft px-4 py-2.5"
+          >
+            <Layout
+              flow="row"
+              className="min-w-0 flex-1 items-center gap-1.5 overflow-x-auto"
+            >
               {bootstrapping ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Layout
+                  flow="row"
+                  className="items-center gap-2 text-xs text-muted-foreground"
+                >
                   <Spinner className="size-3.5" />
-                  <span>正在加载助手实例…</span>
-                </div>
+                  <Text>正在加载助手实例…</Text>
+                </Layout>
               ) : publishedAgents.length > 0 ? (
-                publishedAgents.map((agent) => {
-                  const slug = agent.slug ?? '';
-                  const isActive = slug === selectedSlug;
-                  return (
-                    <Button
-                      key={agent.id ?? slug}
-                      variant={isActive ? 'default' : 'secondary'}
-                      size="xs"
-                      className="shrink-0"
-                      onClick={() => handleSwitchAgent(slug)}
-                      disabled={asking}
-                    >
-                      {agent.name || slug}
-                    </Button>
-                  );
-                })
+                <ToggleGroup
+                  type="single"
+                  variant="filter"
+                  size="sm"
+                  value={selectedSlug}
+                  disabled={asking}
+                  aria-label="选择助手"
+                  onValueChange={(slug) => {
+                    if (slug) handleSwitchAgent(slug);
+                  }}
+                >
+                  {publishedAgents
+                    .filter((agent) => agent.slug)
+                    .map((agent) => (
+                      <ToggleGroupItem
+                        key={agent.id ?? agent.slug}
+                        value={agent.slug!}
+                      >
+                        {agent.name || agent.slug}
+                      </ToggleGroupItem>
+                    ))}
+                </ToggleGroup>
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <Text className="text-xs text-muted-foreground">
                   暂无已发布的助手实例
-                </span>
+                </Text>
               )}
-            </div>
+            </Layout>
 
             {summary ? (
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <Text className="shrink-0 text-xs text-muted-foreground">
                 {remainingQuestions !== null &&
                 typeof summary.maxDailyQuestions === 'number'
                   ? `今日剩余 ${remainingQuestions}/${summary.maxDailyQuestions} 次`
                   : `今日已用 ${summary.questionsCount ?? 0} 次`}
-              </span>
+              </Text>
             ) : null}
-          </div>
+          </Layout>
 
           {/* Platform Paused Alert */}
           {summary?.paused ? (
-            <div className="shrink-0 px-4 pt-3">
+            <Layout className="shrink-0 px-4 pt-3">
               <Alert variant="destructive">
                 <ShieldAlertIcon />
                 <AlertTitle>平台已暂停新增 AI 请求</AlertTitle>
@@ -727,261 +733,298 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                     '管理员已临时开启保护暂停，当前仅可浏览历史对话。'}
                 </AlertDescription>
               </Alert>
-            </div>
+            </Layout>
           ) : null}
 
           {/* Messages Viewport */}
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {!bootstrapping && publishedAgents.length === 0 ? (
-              <Empty className="bg-canvas-soft py-8">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <AlertCircleIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>当前暂无可用助手实例</EmptyTitle>
-                  <EmptyDescription>
-                    管理员尚未发布可用的学屿助手实例，或全部实例已停用。请稍后刷新重试。
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void bootstrapAssistant()}
-                  >
-                    <RefreshCwIcon />
-                    刷新状态
-                  </Button>
-                </EmptyContent>
-              </Empty>
-            ) : loadingMessages ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
-                <Spinner />
-                <span>正在加载历史消息并复核引用权限…</span>
-              </div>
-            ) : messages.length === 0 ? (
-              <Empty className="bg-canvas-soft py-10">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <LearnisLogo variant="mark" tone="ink" markSize={20} />
-                  </EmptyMedia>
-                  <EmptyTitle>
-                    {activeAgent?.name || '学屿助手'}已就绪
-                  </EmptyTitle>
-                  <EmptyDescription>
-                    可围绕课程知识点、实践问题或平台使用提问。每次回答均结合授权知识库检索与实时联网搜索，并提供可点击核验的依据来源。
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              messages.map((message, idx) => {
-                const isUser = message.sender === 'user';
-                const citations = Array.isArray(message.citations)
-                  ? message.citations
-                  : [];
-                const webSources = Array.isArray(message.searchQueries)
-                  ? message.searchQueries
-                  : [];
+          <MessageScrollerProvider key={activeSessionId} autoScroll>
+            <MessageScroller className="min-h-0 flex-1">
+              <MessageScrollerViewport aria-label="对话记录">
+                <MessageScrollerContent className="gap-4 px-4 py-4">
+                  {!bootstrapping && publishedAgents.length === 0 ? (
+                    <MessageScrollerItem messageId="unavailable">
+                      <Empty className="py-8">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <AlertCircleIcon />
+                          </EmptyMedia>
+                          <EmptyTitle>当前暂无可用助手实例</EmptyTitle>
+                          <EmptyDescription>
+                            管理员尚未发布可用的学屿助手实例，或全部实例已停用。请稍后刷新重试。
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void bootstrapAssistant()}
+                          >
+                            <RefreshCwIcon />
+                            刷新状态
+                          </Button>
+                        </EmptyContent>
+                      </Empty>
+                    </MessageScrollerItem>
+                  ) : loadingMessages ? (
+                    <MessageScrollerItem messageId="loading">
+                      <Marker className="justify-center py-12">
+                        <MarkerIcon>
+                          <Spinner />
+                        </MarkerIcon>
+                        <MarkerContent>正在加载对话…</MarkerContent>
+                      </Marker>
+                    </MessageScrollerItem>
+                  ) : messages.length === 0 ? (
+                    <MessageScrollerItem messageId="ready">
+                      <Empty className="py-10">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <LearnisLogo
+                              variant="mark"
+                              tone="ink"
+                              markSize={20}
+                            />
+                          </EmptyMedia>
+                          <EmptyTitle>
+                            {activeAgent?.name || '学屿助手'}已就绪
+                          </EmptyTitle>
+                          <EmptyDescription>
+                            可以提出课程或创作问题。
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+                    </MessageScrollerItem>
+                  ) : (
+                    messages.map((message, idx) => {
+                      const isUser = message.sender === 'user';
+                      const citations = Array.isArray(message.citations)
+                        ? message.citations
+                        : [];
+                      const webSources = Array.isArray(message.searchQueries)
+                        ? message.searchQueries
+                        : [];
 
-                return (
-                  <div
-                    key={message.id ?? `msg_${idx}`}
-                    className={cn(
-                      'flex flex-col gap-2',
-                      isUser ? 'items-end' : 'items-start',
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-6 whitespace-pre-wrap break-words',
-                        isUser
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-canvas-soft text-foreground',
-                      )}
-                    >
-                      {message.content}
-                    </div>
+                      return (
+                        <MessageScrollerItem
+                          key={message.id ?? `msg_${idx}`}
+                          messageId={message.id ?? `msg_${idx}`}
+                          scrollAnchor={isUser}
+                        >
+                          <Message align={isUser ? 'end' : 'start'}>
+                            <MessageContent>
+                              <Bubble
+                                variant={isUser ? 'default' : 'muted'}
+                                align={isUser ? 'end' : 'start'}
+                              >
+                                <BubbleContent className="whitespace-pre-wrap break-words">
+                                  {message.content}
+                                </BubbleContent>
+                              </Bubble>
 
-                    {!isUser && message.redacted ? (
-                      <Alert className="max-w-[92%] py-2.5">
-                        <ShieldAlertIcon />
-                        <AlertTitle className="text-xs">
-                          部分引用来源已受保护隐藏
-                        </AlertTitle>
-                        <AlertDescription className="text-xs">
-                          该回答涉及的知识来源已被撤回或您的课程访问权限已变更，系统已自动隐藏受保护内容。
+                              {!isUser && message.redacted ? (
+                                <Alert className="max-w-[92%] py-2.5">
+                                  <ShieldAlertIcon />
+                                  <AlertTitle className="text-xs">
+                                    部分引用来源已受保护隐藏
+                                  </AlertTitle>
+                                  <AlertDescription className="text-xs">
+                                    该回答涉及的知识来源已被撤回或您的课程访问权限已变更，系统已自动隐藏受保护内容。
+                                  </AlertDescription>
+                                </Alert>
+                              ) : null}
+
+                              {!isUser &&
+                              (citations.length > 0 ||
+                                webSources.length > 0) ? (
+                                <Layout
+                                  flow="stack"
+                                  className="max-w-[94%] gap-2"
+                                >
+                                  {citations.length > 0 ? (
+                                    <Layout
+                                      flow="row"
+                                      className="flex-wrap items-center gap-1.5"
+                                    >
+                                      <Text className="text-xs text-muted-foreground">
+                                        知识引用
+                                      </Text>
+                                      {citations.map((citation, cIdx) => (
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          key={
+                                            citation.chunkId ?? `cit_${cIdx}`
+                                          }
+                                          type="button"
+                                          onClick={() =>
+                                            setEvidenceDetail({
+                                              kind: 'citation',
+                                              data: citation,
+                                            })
+                                          }
+                                        >
+                                          <BookOpenIcon />
+                                          <Text className="max-w-[160px] truncate">
+                                            {citation.title || '授权知识片段'}
+                                          </Text>
+                                          {typeof citation.sourceVersion ===
+                                          'number' ? (
+                                            <Text className="text-muted-foreground">
+                                              v{citation.sourceVersion}
+                                            </Text>
+                                          ) : null}
+                                        </Button>
+                                      ))}
+                                    </Layout>
+                                  ) : null}
+
+                                  {webSources.length > 0 ? (
+                                    <Layout
+                                      flow="row"
+                                      className="flex-wrap items-center gap-1.5"
+                                    >
+                                      <Text className="text-xs text-muted-foreground">
+                                        网页来源
+                                      </Text>
+                                      {webSources.map((source, sIdx) => (
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          key={source.url ?? `web_${sIdx}`}
+                                          type="button"
+                                          onClick={() =>
+                                            setEvidenceDetail({
+                                              kind: 'web',
+                                              data: source,
+                                            })
+                                          }
+                                        >
+                                          <GlobeIcon />
+                                          <Text className="max-w-[160px] truncate">
+                                            {source.title ||
+                                              source.url ||
+                                              '实时网页来源'}
+                                          </Text>
+                                        </Button>
+                                      ))}
+                                    </Layout>
+                                  ) : null}
+                                </Layout>
+                              ) : null}
+                            </MessageContent>
+                          </Message>
+                        </MessageScrollerItem>
+                      );
+                    })
+                  )}
+
+                  {/* Running Stage Banner + Independent Cancel Run Button */}
+                  {asking ? (
+                    <MessageScrollerItem messageId="running">
+                      <Layout flow="stack" className="gap-2.5">
+                        <Layout
+                          flow="row"
+                          className="items-center gap-2 text-sm text-foreground"
+                        >
+                          <Spinner className="size-4 shrink-0" />
+                          <Text>正在检索授权知识库并执行实时联网搜索…</Text>
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="items-center justify-between gap-2"
+                        >
+                          <Text className="text-xs text-muted-foreground">
+                            收起面板后仍会继续运行；如需中断请点击取消。
+                          </Text>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="xs"
+                            disabled={cancelling}
+                            onClick={() => void handleCancelRun()}
+                          >
+                            <SquareIcon />
+                            {cancelling ? '正在取消…' : '取消运行'}
+                          </Button>
+                        </Layout>
+                      </Layout>
+                    </MessageScrollerItem>
+                  ) : null}
+
+                  {/* Structured Error Alert with Actionable Recovery */}
+                  {lastError ? (
+                    <MessageScrollerItem messageId="error">
+                      <Alert variant="destructive">
+                        <AlertCircleIcon />
+                        <AlertTitle>{lastError.title}</AlertTitle>
+                        <AlertDescription className="space-y-2.5">
+                          <Text as="p">{lastError.description}</Text>
+                          <Layout
+                            flow="row"
+                            className="flex-wrap items-center gap-2"
+                          >
+                            {lastError.kind === 'auth' ? (
+                              <Button size="xs" asChild>
+                                <Link
+                                  href={buildLoginHref(pathname)}
+                                  onClick={() => setOpen(false)}
+                                >
+                                  重新登录
+                                </Link>
+                              </Button>
+                            ) : null}
+                            {lastError.kind === 'verify' ? (
+                              <Button size="xs" asChild>
+                                <Link
+                                  href="/account"
+                                  onClick={() => setOpen(false)}
+                                >
+                                  前往验证邮箱
+                                </Link>
+                              </Button>
+                            ) : null}
+                            {lastError.retryable && inputVal.trim() ? (
+                              <Button
+                                type="button"
+                                size="xs"
+                                disabled={asking}
+                                onClick={() => void handleSend()}
+                              >
+                                <RefreshCwIcon />
+                                重新尝试
+                              </Button>
+                            ) : null}
+                            {lastError.kind === 'revoked' ? (
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="xs"
+                                onClick={handleStartNewSession}
+                              >
+                                开启新对话
+                              </Button>
+                            ) : null}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => setLastError(null)}
+                            >
+                              知道了
+                            </Button>
+                          </Layout>
                         </AlertDescription>
                       </Alert>
-                    ) : null}
-
-                    {!isUser &&
-                    (citations.length > 0 || webSources.length > 0) ? (
-                      <div className="flex max-w-[94%] flex-col gap-2">
-                        {citations.length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs text-muted-foreground">
-                              知识引用
-                            </span>
-                            {citations.map((citation, cIdx) => (
-                              <button
-                                key={citation.chunkId ?? `cit_${cIdx}`}
-                                type="button"
-                                onClick={() =>
-                                  setEvidenceDetail({
-                                    kind: 'citation',
-                                    data: citation,
-                                  })
-                                }
-                                className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                              >
-                                <Badge
-                                  variant="secondary"
-                                  className="cursor-pointer hover:bg-control-hover"
-                                >
-                                  <BookOpenIcon />
-                                  <span className="max-w-[160px] truncate">
-                                    {citation.title || '授权知识片段'}
-                                  </span>
-                                  {typeof citation.sourceVersion ===
-                                  'number' ? (
-                                    <span className="text-muted-foreground">
-                                      v{citation.sourceVersion}
-                                    </span>
-                                  ) : null}
-                                </Badge>
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-
-                        {webSources.length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs text-muted-foreground">
-                              网页来源
-                            </span>
-                            {webSources.map((source, sIdx) => (
-                              <button
-                                key={source.url ?? `web_${sIdx}`}
-                                type="button"
-                                onClick={() =>
-                                  setEvidenceDetail({
-                                    kind: 'web',
-                                    data: source,
-                                  })
-                                }
-                                className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                              >
-                                <Badge
-                                  variant="secondary"
-                                  className="cursor-pointer hover:bg-control-hover"
-                                >
-                                  <GlobeIcon />
-                                  <span className="max-w-[160px] truncate">
-                                    {source.title ||
-                                      source.url ||
-                                      '实时网页来源'}
-                                  </span>
-                                </Badge>
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })
-            )}
-
-            {/* Running Stage Banner + Independent Cancel Run Button */}
-            {asking ? (
-              <div className="flex flex-col gap-2.5 rounded-xl bg-canvas-soft p-3.5">
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <Spinner className="size-4 shrink-0" />
-                  <span>正在检索授权知识库并执行实时联网搜索…</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    收起面板后仍会继续运行；如需中断请点击取消。
-                  </span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    disabled={cancelling}
-                    onClick={() => void handleCancelRun()}
-                  >
-                    <SquareIcon />
-                    {cancelling ? '正在取消…' : '取消运行'}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Structured Error Alert with Actionable Recovery */}
-            {lastError ? (
-              <Alert variant="destructive">
-                <AlertCircleIcon />
-                <AlertTitle>{lastError.title}</AlertTitle>
-                <AlertDescription className="space-y-2.5">
-                  <p>{lastError.description}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {lastError.kind === 'auth' ? (
-                      <Button size="xs" asChild>
-                        <Link
-                          href={buildLoginHref(pathname)}
-                          onClick={() => setOpen(false)}
-                        >
-                          重新登录
-                        </Link>
-                      </Button>
-                    ) : null}
-                    {lastError.kind === 'verify' ? (
-                      <Button size="xs" asChild>
-                        <Link href="/account" onClick={() => setOpen(false)}>
-                          前往验证邮箱
-                        </Link>
-                      </Button>
-                    ) : null}
-                    {lastError.retryable && inputVal.trim() ? (
-                      <Button
-                        type="button"
-                        size="xs"
-                        disabled={asking}
-                        onClick={() => void handleSend()}
-                      >
-                        <RefreshCwIcon />
-                        重新尝试
-                      </Button>
-                    ) : null}
-                    {lastError.kind === 'revoked' ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="xs"
-                        onClick={handleStartNewSession}
-                      >
-                        开启新对话
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => setLastError(null)}
-                    >
-                      知道了
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            <div ref={messagesEndRef} />
-          </div>
+                    </MessageScrollerItem>
+                  ) : null}
+                </MessageScrollerContent>
+              </MessageScrollerViewport>
+              <MessageScrollerButton />
+            </MessageScroller>
+          </MessageScrollerProvider>
 
           {/* Input Footer using official InputGroup */}
-          <div className="shrink-0 bg-background px-4 pt-2 pb-4">
+          <Layout className="shrink-0 bg-background px-4 pt-2 pb-4">
             <InputGroup>
               <InputGroupTextarea
                 value={inputVal}
@@ -1011,9 +1054,9 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
               <InputGroupAddon align="block-end">
                 <InputGroupText className="text-xs">
                   <GlobeIcon className="size-3.5" />
-                  <span>每答必联网</span>
+                  <Text>每答必联网</Text>
                 </InputGroupText>
-                <div className="flex items-center gap-1.5">
+                <Layout flow="row" className="items-center gap-1.5">
                   {asking ? (
                     <InputGroupButton
                       variant="secondary"
@@ -1039,60 +1082,50 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                       发送
                     </InputGroupButton>
                   )}
-                </div>
+                </Layout>
               </InputGroupAddon>
             </InputGroup>
-          </div>
+          </Layout>
         </>
       )}
-    </div>
+    </Layout>
   );
 
   return (
     <>
-      {/* Trigger Button (Design 010 §5.4): 52px circular black button, inverse mark only */}
-      {!open ? (
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="打开学屿助手"
-          aria-expanded={open}
-          className="fixed right-4 bottom-4 z-50 inline-flex size-[52px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--overlay-shadow)] transition-transform duration-150 outline-none hover:scale-[1.03] hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:right-6 md:bottom-6"
-        >
-          <LearnisLogo variant="mark" tone="inverse" markSize={24} />
-        </button>
-      ) : null}
-
-      {/* Desktop Floating Panel */}
-      {open && !isMobile ? (
-        <section
-          role="dialog"
-          aria-label="学屿助手"
-          className="fixed right-6 bottom-6 z-50 flex h-[min(680px,calc(100vh-112px))] w-[440px] flex-col overflow-hidden rounded-2xl bg-popover text-popover-foreground shadow-[var(--overlay-shadow)]"
-        >
-          {renderPanelContent()}
-        </section>
-      ) : null}
-
-      {/* Mobile Full-screen Official Sheet */}
-      {isMobile ? (
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent
-            side="right"
-            showCloseButton={false}
-            className="inset-0 h-dvh w-full max-w-none gap-0 p-0 sm:max-w-none"
+      <Sheet open={open} onOpenChange={setOpen} modal={isMobile}>
+        <SheetTrigger asChild>
+          <Button
+            size="icon-lg"
+            aria-label="打开学屿助手"
+            className={cn(
+              'fixed right-4 bottom-4 z-40 size-[52px] md:right-6 md:bottom-6',
+              open && 'invisible',
+            )}
           >
-            <SheetHeader className="sr-only">
-              <SheetTitle>学屿助手</SheetTitle>
-              <SheetDescription>
-                结合授权知识库与实时联网搜索的学习问答浮层
-              </SheetDescription>
-            </SheetHeader>
-            {renderPanelContent()}
-          </SheetContent>
-        </Sheet>
-      ) : null}
+            <LearnisLogo variant="mark" tone="inverse" markSize={24} />
+          </Button>
+        </SheetTrigger>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          onInteractOutside={(event) => {
+            if (!isMobile) event.preventDefault();
+          }}
+          className={cn(
+            'gap-0 overflow-hidden p-0',
+            isMobile
+              ? 'data-[side=right]:h-dvh data-[side=right]:sm:max-w-none'
+              : 'rounded-xl data-[side=right]:inset-y-auto data-[side=right]:right-6 data-[side=right]:bottom-6 data-[side=right]:h-[min(680px,calc(100dvh-112px))] data-[side=right]:w-[440px]',
+          )}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>学屿助手</SheetTitle>
+            <SheetDescription>课程与学习问答</SheetDescription>
+          </SheetHeader>
+          {renderPanelContent()}
+        </SheetContent>
+      </Sheet>
 
       {/* Citation & Web Source Evidence Detail Dialog */}
       <Dialog
@@ -1107,7 +1140,7 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
           {evidenceDetail?.kind === 'citation' ? (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2">
+                <Layout flow="row" className="items-center gap-2">
                   <Badge variant="secondary">
                     <BookOpenIcon />
                     知识库引用
@@ -1117,7 +1150,7 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                       版本 v{evidenceDetail.data.sourceVersion}
                     </Badge>
                   ) : null}
-                </div>
+                </Layout>
                 <DialogTitle className="mt-1">
                   {evidenceDetail.data.title || '授权知识片段'}
                 </DialogTitle>
@@ -1125,30 +1158,36 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                   来自已发布且经实时权限校验的知识库来源切片
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-3">
-                <div className="rounded-xl bg-canvas-soft p-4 text-sm leading-6 whitespace-pre-wrap text-body">
+              <Layout className="space-y-3">
+                <Card
+                  surface="muted"
+                  className="p-4 text-sm leading-6 whitespace-pre-wrap text-body block"
+                >
                   {evidenceDetail.data.snippet || '暂无摘要片段。'}
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                </Card>
+                <Layout
+                  flow="row"
+                  className="flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+                >
                   {typeof evidenceDetail.data.chunkIndex === 'number' ? (
-                    <span>切片序号：#{evidenceDetail.data.chunkIndex + 1}</span>
+                    <Text>切片序号：#{evidenceDetail.data.chunkIndex + 1}</Text>
                   ) : null}
                   {evidenceDetail.data.courseId ? (
-                    <span>关联课程：{evidenceDetail.data.courseId}</span>
+                    <Text>关联课程：{evidenceDetail.data.courseId}</Text>
                   ) : null}
-                </div>
-              </div>
+                </Layout>
+              </Layout>
               <DialogFooter showCloseButton />
             </>
           ) : evidenceDetail?.kind === 'web' ? (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2">
+                <Layout flow="row" className="items-center gap-2">
                   <Badge variant="secondary">
                     <GlobeIcon />
                     实时网页来源
                   </Badge>
-                </div>
+                </Layout>
                 <DialogTitle className="mt-1">
                   {evidenceDetail.data.title || '网页检索结果'}
                 </DialogTitle>
@@ -1156,27 +1195,33 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
                   本次问答触发实时联网搜索获取的公开网页参考
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-3">
-                <div className="rounded-xl bg-canvas-soft p-4 text-sm leading-6 whitespace-pre-wrap text-body">
+              <Layout className="space-y-3">
+                <Card
+                  surface="muted"
+                  className="p-4 text-sm leading-6 whitespace-pre-wrap text-body block"
+                >
                   {evidenceDetail.data.snippet || '暂无网页摘要内容。'}
-                </div>
+                </Card>
                 {evidenceDetail.data.url ? (
-                  <p className="truncate font-mono text-xs text-muted-foreground">
+                  <Text
+                    as="p"
+                    className="truncate font-mono text-xs text-muted-foreground"
+                  >
                     {evidenceDetail.data.url}
-                  </p>
+                  </Text>
                 ) : null}
-              </div>
+              </Layout>
               <DialogFooter>
                 {isSafeExternalHref(evidenceDetail.data.url) ? (
                   <Button asChild>
-                    <a
+                    <Link
                       href={evidenceDetail.data.url}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <ExternalLinkIcon />
                       打开外部链接
-                    </a>
+                    </Link>
                   </Button>
                 ) : null}
                 <Button

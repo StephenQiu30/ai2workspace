@@ -94,13 +94,18 @@ var topicCatalog = []TopicInfo{
 	},
 	{
 		Slug:        "course-qa",
-		Name:        "课程答疑",
-		Description: "围绕课程知识点与练习题的提问与解答",
+		Name:        "课程咨询",
+		Description: "选课、课程内容与学习问题",
 	},
 	{
 		Slug:        "project-practice",
 		Name:        "项目实战",
-		Description: "项目拆分、代码实现与复盘经验分享",
+		Description: "作品制作、项目实践与复盘经验",
+	},
+	{
+		Slug:        "services",
+		Name:        "服务发布",
+		Description: "创作服务、交付内容与合作咨询",
 	},
 	{
 		Slug:        "resources",

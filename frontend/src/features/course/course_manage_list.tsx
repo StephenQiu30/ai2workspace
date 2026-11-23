@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -53,11 +55,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import {Field, FieldDescription, FieldLabel} from '@/components/ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -341,8 +349,11 @@ export function CourseManageList({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <Layout flow="stack" className="gap-6">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-center"
+      >
         <Tabs
           value={tab}
           onValueChange={(val) => setTab(val as ManageTabValue)}
@@ -373,82 +384,90 @@ export function CourseManageList({
               </DialogDescription>
             </DialogHeader>
 
-            <form
+            <Layout
+              as="form"
+              flow="stack"
               onSubmit={(e) => void handleCreateCourse(e)}
-              className="flex flex-col gap-4"
+              className="gap-4"
             >
-              <Field>
-                <FieldLabel htmlFor="new-course-title">课程标题</FieldLabel>
-                <Input
-                  id="new-course-title"
-                  placeholder="例如：AI Agent 工程化与 RAG 实战"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  required
-                />
-              </Field>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="new-course-title">课程标题</FieldLabel>
+                  <Input
+                    id="new-course-title"
+                    placeholder="例如：AI 短漫剧分镜"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    required
+                  />
+                </Field>
 
-              <Field>
-                <FieldLabel htmlFor="new-course-category">课程分类</FieldLabel>
-                <Select value={newCategory} onValueChange={setNewCategory}>
-                  <SelectTrigger id="new-course-category">
-                    <SelectValue placeholder="选择分类" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SELECTABLE_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.slug} value={cat.slug}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="new-course-desc">课程简介</FieldLabel>
-                <Textarea
-                  id="new-course-desc"
-                  placeholder="概述本课程面向的人群、核心知识点与学习收获…"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  rows={3}
-                />
-              </Field>
-
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="new-course-free"
-                  checked={newIsFree}
-                  onCheckedChange={(checked) => setNewIsFree(checked === true)}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <FieldLabel htmlFor="new-course-free">
-                    设为免费公开课
+                <Field>
+                  <FieldLabel htmlFor="new-course-category">
+                    课程分类
                   </FieldLabel>
-                  <FieldDescription>
-                    勾选后登录学员可直接免费加入；不勾选则为人民币单课买断，由管理员核定价格。
-                  </FieldDescription>
-                </div>
-              </Field>
+                  <Select value={newCategory} onValueChange={setNewCategory}>
+                    <SelectTrigger id="new-course-category">
+                      <SelectValue placeholder="选择分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {SELECTABLE_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.slug} value={cat.slug}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={creating}
-                  onClick={() => setCreateOpen(false)}
-                >
-                  取消
-                </Button>
-                <Button type="submit" disabled={creating}>
-                  {creating ? <Spinner data-icon="inline-start" /> : null}
-                  {creating ? '正在创建…' : '创建并进入编辑'}
-                </Button>
-              </DialogFooter>
-            </form>
+                <Field>
+                  <FieldLabel htmlFor="new-course-desc">课程简介</FieldLabel>
+                  <Textarea
+                    id="new-course-desc"
+                    placeholder="学员将完成什么作品？"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    rows={3}
+                  />
+                </Field>
+
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="new-course-free"
+                    checked={newIsFree}
+                    onCheckedChange={(checked) =>
+                      setNewIsFree(checked === true)
+                    }
+                  />
+                  <Layout flow="stack" className="gap-0.5">
+                    <FieldLabel htmlFor="new-course-free">免费课程</FieldLabel>
+                    <FieldDescription>
+                      付费课程由管理员设置售价。
+                    </FieldDescription>
+                  </Layout>
+                </Field>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={creating}
+                    onClick={() => setCreateOpen(false)}
+                  >
+                    取消
+                  </Button>
+                  <Button type="submit" disabled={creating}>
+                    {creating ? <Spinner data-icon="inline-start" /> : null}
+                    {creating ? '正在创建…' : '创建并进入编辑'}
+                  </Button>
+                </DialogFooter>
+              </FieldGroup>
+            </Layout>
           </DialogContent>
         </Dialog>
-      </div>
+      </Layout>
 
       {loadFailed ? (
         <Alert variant="destructive">
@@ -534,26 +553,29 @@ export function CourseManageList({
                   return (
                     <TableRow key={courseId}>
                       <TableCell className="max-w-xs">
-                        <div className="flex flex-col gap-1">
+                        <Layout flow="stack" className="gap-1">
                           <Link
                             href={`/manage/courses/${courseId}`}
                             className="truncate font-medium text-foreground hover:underline"
                           >
                             {course.title || '未命名课程'}
                           </Link>
-                          <span className="truncate text-xs text-muted-foreground">
+                          <Text className="truncate text-xs text-muted-foreground">
                             讲师：{course.authorNickname?.trim() || '学屿讲师'}
-                          </span>
+                          </Text>
                           {course.reviewReason ? (
-                            <span className="line-clamp-1 text-xs text-muted-foreground">
+                            <Text className="line-clamp-1 text-xs text-muted-foreground">
                               审核备注：{course.reviewReason}
-                            </span>
+                            </Text>
                           ) : null}
-                        </div>
+                        </Layout>
                       </TableCell>
 
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-1.5"
+                        >
                           <Badge variant="secondary">
                             {getCourseCategoryLabel(course.category)}
                           </Badge>
@@ -562,28 +584,31 @@ export function CourseManageList({
                           >
                             {course.isFree ? '免费' : '买断'}
                           </Badge>
-                        </div>
+                        </Layout>
                       </TableCell>
 
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-1.5"
+                        >
                           <Badge variant={combinedMeta.variant}>
                             {combinedMeta.label}
                           </Badge>
                           {combinedMeta.label !== prodMeta.label ? (
                             <Badge variant="secondary">{prodMeta.label}</Badge>
                           ) : null}
-                        </div>
+                        </Layout>
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">
-                        <div>{lessonsCount} 课时</div>
-                        <div>
+                        <Layout>{lessonsCount} 课时</Layout>
+                        <Layout>
                           草稿 v{course.version ?? 1}
                           {course.publishedVersion
                             ? ` · 线上 v${course.publishedVersion}`
                             : ''}
-                        </div>
+                        </Layout>
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">
@@ -591,7 +616,10 @@ export function CourseManageList({
                       </TableCell>
 
                       <TableCell className="text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center justify-end gap-1.5"
+                        >
                           <Button asChild variant="secondary" size="xs">
                             <Link href={`/manage/courses/${courseId}`}>
                               编辑内容
@@ -683,7 +711,7 @@ export function CourseManageList({
                               删除
                             </Button>
                           ) : null}
-                        </div>
+                        </Layout>
                       </TableCell>
                     </TableRow>
                   );
@@ -752,6 +780,6 @@ export function CourseManageList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Layout>
   );
 }

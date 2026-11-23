@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import {ManageNav} from '@/components/layout/manage_nav';
 import {ManageAccessGuard} from '@/features/assistant/manage_access_guard';
@@ -43,23 +45,23 @@ export default async function ManageCoursesPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col">
+    <Layout flow="stack" className="w-full">
       <ManageNav user={user} />
 
-      <div className="mb-8 flex flex-col gap-2">
-        <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+      <Layout flow="stack" className="mb-8 gap-2">
+        <Heading level={1} size="page" className="text-foreground">
           课程管理
-        </h1>
-        <p className="text-sm leading-6 text-body">
+        </Heading>
+        <Text as="p" variant="body">
           集中管理课程草稿、章节课时编排、上线审核与售卖交付状态。
-        </p>
-      </div>
+        </Text>
+      </Layout>
 
       <CourseManageList
         initialCourses={courses}
         user={user}
         loadFailed={loadFailed}
       />
-    </div>
+    </Layout>
   );
 }

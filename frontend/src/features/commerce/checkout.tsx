@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {AlertCircleIcon, CheckCircle2Icon, CreditCardIcon} from 'lucide-react';
@@ -236,39 +238,39 @@ export function Checkout({
   return (
     <Card className="mx-auto max-w-md">
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1">
+        <Layout flow="row" className="items-start justify-between gap-2">
+          <Layout className="space-y-1">
             <CardTitle>确认课程购买</CardTitle>
             <CardDescription>
               人民币单课结算 · 7×24 小时全额原路退款保障
             </CardDescription>
-          </div>
+          </Layout>
           {createdOrder ? (
             <Badge variant={getOrderStatusMeta(createdOrder.status).variant}>
               {getOrderStatusMeta(createdOrder.status).label}
             </Badge>
           ) : null}
-        </div>
+        </Layout>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
-        <div className="flex items-center justify-between py-2">
-          <span className="text-muted-foreground">所购课程</span>
-          <span className="font-medium text-foreground">{courseTitle}</span>
-        </div>
+        <Layout flow="row" className="items-center justify-between py-2">
+          <Text className="text-muted-foreground">所购课程</Text>
+          <Text className="font-medium text-foreground">{courseTitle}</Text>
+        </Layout>
 
-        <div className="flex items-center justify-between py-2">
-          <span className="text-muted-foreground">服务端核定金额</span>
-          <span className="text-lg font-medium text-foreground">
+        <Layout flow="row" className="items-center justify-between py-2">
+          <Text className="text-muted-foreground">服务端核定金额</Text>
+          <Text className="text-lg font-medium text-foreground">
             {serverCurrency === 'CNY'
               ? formatPriceCny(serverAmount, false)
               : formatPrice(serverAmount, serverCurrency)}
-          </span>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="rounded-lg bg-secondary p-3 text-xs leading-relaxed text-muted-foreground">
+        <Card className="bg-secondary p-3 text-xs leading-relaxed text-muted-foreground block">
           支付确认以服务端渠道签名为准，确认成功后立即激活课程学习权益。自课程实际可访问起
           7×24 小时内，可随时申请全额原路退款。
-        </div>
+        </Card>
 
         {errorMessage ? (
           <Alert variant="destructive">
@@ -285,26 +287,26 @@ export function Checkout({
               {isPaid ? '支付已确认，课程权益已生效' : '支付单已提交渠道受理'}
             </AlertTitle>
             <AlertDescription className="space-y-2 text-xs">
-              <div>
+              <Layout>
                 订单号：
-                <span className="font-mono text-foreground">
+                <Text className="font-mono text-foreground">
                   {createdOrder.id}
-                </span>
-              </div>
+                </Text>
+              </Layout>
               {paymentAttempt ? (
-                <div className="space-y-1">
-                  <div>
+                <Layout className="space-y-1">
+                  <Layout>
                     渠道流水号：
-                    <span className="font-mono text-foreground">
+                    <Text className="font-mono text-foreground">
                       {paymentAttempt.channelOrderId || paymentAttempt.id}
-                    </span>
-                  </div>
+                    </Text>
+                  </Layout>
                   {paymentAttempt.paymentAction ? (
-                    <div className="break-all text-muted-foreground">
+                    <Layout className="break-all text-muted-foreground">
                       渠道受理说明：{paymentAttempt.paymentAction}
-                    </div>
+                    </Layout>
                   ) : null}
-                </div>
+                </Layout>
               ) : null}
             </AlertDescription>
           </Alert>
@@ -324,7 +326,10 @@ export function Checkout({
               : `确认下单并发起支付（${formatPriceCny(serverAmount, false)}）`}
           </Button>
         ) : (
-          <div className="flex w-full flex-wrap items-center justify-end gap-2">
+          <Layout
+            flow="row"
+            className="w-full flex-wrap items-center justify-end gap-2"
+          >
             {!isPaid ? (
               <Button
                 type="button"
@@ -353,7 +358,7 @@ export function Checkout({
             >
               前往订单详情
             </Button>
-          </div>
+          </Layout>
         )}
       </CardFooter>
     </Card>

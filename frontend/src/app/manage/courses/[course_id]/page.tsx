@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
@@ -69,10 +71,10 @@ export default async function ManageCourseEditPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col">
+    <Layout flow="stack" className="w-full">
       <ManageNav user={user} />
 
-      <div className="mb-6 flex flex-col gap-2">
+      <Layout flow="stack" className="mb-6 gap-2">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -87,15 +89,15 @@ export default async function ManageCourseEditPage({
           </BreadcrumbList>
         </Breadcrumb>
 
-        <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+        <Heading level={1} size="page" className="text-foreground">
           课程编辑与审核发布
-        </h1>
-        <p className="text-sm leading-6 text-body">
+        </Heading>
+        <Text as="p" variant="body">
           维护课程元信息、人民币买断定价、章节与视频/图文课时，并执行提审或管理员上线处置。
-        </p>
-      </div>
+        </Text>
+      </Layout>
 
       <CourseEditor initialCourse={course} initialPrice={price} user={user} />
-    </div>
+    </Layout>
   );
 }

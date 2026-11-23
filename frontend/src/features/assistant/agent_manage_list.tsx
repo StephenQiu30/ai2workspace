@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -54,6 +56,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -237,17 +240,20 @@ export function AgentManageList({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+    <Layout className="space-y-6">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-center"
+      >
+        <Layout>
+          <Heading level={1} size="page">
             Agent 实例与配置管理
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          </Heading>
+          <Text as="p" className="mt-1 text-sm text-muted-foreground">
             仅平台管理员可创建、配置、发布或停用学屿助手 Agent
             实例（R-28），统一绑定允许模型与多知识库授权。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -263,12 +269,16 @@ export function AgentManageList({
                 创建后默认处于「草稿」状态，不会自动对外发布。您可在独立配置页核对角色提示词与多知识库授权后再发布。
               </DialogDescription>
             </DialogHeader>
-            <form
+            <Layout
+              as="form"
               onSubmit={(e) => void handleCreateDraft(e)}
               className="space-y-5"
             >
               <FieldGroup>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Layout
+                  flow="grid"
+                  className="grid-cols-1 gap-4 sm:grid-cols-2"
+                >
                   <Field>
                     <FieldLabel htmlFor="agent-create-name">
                       实例名称
@@ -295,7 +305,7 @@ export function AgentManageList({
                       required
                     />
                   </Field>
-                </div>
+                </Layout>
 
                 <Field>
                   <FieldLabel htmlFor="agent-create-model">
@@ -310,28 +320,30 @@ export function AgentManageList({
                       <SelectValue placeholder="选择提供商与模型" />
                     </SelectTrigger>
                     <SelectContent>
-                      {models.length > 0 ? (
-                        models.map((m) => {
-                          const key = buildModelKey(m.providerId, m.modelId);
-                          const expired = isModelExpired(m.expiresAt);
-                          return (
-                            <SelectItem key={key} value={key}>
-                              {getProviderLabel(m.providerId)} ·{' '}
-                              {m.displayName || m.modelId} ({m.providerId}:
-                              {m.modelId})
-                              {m.enabled === false
-                                ? ' [已停用]'
-                                : expired
-                                  ? ' [价目已过期]'
-                                  : ''}
-                            </SelectItem>
-                          );
-                        })
-                      ) : (
-                        <SelectItem value="deepseek::deepseek-chat">
-                          DeepSeek · deepseek-chat (deepseek:deepseek-chat)
-                        </SelectItem>
-                      )}
+                      <SelectGroup>
+                        {models.length > 0 ? (
+                          models.map((m) => {
+                            const key = buildModelKey(m.providerId, m.modelId);
+                            const expired = isModelExpired(m.expiresAt);
+                            return (
+                              <SelectItem key={key} value={key}>
+                                {getProviderLabel(m.providerId)} ·{' '}
+                                {m.displayName || m.modelId} ({m.providerId}:
+                                {m.modelId})
+                                {m.enabled === false
+                                  ? ' [已停用]'
+                                  : expired
+                                    ? ' [价目已过期]'
+                                    : ''}
+                              </SelectItem>
+                            );
+                          })
+                        ) : (
+                          <SelectItem value="deepseek::deepseek-chat">
+                            DeepSeek · deepseek-chat (deepseek:deepseek-chat)
+                          </SelectItem>
+                        )}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -345,18 +357,18 @@ export function AgentManageList({
                       当前暂无可选知识库，可先创建草稿后再前往「知识库管理」新建。
                     </FieldDescription>
                   ) : (
-                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-md bg-canvas-soft p-3">
+                    <Layout className="max-h-40 space-y-2 overflow-y-auto rounded-md bg-canvas-soft p-3">
                       {knowledgeBases.map((kb) => {
                         if (!kb.id) {
                           return null;
                         }
                         const checked = createKbIds.includes(kb.id);
                         return (
-                          <label
+                          <FieldLabel
                             key={kb.id}
                             className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
                           >
-                            <span className="flex items-center gap-2.5">
+                            <Text className="flex items-center gap-2.5">
                               <Checkbox
                                 checked={checked}
                                 onCheckedChange={(val) =>
@@ -364,17 +376,17 @@ export function AgentManageList({
                                 }
                                 disabled={creating}
                               />
-                              <span className="font-medium text-foreground">
+                              <Text className="font-medium text-foreground">
                                 {kb.name}
-                              </span>
-                            </span>
-                            <Badge variant="outline" className="text-xs">
+                              </Text>
+                            </Text>
+                            <Badge variant="ghost" className="text-xs">
                               {kb.visibility === 'public' ? '公开' : '私有'}
                             </Badge>
-                          </label>
+                          </FieldLabel>
                         );
                       })}
-                    </div>
+                    </Layout>
                   )}
                 </Field>
 
@@ -419,10 +431,10 @@ export function AgentManageList({
                   {creating ? '保存草稿中...' : '创建草稿'}
                 </Button>
               </DialogFooter>
-            </form>
+            </Layout>
           </DialogContent>
         </Dialog>
-      </div>
+      </Layout>
 
       {errorMsg ? (
         <Alert variant="destructive">
@@ -489,13 +501,13 @@ export function AgentManageList({
                   return (
                     <TableRow key={ag.id ?? ag.slug}>
                       <TableCell>
-                        <div className="font-medium text-foreground">
+                        <Layout className="font-medium text-foreground">
                           {ag.name || '未命名实例'}
-                        </div>
+                        </Layout>
                         {ag.disabledReason && ag.state === 'disabled' ? (
-                          <div className="mt-0.5 text-xs text-muted-foreground">
+                          <Layout className="mt-0.5 text-xs text-muted-foreground">
                             停用原因: {ag.disabledReason}
-                          </div>
+                          </Layout>
                         ) : null}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
@@ -515,18 +527,21 @@ export function AgentManageList({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="font-mono text-xs">
+                        <Badge variant="ghost" className="font-mono text-xs">
                           {ag.providerId}:{ag.modelId}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-foreground">
+                        <Text className="text-sm text-foreground">
                           {kbCount} 个知识库
-                        </span>
+                        </Text>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Badge variant="outline">
+                        <Layout
+                          flow="row"
+                          className="items-center gap-1.5 text-xs"
+                        >
+                          <Badge variant="ghost">
                             草稿 v{ag.draftVersion ?? 1}
                           </Badge>
                           <Badge
@@ -541,13 +556,13 @@ export function AgentManageList({
                               ? `v${ag.publishedVersion}`
                               : '未发布'}
                           </Badge>
-                        </div>
+                        </Layout>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {formatDateTime(ag.updatedAt ?? ag.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                        <Layout className="inline-flex flex-wrap items-center justify-end gap-1.5">
                           {configIdentifier ? (
                             <Button variant="secondary" size="sm" asChild>
                               <Link
@@ -623,7 +638,7 @@ export function AgentManageList({
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </div>
+                        </Layout>
                       </TableCell>
                     </TableRow>
                   );
@@ -633,6 +648,6 @@ export function AgentManageList({
           )}
         </CardContent>
       </Card>
-    </div>
+    </Layout>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useMemo, useState} from 'react';
 import Link from 'next/link';
 import {
@@ -42,7 +44,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import {Separator} from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
@@ -252,11 +253,11 @@ export function ReportsManagement({
   ) {
     if (loading) {
       return (
-        <div className="flex flex-col gap-2.5">
+        <Layout flow="stack" className="gap-2.5">
           <Skeleton className="h-12 w-full rounded-lg" />
           <Skeleton className="h-14 w-full rounded-lg" />
           <Skeleton className="h-14 w-full rounded-lg" />
-        </div>
+        </Layout>
       );
     }
 
@@ -353,7 +354,10 @@ export function ReportsManagement({
                       {formatDateTime(report.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <Layout
+                        flow="row"
+                        className="flex-wrap items-center justify-end gap-1.5"
+                      >
                         <Button
                           type="button"
                           variant="secondary"
@@ -389,7 +393,7 @@ export function ReportsManagement({
                             </Button>
                           </>
                         ) : null}
-                      </div>
+                      </Layout>
                     </TableCell>
                   </TableRow>
                 );
@@ -402,19 +406,27 @@ export function ReportsManagement({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="font-heading text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout flow="stack" className="gap-6">
+      <Layout
+        as="header"
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout flow="stack" className="gap-1.5">
+          <Heading
+            level={1}
+            size="page"
+            className="font-heading text-foreground"
+          >
             内容举报治理
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             审核社区讨论帖与评论回复的违规举报；确认违规后将立即隐藏对应内容并发送治理通知（不在通知中泄露被隐藏原文，共{' '}
             {totalCount} 条记录）。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex items-center gap-2">
+        <Layout flow="row" className="items-center gap-2">
           <Button
             type="button"
             variant="secondary"
@@ -428,8 +440,8 @@ export function ReportsManagement({
             />
             刷新队列
           </Button>
-        </div>
-      </header>
+        </Layout>
+      </Layout>
 
       {errorBanner ? (
         <Alert variant="destructive">
@@ -508,8 +520,8 @@ export function ReportsManagement({
           </SheetHeader>
 
           {selectedReport ? (
-            <div className="flex flex-1 flex-col gap-5 px-6 pb-6">
-              <div className="flex flex-wrap items-center gap-2">
+            <Layout flow="stack" className="flex-1 gap-5 px-6 pb-6">
+              <Layout flow="row" className="flex-wrap items-center gap-2">
                 <Badge
                   variant={
                     (selectedReport.status ?? 'pending') === 'pending'
@@ -522,81 +534,93 @@ export function ReportsManagement({
                 <Badge variant="secondary">
                   {getTargetTypeLabel(selectedReport.targetType)}
                 </Badge>
-              </div>
+              </Layout>
 
-              <div className="flex flex-col gap-3 rounded-xl bg-background p-4 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
+              <Card className="flex flex-col gap-3 bg-background p-4 text-sm">
+                <Layout
+                  flow="row"
+                  className="items-center justify-between gap-2"
+                >
+                  <Text className="text-xs text-muted-foreground">
                     举报编号
-                  </span>
-                  <span className="font-mono text-xs text-foreground">
+                  </Text>
+                  <Text className="font-mono text-xs text-foreground">
                     {selectedReport.id || '-'}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
+                  </Text>
+                </Layout>
+                <Layout
+                  flow="row"
+                  className="items-center justify-between gap-2"
+                >
+                  <Text className="text-xs text-muted-foreground">
                     目标对象 ID
-                  </span>
-                  <span className="font-mono text-xs text-foreground">
+                  </Text>
+                  <Text className="font-mono text-xs text-foreground">
                     {selectedReport.targetId || '-'}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
+                  </Text>
+                </Layout>
+                <Layout
+                  flow="row"
+                  className="items-center justify-between gap-2"
+                >
+                  <Text className="text-xs text-muted-foreground">
                     举报人 ID
-                  </span>
-                  <span className="font-mono text-xs text-foreground">
+                  </Text>
+                  <Text className="font-mono text-xs text-foreground">
                     {selectedReport.reporterId || '-'}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
+                  </Text>
+                </Layout>
+                <Layout
+                  flow="row"
+                  className="items-center justify-between gap-2"
+                >
+                  <Text className="text-xs text-muted-foreground">
                     提交时间
-                  </span>
-                  <span className="text-xs text-foreground">
+                  </Text>
+                  <Text className="text-xs text-foreground">
                     {formatDateTime(selectedReport.createdAt)}
-                  </span>
-                </div>
-              </div>
+                  </Text>
+                </Layout>
+              </Card>
 
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs leading-5 font-medium text-muted-foreground">
+              <Layout flow="stack" className="gap-1.5">
+                <Text variant="meta" className="font-medium">
                   举报人填写的违规原因
-                </span>
-                <div className="rounded-xl bg-background p-4 text-sm leading-6 text-body">
+                </Text>
+                <Card className="bg-background p-4 text-sm leading-6 text-body block">
                   {selectedReport.reason || '未提供详细说明'}
-                </div>
-              </div>
+                </Card>
+              </Layout>
 
               {selectedReport.targetType === 'post' &&
               selectedReport.targetId ? (
-                <div>
+                <Layout>
                   <Button variant="secondary" size="sm" asChild>
                     <Link href={`/community/${selectedReport.targetId}`}>
                       前往目标讨论页核查
                       <ArrowUpRightIcon data-icon="inline-end" />
                     </Link>
                   </Button>
-                </div>
+                </Layout>
               ) : null}
 
               {selectedReport.status && selectedReport.status !== 'pending' ? (
-                <div className="flex flex-col gap-2 rounded-xl bg-background p-4">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                <Card className="flex flex-col gap-2 bg-background p-4">
+                  <Layout
+                    flow="row"
+                    className="items-center gap-1.5 text-xs font-medium text-foreground"
+                  >
                     <CheckCircle2Icon className="size-3.5" />
                     处置审计记录
-                  </div>
-                  <p className="text-xs leading-5 text-muted-foreground">
+                  </Layout>
+                  <Text as="p" variant="meta">
                     处理人：{selectedReport.reviewerId || '管理员'} · 处理时间：
                     {formatDateTime(selectedReport.reviewedAt)}
-                  </p>
-                  <p className="text-sm leading-6 text-body">
+                  </Text>
+                  <Text as="p" variant="body">
                     结论说明：{selectedReport.reviewReason || '无附加说明'}
-                  </p>
-                </div>
+                  </Text>
+                </Card>
               ) : null}
 
               <SheetFooter className="mt-auto flex-row justify-end gap-2 px-0 pb-0">
@@ -632,7 +656,7 @@ export function ReportsManagement({
                   </Button>
                 )}
               </SheetFooter>
-            </div>
+            </Layout>
           ) : null}
         </SheetContent>
       </Sheet>
@@ -712,6 +736,6 @@ export function ReportsManagement({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Layout>
   );
 }

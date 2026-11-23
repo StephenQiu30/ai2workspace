@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -40,6 +42,7 @@ import {Input} from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -174,16 +177,19 @@ export function KnowledgeManageList({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+    <Layout className="space-y-6">
+      <Layout
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-center"
+      >
+        <Layout>
+          <Heading level={1} size="page">
             知识库与检索授权管理
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          </Heading>
+          <Text as="p" className="mt-1 text-sm text-muted-foreground">
             管理授权知识库元信息与可见范围，进入详情页分步登记资料、执行切片索引、发布或立即撤回。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -199,7 +205,11 @@ export function KnowledgeManageList({
                 创建受控知识库容器。创建后可进入详情页分步登记文档或授权课程图文来源。
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={(e) => void handleCreate(e)} className="space-y-5">
+            <Layout
+              as="form"
+              onSubmit={(e) => void handleCreate(e)}
+              className="space-y-5"
+            >
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="kb-create-name">知识库名称</FieldLabel>
@@ -227,12 +237,14 @@ export function KnowledgeManageList({
                       <SelectValue placeholder="选择可见范围" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="public">
-                        公开可见（所有已绑定 Agent 可按规则检索已发布来源）
-                      </SelectItem>
-                      <SelectItem value="private">
-                        私有受限（按课程权限或归属范围校验后可检索）
-                      </SelectItem>
+                      <SelectGroup>
+                        <SelectItem value="public">
+                          公开可见（所有已绑定 Agent 可按规则检索已发布来源）
+                        </SelectItem>
+                        <SelectItem value="private">
+                          私有受限（按课程权限或归属范围校验后可检索）
+                        </SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
@@ -264,10 +276,10 @@ export function KnowledgeManageList({
                   {creating ? '创建中...' : '确认创建'}
                 </Button>
               </DialogFooter>
-            </form>
+            </Layout>
           </DialogContent>
         </Dialog>
-      </div>
+      </Layout>
 
       {errorMsg ? (
         <Alert variant="destructive">
@@ -326,13 +338,13 @@ export function KnowledgeManageList({
                 {bases.map((kb) => (
                   <TableRow key={kb.id}>
                     <TableCell>
-                      <div className="font-medium text-foreground">
+                      <Layout className="font-medium text-foreground">
                         {kb.name || '未命名知识库'}
-                      </div>
+                      </Layout>
                       {kb.description ? (
-                        <div className="mt-0.5 line-clamp-1 max-w-md text-xs text-muted-foreground">
+                        <Layout className="mt-0.5 line-clamp-1 max-w-md text-xs text-muted-foreground">
                           {kb.description}
-                        </div>
+                        </Layout>
                       ) : null}
                     </TableCell>
                     <TableCell>
@@ -348,13 +360,13 @@ export function KnowledgeManageList({
                       {kb.ownerId || 'system'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">v{kb.version ?? 1}</Badge>
+                      <Badge variant="ghost">v{kb.version ?? 1}</Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {formatDateTime(kb.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="inline-flex flex-wrap items-center justify-end gap-2">
+                      <Layout className="inline-flex flex-wrap items-center justify-end gap-2">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -370,7 +382,7 @@ export function KnowledgeManageList({
                             </Link>
                           </Button>
                         ) : null}
-                      </div>
+                      </Layout>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -396,7 +408,11 @@ export function KnowledgeManageList({
               {editTarget?.version ?? 1}）。
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => void handleUpdate(e)} className="space-y-5">
+          <Layout
+            as="form"
+            onSubmit={(e) => void handleUpdate(e)}
+            className="space-y-5"
+          >
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="kb-edit-name">知识库名称</FieldLabel>
@@ -423,8 +439,10 @@ export function KnowledgeManageList({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="public">公开可见</SelectItem>
-                    <SelectItem value="private">私有受限</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="public">公开可见</SelectItem>
+                      <SelectItem value="private">私有受限</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>
@@ -452,9 +470,9 @@ export function KnowledgeManageList({
                 {updating ? '保存中...' : '保存修改'}
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

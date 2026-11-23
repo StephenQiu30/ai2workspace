@@ -1,3 +1,5 @@
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {
@@ -89,7 +91,7 @@ export default async function MyLearningPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-8">
+      <Layout flow="stack" className="w-full gap-6 py-8">
         <Empty className="bg-canvas-soft py-16">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -101,17 +103,20 @@ export default async function MyLearningPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <Layout
+              flow="row"
+              className="flex-wrap items-center justify-center gap-3"
+            >
               <Button asChild>
                 <Link href={buildLoginHref('/learning')}>前往登录</Link>
               </Button>
               <Button asChild variant="secondary">
                 <Link href="/courses">先逛逛课程目录</Link>
               </Button>
-            </div>
+            </Layout>
           </EmptyContent>
         </Empty>
-      </div>
+      </Layout>
     );
   }
 
@@ -127,25 +132,29 @@ export default async function MyLearningPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout flow="stack" className="w-full gap-8">
+      <Layout
+        as="section"
+        flow="stack"
+        className="justify-between gap-4 sm:flex-row sm:items-end"
+      >
+        <Layout flow="stack" className="gap-2">
+          <Heading level={1} size="page" className="text-foreground">
             我的学习
-          </h1>
-          <p className="text-sm leading-6 text-body">
+          </Heading>
+          <Text as="p" variant="body">
             汇总您已报名的免费课程与已购买的买断课程，随时从上次学习位置继续。
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+          </Text>
+        </Layout>
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           <Button asChild variant="secondary" size="sm">
             <Link href="/orders">查看我的订单</Link>
           </Button>
           <Button asChild variant="secondary" size="sm">
             <Link href="/courses">探索更多课程</Link>
           </Button>
-        </div>
-      </section>
+        </Layout>
+      </Layout>
 
       {loadFailed ? (
         <Alert variant="destructive">
@@ -180,7 +189,10 @@ export default async function MyLearningPage() {
       ) : null}
 
       {courses.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Layout
+          flow="grid"
+          className="grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        >
           {courses.map((course, index) => {
             const courseId = course.id ?? `course-${index}`;
             const summary = course.progressSummary;
@@ -207,7 +219,7 @@ export default async function MyLearningPage() {
                 className="flex h-full flex-col justify-between transition-colors duration-120 hover:bg-secondary/50"
               >
                 <CardHeader className="gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <Layout flow="row" className="flex-wrap items-center gap-2">
                     <Badge variant="secondary">
                       {getCourseCategoryLabel(course.category)}
                     </Badge>
@@ -220,7 +232,7 @@ export default async function MyLearningPage() {
                     {isWithdrawn ? (
                       <Badge variant="destructive">已撤回</Badge>
                     ) : null}
-                  </div>
+                  </Layout>
                   <CardTitle className="line-clamp-2">
                     <Link
                       href={`/courses/${courseId}`}
@@ -235,64 +247,76 @@ export default async function MyLearningPage() {
                 </CardHeader>
 
                 <CardContent className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
+                  <Layout
+                    flow="row"
+                    className="flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"
+                  >
+                    <Text className="inline-flex items-center gap-1">
                       <UserIcon className="size-3.5" />
                       {course.authorNickname?.trim() || '学屿讲师'}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
+                    </Text>
+                    <Text className="inline-flex items-center gap-1">
                       <BookOpenIcon className="size-3.5" />
                       已学 {watchedLessons} / {totalLessons} 课时
-                    </span>
-                  </div>
+                    </Text>
+                  </Layout>
 
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">学习进度</span>
-                      <span className="font-medium text-foreground">
+                  <Layout flow="stack" className="gap-1.5">
+                    <Layout
+                      flow="row"
+                      className="items-center justify-between text-xs"
+                    >
+                      <Text className="text-muted-foreground">学习进度</Text>
+                      <Text className="font-medium text-foreground">
                         {percent}%
-                      </span>
-                    </div>
+                      </Text>
+                    </Layout>
                     <Progress
                       value={percent}
                       aria-label={`${course.title ?? '课程'}学习进度`}
                     />
-                  </div>
+                  </Layout>
 
-                  <div className="flex flex-col gap-1 rounded-lg bg-secondary p-3 text-xs text-body">
+                  <Card className="flex flex-col gap-1 bg-secondary p-3 text-xs text-body">
                     {resume.isResume ? (
                       <>
-                        <div className="flex items-center gap-1.5 font-medium text-foreground">
+                        <Layout
+                          flow="row"
+                          className="items-center gap-1.5 font-medium text-foreground"
+                        >
                           <PlayCircleIcon className="size-3.5 shrink-0" />
-                          <span className="truncate">
+                          <Text className="truncate">
                             上次学习：
                             {resume.lessonTitle || '已记录课时位置'}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+                          </Text>
+                        </Layout>
+                        <Layout
+                          flow="row"
+                          className="flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground"
+                        >
                           {summary?.lastPositionSeconds &&
                           summary.lastPositionSeconds > 0 ? (
-                            <span className="inline-flex items-center gap-1">
+                            <Text className="inline-flex items-center gap-1">
                               <ClockIcon className="size-3" />
                               停留于{' '}
                               {formatDurationSeconds(
                                 summary.lastPositionSeconds,
                               )}
-                            </span>
+                            </Text>
                           ) : null}
                           {summary?.lastStudiedAt ? (
-                            <span>
+                            <Text>
                               最近学习 {formatDateTime(summary.lastStudiedAt)}
-                            </span>
+                            </Text>
                           ) : null}
-                        </div>
+                        </Layout>
                       </>
                     ) : (
-                      <span className="text-muted-foreground">
+                      <Text className="text-muted-foreground">
                         尚未开始学习，点击下方按钮从第一节课时开始。
-                      </span>
+                      </Text>
                     )}
-                  </div>
+                  </Card>
                 </CardContent>
 
                 <CardFooter className="mt-auto items-center justify-between gap-2 pt-1">
@@ -315,8 +339,8 @@ export default async function MyLearningPage() {
               </Card>
             );
           })}
-        </div>
+        </Layout>
       ) : null}
-    </div>
+    </Layout>
   );
 }

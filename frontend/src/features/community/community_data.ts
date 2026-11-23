@@ -31,6 +31,8 @@ export interface HomePageData {
   coursesError: string | null;
   posts: CommunityApi.PostResponse[];
   postsTotal: number;
+  services: CommunityApi.PostResponse[];
+  servicesError: string | null;
   postsError: string | null;
   topics: TopicSummary[];
   myCourses: LearningApi.MyCourseResponse[];
@@ -140,6 +142,8 @@ export async function loadHomePageData(params: {
       coursesError: message,
       posts: [],
       postsTotal: 0,
+      services: [],
+      servicesError: message,
       postsError: message,
       topics: mergeTopics(),
       myCourses: [],
@@ -147,43 +151,57 @@ export async function loadHomePageData(params: {
     };
   }
 
-  const [coursesResult, postsResult, topicsResult, myCoursesResult] =
-    await Promise.all([
-      learningListCourses({page: 1, pageSize: HOME_COURSE_LIMIT}, options)
-        .then((data) => ({ok: true as const, data}))
-        .catch((err: unknown) => ({
-          ok: false as const,
-          error: getErrorMessage(err, '课程列表暂时无法加载，请稍后重试'),
-        })),
-      communityListPosts(
-        {
-          scope: 'global',
-          topic: activeTopic === 'all' ? undefined : activeTopic,
-          page,
-          pageSize,
-        },
-        options,
-      )
-        .then((data) => ({ok: true as const, data}))
-        .catch((err: unknown) => ({
-          ok: false as const,
-          error: getErrorMessage(err, '讨论列表暂时无法加载，请稍后重试'),
-        })),
-      communityListTopics(options)
-        .then((data) => ({ok: true as const, data}))
-        .catch(() => ({ok: false as const, data: undefined})),
-      params.user
-        ? learningListMyCourses(options)
-            .then((data) => ({ok: true as const, data}))
-            .catch((err: unknown) => ({
-              ok: false as const,
-              error: getErrorMessage(err, '学习进度暂时无法加载'),
-            }))
-        : Promise.resolve({
-            ok: true as const,
-            data: [] as LearningApi.MyCourseResponse[],
-          }),
-    ]);
+  const fetchPosts = (
+    topic: string | undefined,
+    page: number,
+    pageSize: number,
+  ) =>
+    communityListPosts({scope: 'global', topic, page, pageSize}, options)
+      .then((data) => ({ok: true as const, data}))
+      .catch((err: unknown) => ({
+        ok: false as const,
+        error: getErrorMessage(err, '社区内容暂时无法加载'),
+      }));
+  const feed = fetchPosts(
+    activeTopic === 'all' ? undefined : activeTopic,
+    page,
+    pageSize,
+  );
+  const serviceList =
+    activeTopic === 'services' && page === 1
+      ? feed
+      : fetchPosts('services', 1, 4);
+
+  const [
+    coursesResult,
+    postsResult,
+    topicsResult,
+    myCoursesResult,
+    servicesResult,
+  ] = await Promise.all([
+    learningListCourses({page: 1, pageSize: HOME_COURSE_LIMIT}, options)
+      .then((data) => ({ok: true as const, data}))
+      .catch((err: unknown) => ({
+        ok: false as const,
+        error: getErrorMessage(err, '课程列表暂时无法加载，请稍后重试'),
+      })),
+    feed,
+    communityListTopics(options)
+      .then((data) => ({ok: true as const, data}))
+      .catch(() => ({ok: false as const, data: undefined})),
+    params.user
+      ? learningListMyCourses(options)
+          .then((data) => ({ok: true as const, data}))
+          .catch((err: unknown) => ({
+            ok: false as const,
+            error: getErrorMessage(err, '学习进度暂时无法加载'),
+          }))
+      : Promise.resolve({
+          ok: true as const,
+          data: [] as LearningApi.MyCourseResponse[],
+        }),
+    serviceList,
+  ]);
 
   const rawCourses = coursesResult.ok ? (coursesResult.data.courses ?? []) : [];
   const courses = await enrichCoursePrices(rawCourses, options);
@@ -198,6 +216,12 @@ export async function loadHomePageData(params: {
     coursesError: coursesResult.ok ? null : coursesResult.error,
     posts: postsResult.ok ? (postsResult.data.items ?? []) : [],
     postsTotal: postsResult.ok ? (postsResult.data.total ?? 0) : 0,
+    services: servicesResult.ok
+      ? (servicesResult.data.items ?? [])
+          .filter((post) => post.id && post.title && post.topic === 'services')
+          .slice(0, 4)
+      : [],
+    servicesError: servicesResult.ok ? null : servicesResult.error,
     postsError: postsResult.ok ? null : postsResult.error,
     topics,
     myCourses: myCoursesResult.ok ? myCoursesResult.data : [],

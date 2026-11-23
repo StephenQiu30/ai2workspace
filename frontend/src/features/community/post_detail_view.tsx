@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useEffect, useMemo, useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -71,7 +73,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import {Separator} from '@/components/ui/separator';
 import {Spinner} from '@/components/ui/spinner';
 import {Textarea} from '@/components/ui/textarea';
 import type {SessionUser} from '@/lib/auth/roles';
@@ -660,35 +661,32 @@ export function PostDetailView({
     const commentAuthorLabel = comment.authorNickname?.trim() || '学屿成员';
 
     return (
-      <div
+      <Layout
         key={commentId}
         className={`flex flex-col gap-3 rounded-xl p-4 ${
           isReply ? 'bg-background' : 'bg-canvas-soft'
         }`}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs leading-5 font-medium text-foreground">
+        <Layout
+          flow="row"
+          className="flex-wrap items-center justify-between gap-2"
+        >
+          <Layout flow="row" className="flex-wrap items-center gap-2">
+            <Text className="text-xs leading-5 font-medium text-foreground">
               {commentAuthorLabel}
-            </span>
+            </Text>
             {comment.authorId && comment.authorId === post.authorId ? (
               <Badge variant="secondary">作者</Badge>
             ) : null}
-            <span
-              aria-hidden="true"
-              className="text-xs leading-5 text-muted-foreground"
-            >
+            <Text variant="meta" aria-hidden="true">
               ·
-            </span>
-            <time
-              dateTime={comment.createdAt}
-              className="text-xs leading-5 text-muted-foreground"
-            >
+            </Text>
+            <Text as="time" variant="meta" dateTime={comment.createdAt}>
               {formatDateTime(comment.createdAt)}
-            </time>
-          </div>
+            </Text>
+          </Layout>
 
-          <div className="flex flex-wrap items-center gap-1">
+          <Layout flow="row" className="flex-wrap items-center gap-1">
             {isCommentAuthor && !isEditing ? (
               <>
                 <Button
@@ -729,11 +727,11 @@ export function PostDetailView({
                 举报
               </Button>
             ) : null}
-          </div>
-        </div>
+          </Layout>
+        </Layout>
 
         {isEditing ? (
-          <div className="flex flex-col gap-3">
+          <Layout flow="stack" className="gap-3">
             <TiptapEditor
               mode="comment"
               value={editingCommentBody}
@@ -748,7 +746,7 @@ export function PostDetailView({
             {editingCommentError ? (
               <FieldError>{editingCommentError}</FieldError>
             ) : null}
-            <div className="flex items-center justify-end gap-2">
+            <Layout flow="row" className="items-center justify-end gap-2">
               <Button
                 type="button"
                 variant="secondary"
@@ -772,8 +770,8 @@ export function PostDetailView({
                 ) : null}
                 保存评论
               </Button>
-            </div>
-          </div>
+            </Layout>
+          </Layout>
         ) : (
           <TiptapRenderer
             content={comment.body}
@@ -781,11 +779,15 @@ export function PostDetailView({
           />
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div
+        <Layout
+          flow="row"
+          className="flex-wrap items-center justify-between gap-2 pt-1"
+        >
+          <Layout
+            flow="row"
             role="group"
             aria-label="评论表态"
-            className="flex items-center gap-1.5"
+            className="items-center gap-1.5"
           >
             <Button
               type="button"
@@ -811,7 +813,7 @@ export function PostDetailView({
             >
               <ThumbsDownIcon data-icon="inline-start" />踩 {cReaction.dislikes}
             </Button>
-          </div>
+          </Layout>
 
           {!isReply && user ? (
             <Button
@@ -827,24 +829,24 @@ export function PostDetailView({
               回复此评论
             </Button>
           ) : null}
-        </div>
+        </Layout>
 
         {/* 单层回复列表（不渲染无限缩进树） */}
         {!isReply &&
         commentId &&
         (repliesByParentId.get(commentId)?.length ?? 0) > 0 ? (
-          <div className="mt-1 flex flex-col gap-2.5 pl-4 sm:pl-6">
+          <Layout flow="stack" className="mt-1 gap-2.5 pl-4 sm:pl-6">
             {repliesByParentId
               .get(commentId)!
               .map((reply) => renderCommentItem(reply, true))}
-          </div>
+          </Layout>
         ) : null}
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8">
+    <Layout flow="stack" className="w-full gap-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -870,8 +872,11 @@ export function PostDetailView({
       {/* 帖子主卡片 */}
       <Card>
         <CardHeader className="gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+          <Layout
+            flow="row"
+            className="flex-wrap items-center justify-between gap-2"
+          >
+            <Layout flow="row" className="flex-wrap items-center gap-2">
               <Badge variant="secondary" asChild>
                 <Link href={`/topics/${topicMeta.slug}`}>
                   {topicMeta.label}
@@ -880,24 +885,16 @@ export function PostDetailView({
               {post.scope === 'course' ? (
                 <Badge variant="secondary">课程讨论</Badge>
               ) : null}
-              <span className="text-xs leading-5 text-muted-foreground">
-                作者：{authorNickname}
-              </span>
-              <span
-                aria-hidden="true"
-                className="text-xs leading-5 text-muted-foreground"
-              >
+              <Text variant="meta">作者：{authorNickname}</Text>
+              <Text variant="meta" aria-hidden="true">
                 ·
-              </span>
-              <time
-                dateTime={post.createdAt}
-                className="text-xs leading-5 text-muted-foreground"
-              >
+              </Text>
+              <Text as="time" variant="meta" dateTime={post.createdAt}>
                 {formatDateTime(post.createdAt)}
-              </time>
-            </div>
+              </Text>
+            </Layout>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <Layout flow="row" className="flex-wrap items-center gap-1.5">
               {isPostAuthor ? (
                 <>
                   <Button
@@ -936,66 +933,84 @@ export function PostDetailView({
                   举报
                 </Button>
               ) : null}
-            </div>
-          </div>
+            </Layout>
+          </Layout>
 
-          <CardTitle className="font-heading text-[24px] leading-[34px] font-medium text-foreground sm:text-[28px] sm:leading-[40px]">
-            {post.title}
+          <CardTitle className="font-heading text-xl/7 font-medium text-foreground">
+            <Heading level={1}>{post.title}</Heading>
           </CardTitle>
 
           {post.publicSummary ? (
-            <div className="rounded-xl bg-background p-4">
-              <p className="mb-1 text-xs leading-5 font-medium text-muted-foreground">
+            <Card className="bg-background p-4 block">
+              <Text as="p" variant="meta" className="mb-1 font-medium">
                 公开摘要
-              </p>
-              <p className="text-sm leading-6 text-body">
+              </Text>
+              <Text as="p" variant="body">
                 {post.publicSummary}
-              </p>
-            </div>
+              </Text>
+            </Card>
           ) : null}
         </CardHeader>
 
         <CardContent className="flex flex-col gap-6">
           {accessState === 'login_required' ? (
-            <div className="flex flex-col gap-4 rounded-xl bg-background p-6">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground">
+            <Card className="flex flex-col gap-4 bg-background p-6">
+              <Layout flow="row" className="items-start gap-3">
+                <Layout
+                  flow="row"
+                  className="mt-0.5 size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground"
+                >
                   <LockIcon className="size-4" aria-hidden="true" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <h2 className="text-base leading-6 font-medium text-foreground">
+                </Layout>
+                <Layout flow="stack" className="gap-1.5">
+                  <Heading
+                    level={2}
+                    className="text-base leading-6 font-medium text-foreground"
+                  >
                     登录后阅读完整讨论正文与全部评论
-                  </h2>
-                  <p className="text-sm leading-6 text-muted-foreground">
+                  </Heading>
+                  <Text
+                    as="p"
+                    className="text-sm leading-6 text-muted-foreground"
+                  >
                     游客可查阅讨论标题与作者独立撰写的公开摘要。登录学屿账号后即可自动返回本帖阅读完整图文正文、代码示例与社区评论。
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+                  </Text>
+                </Layout>
+              </Layout>
+              <Layout flow="row" className="flex-wrap items-center gap-2 pt-1">
                 <Button asChild>
                   <Link href={loginHref}>登录并继续阅读</Link>
                 </Button>
                 <Button variant="secondary" asChild>
                   <Link href={registerHref}>注册新账号</Link>
                 </Button>
-              </div>
-            </div>
+              </Layout>
+            </Card>
           ) : accessState === 'course_access_required' ? (
-            <div className="flex flex-col gap-4 rounded-xl bg-background p-6">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground">
+            <Card className="flex flex-col gap-4 bg-background p-6">
+              <Layout flow="row" className="items-start gap-3">
+                <Layout
+                  flow="row"
+                  className="mt-0.5 size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground"
+                >
                   <BookOpenIcon className="size-4" aria-hidden="true" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <h2 className="text-base leading-6 font-medium text-foreground">
+                </Layout>
+                <Layout flow="stack" className="gap-1.5">
+                  <Heading
+                    level={2}
+                    className="text-base leading-6 font-medium text-foreground"
+                  >
                     需要关联课程学习权限
-                  </h2>
-                  <p className="text-sm leading-6 text-muted-foreground">
+                  </Heading>
+                  <Text
+                    as="p"
+                    className="text-sm leading-6 text-muted-foreground"
+                  >
                     本篇讨论属于课程专属交流内容，仅对已加入或购买该课程的学员、讲师与管理员开放完整正文与评论。
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+                  </Text>
+                </Layout>
+              </Layout>
+              <Layout flow="row" className="flex-wrap items-center gap-2 pt-1">
                 {post.courseId ? (
                   <Button asChild>
                     <Link href={`/courses/${post.courseId}`}>查看关联课程</Link>
@@ -1004,25 +1019,23 @@ export function PostDetailView({
                 <Button variant="secondary" asChild>
                   <Link href="/courses">前往课程广场</Link>
                 </Button>
-              </div>
-            </div>
+              </Layout>
+            </Card>
           ) : canReadFull ? (
-            <>
-              <Separator />
-              <TiptapRenderer
-                content={post.body}
-                className="text-base leading-7 text-body"
-              />
-            </>
+            <TiptapRenderer
+              content={post.body}
+              className="text-base leading-7 text-body"
+            />
           ) : null}
         </CardContent>
 
         {canReadFull ? (
           <CardFooter className="flex-wrap items-center justify-between gap-3">
-            <div
+            <Layout
+              flow="row"
               role="group"
               aria-label="讨论赞踩表态"
-              className="flex flex-wrap items-center gap-2"
+              className="flex-wrap items-center gap-2"
             >
               <Button
                 type="button"
@@ -1052,9 +1065,9 @@ export function PostDetailView({
                 <ThumbsDownIcon data-icon="inline-start" />
                 不赞同 ({postReaction.dislikes})
               </Button>
-            </div>
+            </Layout>
 
-            <div className="flex items-center gap-2">
+            <Layout flow="row" className="items-center gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -1066,28 +1079,30 @@ export function PostDetailView({
                 <BookmarkIcon data-icon="inline-start" />
                 {favorited ? '已收藏' : '收藏讨论'}
               </Button>
-            </div>
+            </Layout>
           </CardFooter>
         ) : null}
       </Card>
 
       {/* 评论与回复区（仅在有权阅读完整正文时开放） */}
       {canReadFull ? (
-        <section
+        <Layout
+          as="section"
+          flow="stack"
           aria-labelledby="post-comments-heading"
-          className="flex flex-col gap-6"
+          className="gap-6"
         >
-          <div className="flex items-baseline justify-between gap-2">
-            <h2
+          <Layout flow="row" className="items-baseline justify-between gap-2">
+            <Heading
+              level={2}
+              size="section"
               id="post-comments-heading"
-              className="font-heading text-[20px] leading-[30px] font-medium text-foreground"
+              className="font-heading text-foreground"
             >
               评论与回复
-            </h2>
-            <span className="text-xs leading-5 text-muted-foreground">
-              共 {comments.length} 条互动
-            </span>
-          </div>
+            </Heading>
+            <Text variant="meta">共 {comments.length} 条互动</Text>
+          </Layout>
 
           {/* 发表评论或单层回复 */}
           <Card>
@@ -1107,7 +1122,7 @@ export function PostDetailView({
                   <LockIcon />
                   <AlertTitle>请先登录学屿账号</AlertTitle>
                   <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-                    <span>登录后即可发表评论、参与单层回复与赞踩互动。</span>
+                    <Text>登录后即可发表评论、参与单层回复与赞踩互动。</Text>
                     <Button size="xs" asChild>
                       <Link href={loginHref}>前往登录</Link>
                     </Button>
@@ -1118,30 +1133,38 @@ export function PostDetailView({
                   <MailCheckIcon />
                   <AlertTitle>完成邮箱验证后即可发表评论</AlertTitle>
                   <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-                    <span>
+                    <Text>
                       当前账号（{user.email}
                       ）尚未验证邮箱，请先在账号中心完成验证。
-                    </span>
+                    </Text>
                     <Button size="xs" asChild>
                       <Link href="/account">前往验证邮箱</Link>
                     </Button>
                   </AlertDescription>
                 </Alert>
               ) : (
-                <form
+                <Layout
+                  as="form"
+                  flow="stack"
                   onSubmit={handleCreateComment}
-                  className="flex flex-col gap-4"
+                  className="gap-4"
                   noValidate
                 >
                   {replyTarget ? (
-                    <div className="flex items-center justify-between gap-2 rounded-lg bg-background px-3.5 py-2.5 text-xs leading-5 text-body">
-                      <span className="line-clamp-1">
+                    <Layout
+                      flow="row"
+                      className="items-center justify-between gap-2 rounded-lg bg-background px-3.5 py-2.5 text-xs leading-5 text-body"
+                    >
+                      <Text className="line-clamp-1">
                         正在回复{' '}
-                        <strong className="font-medium text-foreground">
+                        <Text
+                          as="strong"
+                          className="font-medium text-foreground"
+                        >
                           {replyTarget.authorNickname?.trim() || '学屿成员'}
-                        </strong>{' '}
+                        </Text>{' '}
                         的评论
-                      </span>
+                      </Text>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1150,7 +1173,7 @@ export function PostDetailView({
                       >
                         取消回复
                       </Button>
-                    </div>
+                    </Layout>
                   ) : null}
 
                   <Field data-invalid={Boolean(commentError)}>
@@ -1176,7 +1199,7 @@ export function PostDetailView({
                     ) : null}
                   </Field>
 
-                  <div className="flex justify-end gap-2">
+                  <Layout flow="row" className="justify-end gap-2">
                     {replyTarget ? (
                       <Button
                         type="button"
@@ -1202,8 +1225,8 @@ export function PostDetailView({
                           ? '发布回复'
                           : '发布评论'}
                     </Button>
-                  </div>
-                </form>
+                  </Layout>
+                </Layout>
               )}
             </CardContent>
           </Card>
@@ -1222,13 +1245,13 @@ export function PostDetailView({
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="flex flex-col gap-3">
+            <Layout flow="stack" className="gap-3">
               {topLevelComments.map((comment) =>
                 renderCommentItem(comment, false),
               )}
-            </div>
+            </Layout>
           )}
-        </section>
+        </Layout>
       ) : null}
 
       {/* 编辑帖子抽屉 */}
@@ -1344,9 +1367,11 @@ export function PostDetailView({
               。管理员审核通过后将隐藏对应内容，并向相关方发送治理通知。
             </DialogDescription>
           </DialogHeader>
-          <form
+          <Layout
+            as="form"
+            flow="stack"
             onSubmit={handleSubmitReport}
-            className="flex flex-col gap-4"
+            className="gap-4"
             noValidate
           >
             {reportError ? (
@@ -1393,9 +1418,9 @@ export function PostDetailView({
                 提交举报
               </Button>
             </DialogFooter>
-          </form>
+          </Layout>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

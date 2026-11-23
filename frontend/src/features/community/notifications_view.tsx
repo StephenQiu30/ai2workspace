@@ -1,5 +1,7 @@
 'use client';
 
+import {Layout} from '@/components/layout/layout';
+import {Heading, Text} from '@/components/layout/typography';
 import {useMemo, useState} from 'react';
 import Link from 'next/link';
 import {
@@ -214,7 +216,7 @@ export function NotificationsView({
     }
 
     return (
-      <div className="flex flex-col gap-3">
+      <Layout flow="stack" className="gap-3">
         {list.map((item) => {
           const id = item.id ?? '';
           const isRead = Boolean(item.read);
@@ -228,8 +230,11 @@ export function NotificationsView({
               className="transition-colors duration-120"
             >
               <CardHeader className="gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
+                <Layout
+                  flow="row"
+                  className="flex-wrap items-center justify-between gap-2"
+                >
+                  <Layout flow="row" className="flex-wrap items-center gap-2">
                     <Badge variant={isRead ? 'secondary' : 'default'}>
                       {isRead ? '已读' : '未读'}
                     </Badge>
@@ -242,14 +247,11 @@ export function NotificationsView({
                         原目标已不可访问
                       </Badge>
                     ) : null}
-                  </div>
-                  <time
-                    dateTime={item.createdAt}
-                    className="text-xs leading-5 text-muted-foreground"
-                  >
+                  </Layout>
+                  <Text as="time" variant="meta" dateTime={item.createdAt}>
                     {formatDateTime(item.createdAt)}
-                  </time>
-                </div>
+                  </Text>
+                </Layout>
 
                 <CardTitle className="text-base leading-[26px] font-medium text-foreground">
                   {item.title || '站内消息提醒'}
@@ -264,14 +266,18 @@ export function NotificationsView({
 
               {isTargetUnavailable ? (
                 <CardContent className="pt-0">
-                  <p className="rounded-lg bg-background px-3.5 py-2.5 text-xs leading-5 text-muted-foreground">
+                  <Text
+                    as="p"
+                    variant="meta"
+                    className="rounded-lg bg-background px-3.5 py-2.5"
+                  >
                     关联讨论或评论已被作者删除或由管理员依规隐藏，原内容不再提供访问跳转。
-                  </p>
+                  </Text>
                 </CardContent>
               ) : null}
 
               <CardFooter className="flex-wrap items-center justify-between gap-2 pt-0">
-                <div className="flex items-center gap-2">
+                <Layout flow="row" className="items-center gap-2">
                   {targetLink ? (
                     <Button variant="secondary" size="xs" asChild>
                       <Link href={targetLink.href}>
@@ -280,7 +286,7 @@ export function NotificationsView({
                       </Link>
                     </Button>
                   ) : null}
-                </div>
+                </Layout>
 
                 {!isRead && id ? (
                   <Button
@@ -302,24 +308,32 @@ export function NotificationsView({
             </Card>
           );
         })}
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[960px] flex-col gap-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="font-heading text-[28px] leading-[40px] font-medium text-foreground">
+    <Layout flow="stack" className="w-full gap-8">
+      <Layout
+        as="header"
+        flow="stack"
+        className="gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <Layout flow="stack" className="gap-1.5">
+          <Heading
+            level={1}
+            size="page"
+            className="font-heading text-foreground"
+          >
             站内通知
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
+          </Heading>
+          <Text as="p" className="text-sm leading-6 text-muted-foreground">
             查阅社区互动回复、课程购买与退款进度以及内容治理通知（共{' '}
             {totalCount} 条）。
-          </p>
-        </div>
+          </Text>
+        </Layout>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Layout flow="row" className="flex-wrap items-center gap-2">
           {unreadItems.length > 0 ? (
             <Button
               type="button"
@@ -349,8 +363,8 @@ export function NotificationsView({
             />
             刷新
           </Button>
-        </div>
-      </header>
+        </Layout>
+      </Layout>
 
       {errorBanner ? (
         <Alert variant="destructive">
@@ -394,6 +408,6 @@ export function NotificationsView({
           {renderList(unreadItems, true)}
         </TabsContent>
       </Tabs>
-    </div>
+    </Layout>
   );
 }
