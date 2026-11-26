@@ -91,17 +91,17 @@ import {
   communitySetFavorite,
   communitySetReaction,
   communityUpdateComment,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 import {PostComposerSheet} from './post_composer_sheet';
 
 export interface ReactionState {
   likes: number;
   dislikes: number;
-  myReaction: CommunityApi.ReactionValue;
+  myReaction: Api.ReactionValue;
 }
 
 export interface PostDetailViewProps {
-  post: CommunityApi.PostDetailResponse;
+  post: Api.PostDetailResponse;
   user: SessionUser | null;
   initialReaction?: ReactionState;
   initialFavorited?: boolean;
@@ -141,8 +141,8 @@ function createCommentRequestId(): string {
 function computeNextReactionState(
   current: ReactionState,
   clicked: 'like' | 'dislike',
-): {nextValue: CommunityApi.ReactionValue; optimistic: ReactionState} {
-  const nextValue: CommunityApi.ReactionValue =
+): {nextValue: Api.ReactionValue; optimistic: ReactionState} {
+  const nextValue: Api.ReactionValue =
     current.myReaction === clicked ? 'none' : clicked;
 
   let likes = current.likes;
@@ -178,8 +178,7 @@ export function PostDetailView({
   initialReactionsByCommentId = {},
 }: PostDetailViewProps) {
   const router = useRouter();
-  const [post, setPost] =
-    useState<CommunityApi.PostDetailResponse>(initialPost);
+  const [post, setPost] = useState<Api.PostDetailResponse>(initialPost);
   const [postReaction, setPostReaction] =
     useState<ReactionState>(initialReaction);
   const [postReactionPending, setPostReactionPending] = useState(false);
@@ -187,7 +186,7 @@ export function PostDetailView({
   const [favorited, setFavorited] = useState<boolean>(initialFavorited);
   const [favoritePending, setFavoritePending] = useState(false);
 
-  const [comments, setComments] = useState<CommunityApi.CommentResponse[]>(
+  const [comments, setComments] = useState<Api.CommentResponse[]>(
     initialPost.comments ?? [],
   );
   const [commentReactions, setCommentReactions] = useState<
@@ -200,8 +199,9 @@ export function PostDetailView({
   // 新评论与单层回复
   const [commentBody, setCommentBody] = useState('');
   const [commentError, setCommentError] = useState<string | null>(null);
-  const [replyTarget, setReplyTarget] =
-    useState<CommunityApi.CommentResponse | null>(null);
+  const [replyTarget, setReplyTarget] = useState<Api.CommentResponse | null>(
+    null,
+  );
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentRequestId, setCommentRequestId] = useState<string>(
     createCommentRequestId,
@@ -218,7 +218,7 @@ export function PostDetailView({
 
   // 删除评论 AlertDialog
   const [deletingCommentTarget, setDeletingCommentTarget] =
-    useState<CommunityApi.CommentResponse | null>(null);
+    useState<Api.CommentResponse | null>(null);
   const [deletingCommentPending, setDeletingCommentPending] = useState(false);
 
   // 编辑帖子 PostComposerSheet & 删除帖子 AlertDialog
@@ -308,8 +308,8 @@ export function PostDetailView({
     const visible = comments.filter(
       (item) => item.status !== 'deleted' && item.status !== 'hidden',
     );
-    const topLevel: CommunityApi.CommentResponse[] = [];
-    const byParent = new Map<string, CommunityApi.CommentResponse[]>();
+    const topLevel: Api.CommentResponse[] = [];
+    const byParent = new Map<string, Api.CommentResponse[]>();
     const topIds = new Set(
       visible.filter((c) => !c.parentCommentId).map((c) => c.id ?? ''),
     );
@@ -494,7 +494,7 @@ export function PostDetailView({
     }
   }
 
-  function startEditComment(comment: CommunityApi.CommentResponse) {
+  function startEditComment(comment: Api.CommentResponse) {
     if (!comment.id) {
       return;
     }
@@ -647,10 +647,7 @@ export function PostDetailView({
     }
   }
 
-  function renderCommentItem(
-    comment: CommunityApi.CommentResponse,
-    isReply = false,
-  ) {
+  function renderCommentItem(comment: Api.CommentResponse, isReply = false) {
     const commentId = comment.id ?? '';
     const cReaction = commentReactions[commentId] ?? DEFAULT_REACTION;
     const cReactionPending = Boolean(commentReactionPendingMap[commentId]);

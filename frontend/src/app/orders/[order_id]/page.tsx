@@ -21,7 +21,7 @@ import {
   commerceGetOrder,
   commerceListOrderRefunds,
   commerceListPaymentAttempts,
-} from '@/services/generated/commerce/commerce';
+} from '@/services/generated/api/commerce';
 
 export const metadata: Metadata = {
   title: '订单详情与售后',
@@ -75,9 +75,9 @@ export default async function OrderDetailPage({params}: OrderDetailPageProps) {
     );
   }
 
-  let order: CommerceApi.OrderResponse | null = null;
-  let initialRefunds: CommerceApi.RefundResponse[] = [];
-  let initialAttempts: CommerceApi.PaymentAttemptResponse[] = [];
+  let order: Api.OrderResponse | null = null;
+  let initialRefunds: Api.RefundResponse[] = [];
+  let initialAttempts: Api.PaymentAttemptResponse[] = [];
 
   try {
     const options = await getServerRequestOptions();

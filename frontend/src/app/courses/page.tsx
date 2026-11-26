@@ -7,8 +7,8 @@ import {
 } from '@/features/course/course_catalog';
 import {countCourseLessons} from '@/features/course/course_status';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {commerceGetCoursePrice} from '@/services/generated/commerce/commerce';
-import {learningListCourses} from '@/services/generated/learning/courses';
+import {commerceGetCoursePrice} from '@/services/generated/api/commerce';
+import {learningListCourses} from '@/services/generated/api/courses';
 
 export const metadata: Metadata = {
   title: '课程目录',
@@ -55,9 +55,7 @@ export default async function CoursesPage({searchParams}: CoursesPageProps) {
     );
 
     const rawCourses = (resp?.courses ?? []).filter(
-      (
-        course,
-      ): course is LearningApi.CourseResponse & {id: string; title: string} =>
+      (course): course is Api.CourseResponse & {id: string; title: string} =>
         Boolean(course.id && course.title),
     );
     total = resp?.total ?? rawCourses.length;

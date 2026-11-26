@@ -102,7 +102,7 @@ import {
   identityListInstructorInvitations,
   identityRevokeInstructor,
   identitySetAccountStatus,
-} from '@/services/generated/identity/access';
+} from '@/services/generated/api/access';
 import {
   getAccountStatusLabel,
   getInvitationStatusLabel,
@@ -112,8 +112,8 @@ import {
 
 export interface AccountManagementProps {
   readonly currentUser: SessionUser;
-  readonly initialAccounts: IdentityApi.ListAccountsResponse;
-  readonly initialInvitations: IdentityApi.ListInvitationsResponse;
+  readonly initialAccounts: Api.ListAccountsResponse;
+  readonly initialInvitations: Api.ListInvitationsResponse;
   readonly initialError?: string | null;
 }
 
@@ -121,7 +121,7 @@ const ACCOUNTS_PAGE_SIZE = 20;
 const INVITATIONS_PAGE_SIZE = 20;
 
 type StatusActionTarget = {
-  account: IdentityApi.AccountSummary;
+  account: Api.AccountSummary;
   nextStatus: 'active' | 'suspended';
 };
 
@@ -136,7 +136,7 @@ export function AccountManagement({
   );
 
   // Accounts list & filters
-  const [accounts, setAccounts] = useState<IdentityApi.AccountSummary[]>(
+  const [accounts, setAccounts] = useState<Api.AccountSummary[]>(
     initialAccounts.items ?? [],
   );
   const [accountsTotal, setAccountsTotal] = useState<number>(
@@ -152,7 +152,7 @@ export function AccountManagement({
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   // Invitations list & filters
-  const [invitations, setInvitations] = useState<IdentityApi.Invitation[]>(
+  const [invitations, setInvitations] = useState<Api.Invitation[]>(
     initialInvitations.items ?? [],
   );
   const [invitationsTotal, setInvitationsTotal] = useState<number>(
@@ -185,13 +185,14 @@ export function AccountManagement({
   );
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const [revokeTarget, setRevokeTarget] =
-    useState<IdentityApi.AccountSummary | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<Api.AccountSummary | null>(
+    null,
+  );
   const [revokeReason, setRevokeReason] = useState('');
   const [revokingInstructor, setRevokingInstructor] = useState(false);
 
   const [cancelInviteTarget, setCancelInviteTarget] =
-    useState<IdentityApi.Invitation | null>(null);
+    useState<Api.Invitation | null>(null);
   const [cancellingInvite, setCancellingInvite] = useState(false);
 
   const [errorBanner, setErrorBanner] = useState<string | null>(initialError);

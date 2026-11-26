@@ -2,17 +2,17 @@ import 'server-only';
 import type {SessionUser} from '@/lib/auth/roles';
 import {COMMUNITY_TOPICS, getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {commerceGetCoursePrice} from '@/services/generated/commerce/commerce';
+import {commerceGetCoursePrice} from '@/services/generated/api/commerce';
 import {
   communityListPosts,
   communityListTopics,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 import {
   learningListCourses,
   learningListMyCourses,
-} from '@/services/generated/learning/courses';
+} from '@/services/generated/api/courses';
 
-export interface HomeCourseItem extends LearningApi.CourseResponse {
+export interface HomeCourseItem extends Api.CourseResponse {
   priceAmountMinor?: number;
 }
 
@@ -29,20 +29,20 @@ export interface HomePageData {
   pageSize: number;
   courses: HomeCourseItem[];
   coursesError: string | null;
-  posts: CommunityApi.PostResponse[];
+  posts: Api.PostResponse[];
   postsTotal: number;
-  services: CommunityApi.PostResponse[];
+  services: Api.PostResponse[];
   servicesError: string | null;
   postsError: string | null;
   topics: TopicSummary[];
-  myCourses: LearningApi.MyCourseResponse[];
+  myCourses: Api.MyCourseResponse[];
   myCoursesError: string | null;
 }
 
 export interface TopicPageData {
   topic: TopicSummary | null;
   topics: TopicSummary[];
-  posts: CommunityApi.PostResponse[];
+  posts: Api.PostResponse[];
   postsTotal: number;
   page: number;
   pageSize: number;
@@ -76,8 +76,8 @@ export function normalizeTopicParam(raw?: string | string[]): string {
   return VALID_TOPIC_SLUGS.has(value) ? value : 'all';
 }
 
-function mergeTopics(apiTopics?: CommunityApi.TopicInfo[]): TopicSummary[] {
-  const bySlug = new Map<string, CommunityApi.TopicInfo>();
+function mergeTopics(apiTopics?: Api.TopicInfo[]): TopicSummary[] {
+  const bySlug = new Map<string, Api.TopicInfo>();
   for (const item of apiTopics ?? []) {
     if (item.slug) {
       bySlug.set(item.slug, item);
@@ -95,7 +95,7 @@ function mergeTopics(apiTopics?: CommunityApi.TopicInfo[]): TopicSummary[] {
 }
 
 async function enrichCoursePrices(
-  courses: LearningApi.CourseResponse[],
+  courses: Api.CourseResponse[],
   options: Awaited<ReturnType<typeof getServerRequestOptions>>,
 ): Promise<HomeCourseItem[]> {
   if (courses.length === 0) {
@@ -198,7 +198,7 @@ export async function loadHomePageData(params: {
           }))
       : Promise.resolve({
           ok: true as const,
-          data: [] as LearningApi.MyCourseResponse[],
+          data: [] as Api.MyCourseResponse[],
         }),
     serviceList,
   ]);

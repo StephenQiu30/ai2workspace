@@ -83,7 +83,7 @@ import {
 import {VideoUploader} from '@/features/media/video_uploader';
 import {isAdmin, type SessionUser} from '@/lib/auth/roles';
 import {COURSE_CATEGORIES, formatPriceCny, getErrorMessage} from '@/lib/format';
-import {commerceSetCoursePrice} from '@/services/generated/commerce/commerce';
+import {commerceSetCoursePrice} from '@/services/generated/api/commerce';
 import {
   learningAddLesson,
   learningAddSection,
@@ -98,11 +98,11 @@ import {
   learningUpdateLesson,
   learningUpdateSection,
   learningWithdrawCourse,
-} from '@/services/generated/learning/courses';
+} from '@/services/generated/api/courses';
 
 export interface CourseEditorProps {
-  readonly initialCourse?: LearningApi.CourseResponse | null;
-  readonly initialPrice?: CommerceApi.PriceResponse | null;
+  readonly initialCourse?: Api.CourseResponse | null;
+  readonly initialPrice?: Api.PriceResponse | null;
   readonly user?: SessionUser | null;
 }
 
@@ -121,7 +121,7 @@ export function CourseEditor({
   const router = useRouter();
   const admin = isAdmin(user);
 
-  const [course, setCourse] = useState<LearningApi.CourseResponse | null>(
+  const [course, setCourse] = useState<Api.CourseResponse | null>(
     initialCourse,
   );
   const [courseId, setCourseId] = useState<string>(initialCourse?.id ?? '');
@@ -409,7 +409,7 @@ export function CourseEditor({
     setCurrentLessonMediaVersionId(undefined);
   }
 
-  function startEditLesson(lesson: LearningApi.Lesson, sectionId?: string) {
+  function startEditLesson(lesson: Api.Lesson, sectionId?: string) {
     setSelectedLessonId(lesson.id ?? null);
     setTargetSectionId(lesson.sectionId || sectionId || '');
     setLessonTitle(lesson.title ?? '');

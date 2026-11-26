@@ -90,7 +90,7 @@ import {
   commerceGetRefund,
   commerceListRefunds,
   commerceReviewRefund,
-} from '@/services/generated/commerce/commerce';
+} from '@/services/generated/api/commerce';
 import {
   getRefundApplicationStateMeta,
   getRefundChannelStateMeta,
@@ -98,7 +98,7 @@ import {
 } from './checkout';
 
 export interface RefundsManagementProps {
-  readonly initialRefunds: CommerceApi.RefundListResponse;
+  readonly initialRefunds: Api.RefundListResponse;
   readonly initialError?: string | null;
 }
 
@@ -106,18 +106,18 @@ type RefundTabKey =
   'all' | 'pending_review' | 'channel_processing' | 'completed';
 
 interface ReviewTarget {
-  refund: CommerceApi.RefundResponse;
+  refund: Api.RefundResponse;
   decision: 'approved' | 'rejected';
 }
 
-function isPendingReviewRefund(item: CommerceApi.RefundResponse): boolean {
+function isPendingReviewRefund(item: Api.RefundResponse): boolean {
   return (
     item.applicationState === 'pending_review' ||
     item.applicationState === 'pending'
   );
 }
 
-function isChannelProcessingRefund(item: CommerceApi.RefundResponse): boolean {
+function isChannelProcessingRefund(item: Api.RefundResponse): boolean {
   return (
     item.applicationState === 'approved' &&
     (item.channelState === 'submitting' ||
@@ -126,7 +126,7 @@ function isChannelProcessingRefund(item: CommerceApi.RefundResponse): boolean {
   );
 }
 
-function isCompletedRefund(item: CommerceApi.RefundResponse): boolean {
+function isCompletedRefund(item: Api.RefundResponse): boolean {
   return (
     item.applicationState === 'rejected' ||
     item.applicationState === 'cancelled' ||
@@ -139,7 +139,7 @@ export function RefundsManagement({
   initialError = null,
 }: RefundsManagementProps) {
   const [activeTab, setActiveTab] = useState<RefundTabKey>('all');
-  const [refunds, setRefunds] = useState<CommerceApi.RefundResponse[]>(
+  const [refunds, setRefunds] = useState<Api.RefundResponse[]>(
     initialRefunds.items ?? [],
   );
   const [loading, setLoading] = useState(false);
@@ -147,7 +147,7 @@ export function RefundsManagement({
 
   // Sheet inspection target
   const [selectedRefund, setSelectedRefund] =
-    useState<CommerceApi.RefundResponse | null>(null);
+    useState<Api.RefundResponse | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Review AlertDialog state (approve / reject)
@@ -160,8 +160,9 @@ export function RefundsManagement({
 
   // Channel Confirm Dialog state
   const [channelDialogOpen, setChannelDialogOpen] = useState(false);
-  const [channelTarget, setChannelTarget] =
-    useState<CommerceApi.RefundResponse | null>(null);
+  const [channelTarget, setChannelTarget] = useState<Api.RefundResponse | null>(
+    null,
+  );
   const [channelStatus, setChannelStatus] = useState<
     'success' | 'failed' | 'unknown'
   >('success');
@@ -219,13 +220,13 @@ export function RefundsManagement({
     }
   }
 
-  function handleOpenSheet(item: CommerceApi.RefundResponse) {
+  function handleOpenSheet(item: Api.RefundResponse) {
     setSelectedRefund(item);
     setSheetOpen(true);
   }
 
   function openReviewDialog(
-    refund: CommerceApi.RefundResponse,
+    refund: Api.RefundResponse,
     decision: 'approved' | 'rejected',
   ) {
     setReviewTarget({refund, decision});
@@ -275,7 +276,7 @@ export function RefundsManagement({
     }
   }
 
-  function openChannelConfirmDialog(refund: CommerceApi.RefundResponse) {
+  function openChannelConfirmDialog(refund: Api.RefundResponse) {
     setChannelTarget(refund);
     setChannelStatus('success');
     setChannelRefundId(

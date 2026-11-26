@@ -21,7 +21,7 @@ import {getServerRequestOptions} from '@/lib/request/server';
 import {
   identityListAccounts,
   identityListInstructorInvitations,
-} from '@/services/generated/identity/access';
+} from '@/services/generated/api/access';
 
 export const metadata: Metadata = {
   title: '账号管理',
@@ -71,13 +71,13 @@ export default async function ManageAccountsPage() {
     );
   }
 
-  let initialAccounts: IdentityApi.ListAccountsResponse = {
+  let initialAccounts: Api.ListAccountsResponse = {
     items: [],
     page: 1,
     pageSize: 20,
     total: 0,
   };
-  let initialInvitations: IdentityApi.ListInvitationsResponse = {
+  let initialInvitations: Api.ListInvitationsResponse = {
     items: [],
     page: 1,
     pageSize: 20,

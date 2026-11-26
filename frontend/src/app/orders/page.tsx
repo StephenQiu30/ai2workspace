@@ -44,7 +44,7 @@ import {
   getErrorMessage,
 } from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {commerceListOrders} from '@/services/generated/commerce/commerce';
+import {commerceListOrders} from '@/services/generated/api/commerce';
 
 export const metadata: Metadata = {
   title: '我的订单',
@@ -97,7 +97,7 @@ export default async function OrdersPage() {
     );
   }
 
-  let orders: CommerceApi.OrderResponse[] = [];
+  let orders: Api.OrderResponse[] = [];
   let loadError: string | null = null;
 
   try {

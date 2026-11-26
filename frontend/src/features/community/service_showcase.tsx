@@ -22,7 +22,7 @@ export function ServiceShowcase({
   services,
   error,
 }: {
-  services: CommunityApi.PostResponse[];
+  services: Api.PostResponse[];
   error: string | null;
 }) {
   const [selectedId, setSelectedId] = useState<string>();

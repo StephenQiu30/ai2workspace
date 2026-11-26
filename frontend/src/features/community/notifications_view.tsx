@@ -39,10 +39,10 @@ import {formatDateTime, getErrorMessage} from '@/lib/format';
 import {
   communityListMyNotifications,
   communityMarkNotificationRead,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 
 export interface NotificationsViewProps {
-  initialNotifications: CommunityApi.Notification[];
+  initialNotifications: Api.Notification[];
   initialTotal: number;
   initialError?: string | null;
 }
@@ -67,7 +67,7 @@ function getNotificationTypeLabel(type?: string): string {
 }
 
 function resolveNotificationTargetHref(
-  notification: CommunityApi.Notification,
+  notification: Api.Notification,
 ): {href: string; label: string} | null {
   if (notification.targetAccessible === false) {
     return null;
@@ -97,7 +97,7 @@ export function NotificationsView({
 }: NotificationsViewProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [notifications, setNotifications] =
-    useState<CommunityApi.Notification[]>(initialNotifications);
+    useState<Api.Notification[]>(initialNotifications);
   const [totalCount, setTotalCount] = useState<number>(initialTotal);
   const [errorBanner, setErrorBanner] = useState<string | null>(initialError);
   const [refreshing, setRefreshing] = useState(false);
@@ -178,7 +178,7 @@ export function NotificationsView({
     }
   }
 
-  function renderList(list: CommunityApi.Notification[], isUnreadTab: boolean) {
+  function renderList(list: Api.Notification[], isUnreadTab: boolean) {
     if (list.length === 0) {
       return (
         <Empty className="bg-canvas-soft py-14">

@@ -64,13 +64,13 @@ import {
   assistantDisableAgent,
   assistantPublishAgent,
   assistantUpdateAgent,
-} from '@/services/generated/assistant/agents';
+} from '@/services/generated/api/agents';
 
 export interface AgentConfigViewProps {
   agentParam: string;
-  initialAgent: AssistantApi.Configuration | null;
-  initialModels: AssistantApi.ModelInfo[];
-  initialKnowledgeBases: AssistantApi.KnowledgeBase[];
+  initialAgent: Api.Configuration | null;
+  initialModels: Api.ModelInfo[];
+  initialKnowledgeBases: Api.KnowledgeBase[];
   initialError?: string | null;
 }
 
@@ -96,13 +96,9 @@ export function AgentConfigView({
   initialKnowledgeBases,
   initialError,
 }: AgentConfigViewProps) {
-  const [agent, setAgent] = useState<AssistantApi.Configuration | null>(
-    initialAgent,
-  );
-  const [models] = useState<AssistantApi.ModelInfo[]>(initialModels);
-  const [knowledgeBases] = useState<AssistantApi.KnowledgeBase[]>(
-    initialKnowledgeBases,
-  );
+  const [agent, setAgent] = useState<Api.Configuration | null>(initialAgent);
+  const [models] = useState<Api.ModelInfo[]>(initialModels);
+  const [knowledgeBases] = useState<Api.KnowledgeBase[]>(initialKnowledgeBases);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError ?? null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -138,7 +134,7 @@ export function AgentConfigView({
     });
   };
 
-  const applyUpdatedAgent = (updated: AssistantApi.Configuration) => {
+  const applyUpdatedAgent = (updated: Api.Configuration) => {
     setAgent(updated);
     setName(updated.name ?? '');
     setSlug(updated.slug ?? '');

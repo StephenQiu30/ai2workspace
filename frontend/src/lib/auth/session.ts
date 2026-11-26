@@ -1,7 +1,7 @@
 import 'server-only';
 import {cache} from 'react';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {identityGetCurrentUser} from '@/services/generated/identity/sessions';
+import {identityGetCurrentUser} from '@/services/generated/api/sessions';
 import {normalizeSessionUser, type SessionUser} from './roles';
 
 /**

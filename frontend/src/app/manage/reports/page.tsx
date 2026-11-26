@@ -18,7 +18,7 @@ import {isAdmin} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {buildLoginHref, getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {communityListReports} from '@/services/generated/community/community';
+import {communityListReports} from '@/services/generated/api/community';
 
 export const metadata: Metadata = {
   title: '内容举报治理',
@@ -69,7 +69,7 @@ export default async function ManageReportsPage() {
     );
   }
 
-  let initialReports: CommunityApi.Report[] = [];
+  let initialReports: Api.Report[] = [];
   let initialTotal = 0;
   let initialError: string | null = null;
 

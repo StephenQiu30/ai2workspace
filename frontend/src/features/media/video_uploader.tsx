@@ -29,7 +29,7 @@ import {
   learningCompleteUpload,
   learningCreateUpload,
   learningPublishLessonMedia,
-} from '@/services/generated/learning/media';
+} from '@/services/generated/api/media';
 
 export interface VideoFileSpec {
   name: string;

@@ -23,7 +23,7 @@ import {
   commerceCreateOrder,
   commerceCreatePaymentAttempt,
   commerceGetPaymentStatus,
-} from '@/services/generated/commerce/commerce';
+} from '@/services/generated/api/commerce';
 
 export type StatusBadgeVariant = 'default' | 'secondary' | 'destructive';
 
@@ -167,10 +167,11 @@ export function Checkout({
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [createdOrder, setCreatedOrder] =
-    useState<CommerceApi.OrderResponse | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<Api.OrderResponse | null>(
+    null,
+  );
   const [paymentAttempt, setPaymentAttempt] =
-    useState<CommerceApi.PaymentAttemptResponse | null>(null);
+    useState<Api.PaymentAttemptResponse | null>(null);
 
   async function handleCreateOrderAndInitiatePayment() {
     setLoading(true);

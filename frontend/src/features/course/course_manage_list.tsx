@@ -100,10 +100,10 @@ import {
   learningReviewCourse,
   learningSubmitCourse,
   learningWithdrawCourse,
-} from '@/services/generated/learning/courses';
+} from '@/services/generated/api/courses';
 
 export interface CourseManageListProps {
-  readonly initialCourses: LearningApi.CourseResponse[];
+  readonly initialCourses: Api.CourseResponse[];
   readonly user: SessionUser;
   readonly loadFailed?: boolean;
 }
@@ -115,7 +115,7 @@ type GovernanceActionType =
   'submit' | 'approve' | 'reject' | 'close_sales' | 'withdraw' | 'delete';
 
 interface PendingActionState {
-  course: LearningApi.CourseResponse;
+  course: Api.CourseResponse;
   action: GovernanceActionType;
 }
 
@@ -206,7 +206,7 @@ export function CourseManageList({
   }
 
   function openActionDialog(
-    course: LearningApi.CourseResponse,
+    course: Api.CourseResponse,
     action: GovernanceActionType,
   ) {
     setActionReason('');

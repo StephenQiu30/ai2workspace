@@ -8,8 +8,8 @@
 
 工具接入直接使用官方 CLI 与配置文件，不新增 `scripts/` 目录或独立编排脚本。
 
-- 知识库网站工程位于 `workspace/`，知识正文统一放在 `workspace/content/`。业务工程分别位于 `frontend/`（Next.js）与 `backend/`（Go 微服务），当前工程入口见 [PROJECT.md](./PROJECT.md)。原创 IP 首版从[现行产品专题](./workspace/content/index.md#学屿原创-ip-制作与共创-saas)进入，旧课程与社区文档按其适用范围复用，实施状态核对源代码与实际验收记录。
-- 业务前端采用 Next.js + TypeScript + React + Tailwind CSS + shadcn/ui（Radix 版本）+ Prettier + ESLint + Axios + Umi OpenAPI。业务接口从 Go DTO 与 Swaggo 注释生成 Swagger，再生成前端类型和调用代码；禁止手动维护 Swagger / OpenAPI 文件及生成的调用代码。各 Go 服务独立维护依赖、数据所有权和部署边界。
+- 知识库网站工程位于 `workspace/`，知识正文统一放在 `workspace/content/`。业务工程分别位于 `frontend/`（Next.js）与 `backend/`（Go 模块化单体），当前工程入口见 [PROJECT.md](./PROJECT.md)。原创 IP 首版从[现行产品专题](./workspace/content/index.md#学屿原创-ip-制作与共创-saas)进入，旧课程与社区文档按其适用范围复用，实施状态核对源代码与实际验收记录。
+- 业务前端采用 Next.js + TypeScript + React + Tailwind CSS + shadcn/ui（Radix 版本）+ Prettier + ESLint + Axios + Umi OpenAPI。业务接口从 Go DTO 与 Swaggo 注释生成 Swagger，再生成前端类型和调用代码；禁止手动维护 Swagger / OpenAPI 文件及生成的调用代码。后端使用一个 Go module、一个进程和一个 PostgreSQL 数据库。模块通过 Go 接口协作，数据结构以 `backend/schema.sql` 为唯一事实源。异步执行归对应业务模块。
 - 基于 Fumadocs 官方脚手架和组件，自动发现 Markdown/MDX、生成导航及搜索；不添加逐页路由、硬编码文档清单、自定义解析器或旧版 Core/CLI/空间管理封装。
 - Go 服务遵循 Google Go，前端 TypeScript 遵循 Google TS 并保持 strict；命名、目录职责、依赖方向及框架 / 生成代码例外统一见[工程规范](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计)，不在其他文件复制规则正文。
 - 使用、编写与部署见 [知识库使用说明](./workspace/content/index.md)，Fumadocs 入口见 [workspace/AGENTS.md](./workspace/AGENTS.md)。知识库界面使用官方 Spacious 布局及配套样式，主题变量与字体对齐官网。

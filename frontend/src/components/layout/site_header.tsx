@@ -48,7 +48,7 @@ import {
   type SessionUser,
 } from '@/lib/auth/roles';
 import {buildLoginHref, getErrorMessage} from '@/lib/format';
-import {identityLogout} from '@/services/generated/identity/sessions';
+import {identityLogout} from '@/services/generated/api/sessions';
 
 interface NavbarProps {
   initialUser: SessionUser | null;

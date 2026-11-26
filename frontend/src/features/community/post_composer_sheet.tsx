@@ -42,7 +42,7 @@ import {buildLoginHref, COMMUNITY_TOPICS, getErrorMessage} from '@/lib/format';
 import {
   communityCreatePost,
   communityUpdatePost,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 
 export interface EditablePostInput {
   id: string;
@@ -64,7 +64,7 @@ export interface PostComposerSheetProps {
   returnPath: string;
   inline?: boolean;
   courseTitle?: string;
-  onSuccess?: (post: CommunityApi.PostResponse, savedBody: string) => void;
+  onSuccess?: (post: Api.PostResponse, savedBody: string) => void;
 }
 
 const SELECTABLE_TOPICS = COMMUNITY_TOPICS.filter(

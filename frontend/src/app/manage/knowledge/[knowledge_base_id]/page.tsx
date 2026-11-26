@@ -10,7 +10,7 @@ import {getServerRequestOptions} from '@/lib/request/server';
 import {
   assistantGetKnowledgeBase,
   assistantListKnowledgeSources,
-} from '@/services/generated/assistant/knowledge';
+} from '@/services/generated/api/knowledge';
 
 export const metadata: Metadata = {
   title: '知识库来源与版本治理 · ai2workspace',
@@ -46,8 +46,8 @@ export default async function KnowledgeDetailPage({
     );
   }
 
-  let initialBase: AssistantApi.KnowledgeBase | null = null;
-  let initialSources: AssistantApi.KnowledgeSource[] = [];
+  let initialBase: Api.KnowledgeBase | null = null;
+  let initialSources: Api.KnowledgeSource[] = [];
   let initialError: string | null = null;
 
   try {

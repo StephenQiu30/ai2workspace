@@ -48,7 +48,7 @@ import {
   type SessionUser,
 } from '@/lib/auth/roles';
 import {getErrorMessage, sanitizeNextPath} from '@/lib/format';
-import {identityAcceptInstructorInvitation} from '@/services/generated/identity/access';
+import {identityAcceptInstructorInvitation} from '@/services/generated/api/access';
 import {
   identityRegister,
   identityRequestPasswordReset,
@@ -56,11 +56,8 @@ import {
   identityResetPassword,
   identityUpdateMe,
   identityVerifyEmail,
-} from '@/services/generated/identity/accounts';
-import {
-  identityLogin,
-  identityLogout,
-} from '@/services/generated/identity/sessions';
+} from '@/services/generated/api/accounts';
+import {identityLogin, identityLogout} from '@/services/generated/api/sessions';
 import {
   getAccountStatusLabel,
   getRoleLabel,

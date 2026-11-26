@@ -33,7 +33,7 @@ import {
   communityGetFavoriteStatus,
   communityGetPost,
   communityGetReaction,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +46,7 @@ interface PostDetailPageProps {
 interface HttpErrorShape {
   response?: {
     status?: number;
-    data?: CommunityApi.PostUnavailableResponse;
+    data?: Api.PostUnavailableResponse;
   };
 }
 
@@ -125,7 +125,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
     );
   }
 
-  let post: CommunityApi.PostDetailResponse;
+  let post: Api.PostDetailResponse;
   try {
     post = await communityGetPost({id: postId}, options);
   } catch (err: unknown) {

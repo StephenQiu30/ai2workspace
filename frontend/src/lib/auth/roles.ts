@@ -9,7 +9,7 @@ export interface SessionUser {
 }
 
 export function normalizeSessionUser(
-  raw: IdentityApi.CurrentUserResponse | null | undefined,
+  raw: Api.CurrentUserResponse | null | undefined,
 ): SessionUser | null {
   if (!raw) {
     return null;

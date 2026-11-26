@@ -3,8 +3,8 @@ import {notFound} from 'next/navigation';
 import {LessonPlayer} from '@/features/learning/lesson_player';
 import {getServerSession} from '@/lib/auth/session';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {communityListPosts} from '@/services/generated/community/community';
-import {learningGetCourse} from '@/services/generated/learning/courses';
+import {communityListPosts} from '@/services/generated/api/community';
+import {learningGetCourse} from '@/services/generated/api/courses';
 
 interface LearnPageProps {
   readonly params: Promise<{
@@ -59,7 +59,7 @@ export default async function LearnPage({params}: LearnPageProps) {
     notFound();
   }
 
-  let activeLesson: LearningApi.Lesson | undefined;
+  let activeLesson: Api.Lesson | undefined;
   for (const section of course.sections ?? []) {
     const found = (section.lessons ?? []).find((item) => item.id === lessonId);
     if (found) {

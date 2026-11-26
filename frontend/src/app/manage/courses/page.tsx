@@ -7,7 +7,7 @@ import {CourseManageList} from '@/features/course/course_manage_list';
 import {canManageCourses} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {learningListManageCourses} from '@/services/generated/learning/courses';
+import {learningListManageCourses} from '@/services/generated/api/courses';
 
 export const metadata: Metadata = {
   title: '课程管理',
@@ -30,7 +30,7 @@ export default async function ManageCoursesPage() {
     );
   }
 
-  let courses: LearningApi.CourseResponse[] = [];
+  let courses: Api.CourseResponse[] = [];
   let loadFailed = false;
 
   try {

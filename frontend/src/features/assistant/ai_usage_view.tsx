@@ -81,12 +81,12 @@ import {
   assistantSetAiPause,
   assistantUpdateBudgetConfig,
   assistantUpdateModel,
-} from '@/services/generated/assistant/governance';
+} from '@/services/generated/api/governance';
 
 export interface AiUsageViewProps {
-  initialSummary: AssistantApi.UsageSummary | null;
-  initialModels: AssistantApi.ModelInfo[];
-  initialReconciliations: AssistantApi.ReconciliationItem[];
+  initialSummary: Api.UsageSummary | null;
+  initialModels: Api.ModelInfo[];
+  initialReconciliations: Api.ReconciliationItem[];
   initialError?: string | null;
 }
 
@@ -96,12 +96,12 @@ export function AiUsageView({
   initialReconciliations,
   initialError,
 }: AiUsageViewProps) {
-  const [summary, setSummary] = useState<AssistantApi.UsageSummary | null>(
+  const [summary, setSummary] = useState<Api.UsageSummary | null>(
     initialSummary,
   );
-  const [models, setModels] = useState<AssistantApi.ModelInfo[]>(initialModels);
+  const [models, setModels] = useState<Api.ModelInfo[]>(initialModels);
   const [reconciliations, setReconciliations] = useState<
-    AssistantApi.ReconciliationItem[]
+    Api.ReconciliationItem[]
   >(initialReconciliations);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError ?? null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -133,8 +133,7 @@ export function AiUsageView({
   const [savingBudget, setSavingBudget] = useState(false);
 
   // Edit Model Dialog
-  const [editingModel, setEditingModel] =
-    useState<AssistantApi.ModelInfo | null>(null);
+  const [editingModel, setEditingModel] = useState<Api.ModelInfo | null>(null);
   const [modelEnabled, setModelEnabled] = useState(true);
   const [modelDisplayName, setModelDisplayName] = useState('');
   const [modelPromptPrice, setModelPromptPrice] = useState('1');
@@ -145,7 +144,7 @@ export function AiUsageView({
 
   // Resolve Reconciliation Dialog
   const [resolvingItem, setResolvingItem] =
-    useState<AssistantApi.ReconciliationItem | null>(null);
+    useState<Api.ReconciliationItem | null>(null);
   const [resolvedCentsInput, setResolvedCentsInput] = useState('0');
   const [resolutionNote, setResolutionNote] = useState('');
   const [resolving, setResolving] = useState(false);
@@ -231,7 +230,7 @@ export function AiUsageView({
     }
   };
 
-  const handleOpenEditModel = (m: AssistantApi.ModelInfo) => {
+  const handleOpenEditModel = (m: Api.ModelInfo) => {
     setEditingModel(m);
     setModelEnabled(m.enabled !== false);
     setModelDisplayName(m.displayName ?? '');
@@ -278,7 +277,7 @@ export function AiUsageView({
     }
   };
 
-  const handleOpenResolve = (item: AssistantApi.ReconciliationItem) => {
+  const handleOpenResolve = (item: Api.ReconciliationItem) => {
     setResolvingItem(item);
     setResolvedCentsInput(String(item.unknownCents ?? 0));
     setResolutionNote(item.resolutionNote ?? '');

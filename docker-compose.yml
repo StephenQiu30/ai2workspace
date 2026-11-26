@@ -1,246 +1,69 @@
 name: ai2workspace
 
 services:
-  gateway:
-    container_name: ai2workspace-gateway
-    image: traefik:v3.6.0
-    command:
-      - --entrypoints.web.address=:80
-      - --providers.file.filename=/etc/traefik/dynamic.yaml
-      - --api.dashboard=false
-    ports:
-      - "127.0.0.1:3121:80"
-    volumes:
-      - ./backend/traefik.yaml:/etc/traefik/dynamic.yaml:ro
-    depends_on:
-      - frontend
-      - identity
-      - learning
-      - commerce
-      - community
-      - assistant
-
-  identity:
-    container_name: ai2workspace-identity
-    build:
-      context: .
-      dockerfile: backend/services/identity/Dockerfile
-    environment:
-      HTTP_ADDR: :3123
-      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
-      DEV_EXPOSE_TOKENS: ${DEV_EXPOSE_TOKENS:-true}
-      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@learnis.local}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin123456!}
-      HOST_INTERNAL: host.docker.internal
-      DB_HOST: ${DB_HOST:-host.docker.internal}
-      MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
-      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
-      REDIS_HOST: ${REDIS_HOST:-host.docker.internal}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-host.docker.internal}
-      KAFKA_HOST: ${KAFKA_HOST:-host.docker.internal}
-      MINIO_HOST: ${MINIO_HOST:-host.docker.internal}
-    ports:
-      - "127.0.0.1:3123:3123"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/identity/health]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 3s
-
-  learning:
-    container_name: ai2workspace-learning
-    build:
-      context: .
-      dockerfile: backend/services/learning/Dockerfile
-    environment:
-      HTTP_ADDR: :3124
-      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
-      IDENTITY_SERVICE_URL: http://identity:3123
-      COMMERCE_SERVICE_URL: http://commerce:3125
-      HOST_INTERNAL: host.docker.internal
-      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
-    ports:
-      - "127.0.0.1:3124:3124"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3124/api/learning/health]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 3s
-
-  commerce:
-    container_name: ai2workspace-commerce
-    build:
-      context: .
-      dockerfile: backend/services/commerce/Dockerfile
-    environment:
-      COMMERCE_HTTP_ADDR: :3125
-      COMMERCE_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
-      IDENTITY_SERVICE_URL: http://identity:3123
-      LEARNING_SERVICE_URL: http://learning:3124
-      COMMUNITY_SERVICE_URL: http://community:3126
-      HOST_INTERNAL: host.docker.internal
-      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
-    ports:
-      - "127.0.0.1:3125:3125"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3125/api/commerce/health]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 3s
-
-  community:
-    container_name: ai2workspace-community
-    build:
-      context: .
-      dockerfile: backend/services/community/Dockerfile
-    environment:
-      COMMUNITY_HTTP_ADDR: :3126
-      COMMUNITY_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      COMMUNITY_SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
-      IDENTITY_SERVICE_URL: http://identity:3123
-      LEARNING_SERVICE_URL: http://learning:3124
-      HOST_INTERNAL: host.docker.internal
-      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
-    ports:
-      - "127.0.0.1:3126:3126"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3126/api/community/health]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 3s
-
-  assistant:
-    container_name: ai2workspace-assistant
-    build:
-      context: .
-      dockerfile: backend/services/assistant/Dockerfile
-    environment:
-      ASSISTANT_HTTP_ADDR: :3127
-      ASSISTANT_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
-      ASSISTANT_SERVICE_TOKEN: ${SERVICE_TOKEN:-identity-service-secret}
-      AI_ALLOW_LOCAL_SIMULATION: ${AI_ALLOW_LOCAL_SIMULATION:-true}
-      IDENTITY_SERVICE_URL: http://identity:3123
-      LEARNING_SERVICE_URL: http://learning:3124
-      HOST_INTERNAL: host.docker.internal
-      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
-    ports:
-      - "127.0.0.1:3127:3127"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3127/api/assistant/health]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 3s
-
-  studio-db:
+  postgres:
     image: postgres:18.1-alpine
-    profiles: [studio]
     environment:
-      POSTGRES_USER: studio
-      POSTGRES_PASSWORD: studio-local
-      POSTGRES_DB: studio
+      POSTGRES_USER: ai2workspace
+      POSTGRES_PASSWORD: ai2workspace-local
+      POSTGRES_DB: ai2workspace
     volumes:
-      - studio-data:/var/lib/postgresql
-    ports:
-      - "127.0.0.1:${STUDIO_DB_PORT:-54329}:5432"
+      - postgres-data:/var/lib/postgresql
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U studio -d studio]
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, ai2workspace, -d, ai2workspace]
       interval: 2s
       timeout: 3s
       retries: 15
 
-  studio-migrate:
-    image: ghcr.io/pressly/goose:v3.30.0
-    profiles: [studio]
-    environment:
-      GOOSE_DRIVER: postgres
-      GOOSE_DBSTRING: postgres://studio:studio-local@studio-db:5432/studio?sslmode=disable
-    command: [-env=none, -dir, /migrations, up]
-    volumes:
-      - ./backend/migrations:/migrations:ro
-    depends_on:
-      studio-db:
-        condition: service_healthy
-
-  studio:
-    profiles: [studio]
+  backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      GIN_MODE: release
-      STUDIO_HTTP_ADDR: :3128
-      STUDIO_DATABASE_URL: postgres://studio:studio-local@studio-db:5432/studio?sslmode=disable
-      STUDIO_IDENTITY_ORIGIN: http://identity:3123
-      STUDIO_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      HTTP_ADDR: :3123
+      DATABASE_URL: postgres://ai2workspace:ai2workspace-local@postgres:5432/ai2workspace?sslmode=disable
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      DEV_EXPOSE_TOKENS: ${DEV_EXPOSE_TOKENS:-true}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      PLAYBACK_SIGNING_SECRET: ${PLAYBACK_SIGNING_SECRET:-ai2workspace-local-playback}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
+      AI_ALLOW_LOCAL_SIMULATION: ${AI_ALLOW_LOCAL_SIMULATION:-false}
     depends_on:
-      studio-migrate:
-        condition: service_completed_successfully
-      identity:
+      postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3128:3128"
+      - "127.0.0.1:3123:3123"
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3128/api/studio/health]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3123/api/health]
       interval: 5s
       timeout: 3s
       retries: 10
 
   frontend:
-    container_name: ai2workspace-frontend
     build:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
-      PORT: 3121
-      API_ORIGIN: http://gateway
-      HOST_INTERNAL: host.docker.internal
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      API_ORIGIN: http://backend:3123
+    ports:
+      - "127.0.0.1:3121:3121"
     depends_on:
-      identity:
-        condition: service_healthy
-      learning:
-        condition: service_healthy
-      commerce:
-        condition: service_healthy
-      community:
-        condition: service_healthy
-      assistant:
+      backend:
         condition: service_healthy
 
   workspace:
-    container_name: ai2workspace-workspace
     build:
       context: .
       dockerfile: workspace/Dockerfile
     ports:
       - "127.0.0.1:3122:3122"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     healthcheck:
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3122/]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 3s
 
 volumes:
-  studio-data:
+  postgres-data:

@@ -45,7 +45,7 @@ export function getProviderLabel(providerId?: string): string {
   }
 }
 
-export function getAgentStateLabel(state?: AssistantApi.AgentState): string {
+export function getAgentStateLabel(state?: Api.AgentState): string {
   switch (state) {
     case 'published':
       return '已发布';
@@ -58,7 +58,7 @@ export function getAgentStateLabel(state?: AssistantApi.AgentState): string {
 }
 
 export function getKnowledgeVisibilityLabel(
-  visibility?: AssistantApi.Visibility,
+  visibility?: Api.Visibility,
 ): string {
   switch (visibility) {
     case 'public':
@@ -70,7 +70,7 @@ export function getKnowledgeVisibilityLabel(
   }
 }
 
-export function getSourceKindLabel(kind?: AssistantApi.SourceKind): string {
+export function getSourceKindLabel(kind?: Api.SourceKind): string {
   switch (kind) {
     case 'course_text':
       return '授权课程图文';
@@ -81,7 +81,7 @@ export function getSourceKindLabel(kind?: AssistantApi.SourceKind): string {
   }
 }
 
-export function getSourceStateLabel(state?: AssistantApi.SourceState): string {
+export function getSourceStateLabel(state?: Api.SourceState): string {
   switch (state) {
     case 'draft':
       return '待切片索引';
@@ -131,7 +131,7 @@ export function getIndexJobStageLabel(stage?: string): string {
 }
 
 export function getReconciliationStateLabel(
-  state?: AssistantApi.ReconciliationState,
+  state?: Api.ReconciliationState,
 ): string {
   switch (state) {
     case 'pending':
@@ -145,9 +145,7 @@ export function getReconciliationStateLabel(
   }
 }
 
-export function getPurposeLabel(
-  purpose?: AssistantApi.ReservationPurpose,
-): string {
+export function getPurposeLabel(purpose?: Api.ReservationPurpose): string {
   switch (purpose) {
     case 'agent_chat':
       return '智能问答';
@@ -204,15 +202,12 @@ interface HttpErrorLike {
   };
 }
 
-export function extractBudgetPausedJob(
-  err: unknown,
-): AssistantApi.IndexJob | null {
+export function extractBudgetPausedJob(err: unknown): Api.IndexJob | null {
   if (!err || typeof err !== 'object') {
     return null;
   }
-  const response = (
-    err as {response?: {status?: number; data?: AssistantApi.IndexJob}}
-  ).response;
+  const response = (err as {response?: {status?: number; data?: Api.IndexJob}})
+    .response;
   if (
     response?.status === 402 &&
     response.data &&

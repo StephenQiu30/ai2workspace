@@ -10,9 +10,9 @@ import {getServerRequestOptions} from '@/lib/request/server';
 import {
   assistantGetAgentBySlug,
   assistantListAgents,
-} from '@/services/generated/assistant/agents';
-import {assistantListModels} from '@/services/generated/assistant/governance';
-import {assistantListKnowledgeBases} from '@/services/generated/assistant/knowledge';
+} from '@/services/generated/api/agents';
+import {assistantListModels} from '@/services/generated/api/governance';
+import {assistantListKnowledgeBases} from '@/services/generated/api/knowledge';
 
 export const metadata: Metadata = {
   title: 'Agent 实例详细配置 · ai2workspace',
@@ -57,9 +57,9 @@ export default async function AgentConfigPage({params}: AgentConfigPageProps) {
     );
   }
 
-  let initialAgent: AssistantApi.Configuration | null = null;
-  let initialModels: AssistantApi.ModelInfo[] = [];
-  let initialKnowledgeBases: AssistantApi.KnowledgeBase[] = [];
+  let initialAgent: Api.Configuration | null = null;
+  let initialModels: Api.ModelInfo[] = [];
+  let initialKnowledgeBases: Api.KnowledgeBase[] = [];
   let initialError: string | null = null;
 
   try {

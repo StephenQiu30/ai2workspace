@@ -7,7 +7,7 @@ import {canManageKnowledge} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {assistantListKnowledgeBases} from '@/services/generated/assistant/knowledge';
+import {assistantListKnowledgeBases} from '@/services/generated/api/knowledge';
 
 export const metadata: Metadata = {
   title: '知识库管理 · ai2workspace',
@@ -33,7 +33,7 @@ export default async function KnowledgeManagePage() {
     );
   }
 
-  let initialBases: AssistantApi.KnowledgeBase[] = [];
+  let initialBases: Api.KnowledgeBase[] = [];
   let initialError: string | null = null;
 
   try {

@@ -49,7 +49,7 @@ export interface TopicDetailViewProps {
   user: SessionUser | null;
   topic: TopicSummary;
   topics: TopicSummary[];
-  posts: CommunityApi.PostResponse[];
+  posts: Api.PostResponse[];
   postsTotal: number;
   page: number;
   pageSize: number;

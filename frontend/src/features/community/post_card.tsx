@@ -14,7 +14,7 @@ import {Badge} from '@/components/ui/badge';
 import {formatDateTime, getTopicMeta} from '@/lib/format';
 
 export interface PostCardProps {
-  post: CommunityApi.PostResponse;
+  post: Api.PostResponse;
   hideTopicLink?: boolean;
 }
 

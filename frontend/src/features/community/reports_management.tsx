@@ -68,10 +68,10 @@ import {formatDateTime, getErrorMessage} from '@/lib/format';
 import {
   communityListReports,
   communityModerateReport,
-} from '@/services/generated/community/community';
+} from '@/services/generated/api/community';
 
 export interface ReportsManagementProps {
-  initialReports: CommunityApi.Report[];
+  initialReports: Api.Report[];
   initialTotal: number;
   initialError?: string | null;
 }
@@ -79,13 +79,13 @@ export interface ReportsManagementProps {
 type ReportTabKey = 'pending' | 'processed' | 'all';
 
 interface ModerationActionState {
-  report: CommunityApi.Report;
+  report: Api.Report;
   decision: 'approved' | 'rejected';
 }
 
 const REPORTS_PAGE_SIZE = 50;
 
-function getReportStatusLabel(status?: CommunityApi.ReportStatus): string {
+function getReportStatusLabel(status?: Api.ReportStatus): string {
   switch (status) {
     case 'pending':
       return '待处理';
@@ -115,14 +115,13 @@ export function ReportsManagement({
   initialError = null,
 }: ReportsManagementProps) {
   const [activeTab, setActiveTab] = useState<ReportTabKey>('pending');
-  const [reports, setReports] = useState<CommunityApi.Report[]>(initialReports);
+  const [reports, setReports] = useState<Api.Report[]>(initialReports);
   const [totalCount, setTotalCount] = useState<number>(initialTotal);
   const [loading, setLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(initialError);
 
   // Sheet 查看举报详情
-  const [selectedReport, setSelectedReport] =
-    useState<CommunityApi.Report | null>(null);
+  const [selectedReport, setSelectedReport] = useState<Api.Report | null>(null);
 
   // AlertDialog 执行审核处置
   const [moderationAction, setModerationAction] =
@@ -170,7 +169,7 @@ export function ReportsManagement({
   }
 
   function openModerationDialog(
-    report: CommunityApi.Report,
+    report: Api.Report,
     decision: 'approved' | 'rejected',
   ) {
     setModerationAction({report, decision});
@@ -247,10 +246,7 @@ export function ReportsManagement({
     }
   }
 
-  function renderTableForList(
-    list: CommunityApi.Report[],
-    tabKey: ReportTabKey,
-  ) {
+  function renderTableForList(list: Api.Report[], tabKey: ReportTabKey) {
     if (loading) {
       return (
         <Layout flow="stack" className="gap-2.5">

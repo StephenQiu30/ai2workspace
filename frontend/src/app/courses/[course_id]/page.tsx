@@ -20,11 +20,11 @@ import {getServerRequestOptions} from '@/lib/request/server';
 import {
   commerceGetCoursePrice,
   commerceListMyEntitlements,
-} from '@/services/generated/commerce/commerce';
+} from '@/services/generated/api/commerce';
 import {
   learningGetCourse,
   learningListMyCourses,
-} from '@/services/generated/learning/courses';
+} from '@/services/generated/api/courses';
 
 interface CourseDetailPageProps {
   readonly params: Promise<{course_id: string}>;

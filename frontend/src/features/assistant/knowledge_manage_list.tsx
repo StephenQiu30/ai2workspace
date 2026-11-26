@@ -62,10 +62,10 @@ import {
   assistantCreateKnowledgeBase,
   assistantListKnowledgeBases,
   assistantUpdateKnowledgeBase,
-} from '@/services/generated/assistant/knowledge';
+} from '@/services/generated/api/knowledge';
 
 export interface KnowledgeManageListProps {
-  initialBases: AssistantApi.KnowledgeBase[];
+  initialBases: Api.KnowledgeBase[];
   initialError?: string | null;
 }
 
@@ -73,8 +73,7 @@ export function KnowledgeManageList({
   initialBases,
   initialError,
 }: KnowledgeManageListProps) {
-  const [bases, setBases] =
-    useState<AssistantApi.KnowledgeBase[]>(initialBases);
+  const [bases, setBases] = useState<Api.KnowledgeBase[]>(initialBases);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError ?? null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -83,16 +82,15 @@ export function KnowledgeManageList({
   const [createName, setCreateName] = useState('');
   const [createDescription, setCreateDescription] = useState('');
   const [createVisibility, setCreateVisibility] =
-    useState<AssistantApi.Visibility>('public');
+    useState<Api.Visibility>('public');
   const [creating, setCreating] = useState(false);
 
   // Edit Dialog State
-  const [editTarget, setEditTarget] =
-    useState<AssistantApi.KnowledgeBase | null>(null);
+  const [editTarget, setEditTarget] = useState<Api.KnowledgeBase | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editVisibility, setEditVisibility] =
-    useState<AssistantApi.Visibility>('public');
+    useState<Api.Visibility>('public');
   const [updating, setUpdating] = useState(false);
 
   const refreshBases = async () => {
@@ -106,7 +104,7 @@ export function KnowledgeManageList({
     }
   };
 
-  const handleOpenEdit = (kb: AssistantApi.KnowledgeBase) => {
+  const handleOpenEdit = (kb: Api.KnowledgeBase) => {
     setEditTarget(kb);
     setEditName(kb.name ?? '');
     setEditDescription(kb.description ?? '');
@@ -229,7 +227,7 @@ export function KnowledgeManageList({
                   <Select
                     value={createVisibility}
                     onValueChange={(val) =>
-                      setCreateVisibility(val as AssistantApi.Visibility)
+                      setCreateVisibility(val as Api.Visibility)
                     }
                     disabled={creating}
                   >
@@ -431,7 +429,7 @@ export function KnowledgeManageList({
                 <Select
                   value={editVisibility}
                   onValueChange={(val) =>
-                    setEditVisibility(val as AssistantApi.Visibility)
+                    setEditVisibility(val as Api.Visibility)
                   }
                   disabled={updating}
                 >

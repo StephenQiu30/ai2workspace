@@ -93,23 +93,23 @@ import {
 } from '@/features/assistant/assistant_helpers';
 import type {SessionUser} from '@/lib/auth/roles';
 import {buildLoginHref, formatDateTime} from '@/lib/format';
-import {assistantListAgents} from '@/services/generated/assistant/agents';
+import {assistantListAgents} from '@/services/generated/api/agents';
 import {
   assistantAskQuestion,
   assistantCancelRun,
   assistantCreateSession,
   assistantListSessionMessages,
   assistantListSessions,
-} from '@/services/generated/assistant/chat';
-import {assistantGetGovernanceSummary} from '@/services/generated/assistant/governance';
+} from '@/services/generated/api/chat';
+import {assistantGetGovernanceSummary} from '@/services/generated/api/governance';
 
 export interface FloatingAssistantProps {
   initialUser: SessionUser | null;
 }
 
 type EvidenceDetail =
-  | {kind: 'citation'; data: AssistantApi.Citation}
-  | {kind: 'web'; data: AssistantApi.SearchResultItem};
+  | {kind: 'citation'; data: Api.Citation}
+  | {kind: 'web'; data: Api.SearchResultItem};
 
 function isSafeExternalHref(url?: string): url is string {
   if (!url) {
@@ -123,7 +123,7 @@ function isSafeExternalHref(url?: string): url is string {
   }
 }
 
-function getSessionLabel(session: AssistantApi.Session): string {
+function getSessionLabel(session: Api.Session): string {
   const title = session.title?.trim();
   if (title) {
     return title;
@@ -140,14 +140,12 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
   const isVerifiedUser = Boolean(user && user.emailVerified);
 
   const [isMobile, setIsMobile] = useState(false);
-  const [agents, setAgents] = useState<AssistantApi.Configuration[]>([]);
+  const [agents, setAgents] = useState<Api.Configuration[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string>('');
-  const [sessions, setSessions] = useState<AssistantApi.Session[]>([]);
+  const [sessions, setSessions] = useState<Api.Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>('');
-  const [messages, setMessages] = useState<AssistantApi.Message[]>([]);
-  const [summary, setSummary] = useState<AssistantApi.UsageSummary | null>(
-    null,
-  );
+  const [messages, setMessages] = useState<Api.Message[]>([]);
+  const [summary, setSummary] = useState<Api.UsageSummary | null>(null);
 
   const [bootstrapping, setBootstrapping] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -246,7 +244,7 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
       const [agentList, summaryData, sessionList] = await Promise.all([
         assistantListAgents(),
         assistantGetGovernanceSummary().catch(() => null),
-        assistantListSessions().catch(() => [] as AssistantApi.Session[]),
+        assistantListSessions().catch(() => [] as Api.Session[]),
       ]);
 
       const validAgents = Array.isArray(agentList) ? agentList : [];
@@ -298,7 +296,7 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
   }, [open, isVerifiedUser, bootstrapAssistant, refreshSummary]);
 
   const handleSelectSession = useCallback(
-    async (session: AssistantApi.Session) => {
+    async (session: Api.Session) => {
       if (!session.id) {
         return;
       }
@@ -397,7 +395,7 @@ export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
     abortControllerRef.current = controller;
 
     const tempMessageId = `pending_${Date.now()}`;
-    const optimisticUserMessage: AssistantApi.Message = {
+    const optimisticUserMessage: Api.Message = {
       id: tempMessageId,
       sender: 'user',
       content: questionText,

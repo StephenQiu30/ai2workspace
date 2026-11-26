@@ -54,14 +54,14 @@ export interface CommunityHomeViewProps {
   page: number;
   pageSize: number;
   courses: HomeCourseItem[];
-  services: CommunityApi.PostResponse[];
+  services: Api.PostResponse[];
   servicesError: string | null;
   coursesError: string | null;
-  posts: CommunityApi.PostResponse[];
+  posts: Api.PostResponse[];
   postsTotal: number;
   postsError: string | null;
   topics: TopicSummary[];
-  myCourses: LearningApi.MyCourseResponse[];
+  myCourses: Api.MyCourseResponse[];
   myCoursesError: string | null;
   composeTopic?: string;
   courseTitle?: string;
@@ -98,7 +98,7 @@ function formatCourseUnitCount(course: HomeCourseItem): string {
   return `${lessonCount} 课时`;
 }
 
-function computeProgressMetrics(item: LearningApi.MyCourseResponse): {
+function computeProgressMetrics(item: Api.MyCourseResponse): {
   percent: number;
   summaryText: string;
   continueHref: string;

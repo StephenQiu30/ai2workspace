@@ -7,9 +7,9 @@ import {isAdmin} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {assistantListAgents} from '@/services/generated/assistant/agents';
-import {assistantListModels} from '@/services/generated/assistant/governance';
-import {assistantListKnowledgeBases} from '@/services/generated/assistant/knowledge';
+import {assistantListAgents} from '@/services/generated/api/agents';
+import {assistantListModels} from '@/services/generated/api/governance';
+import {assistantListKnowledgeBases} from '@/services/generated/api/knowledge';
 
 export const metadata: Metadata = {
   title: 'Agent 实例管理 · ai2workspace',
@@ -46,9 +46,9 @@ export default async function AgentManagePage() {
     );
   }
 
-  let initialAgents: AssistantApi.Configuration[] = [];
-  let initialModels: AssistantApi.ModelInfo[] = [];
-  let initialKnowledgeBases: AssistantApi.KnowledgeBase[] = [];
+  let initialAgents: Api.Configuration[] = [];
+  let initialModels: Api.ModelInfo[] = [];
+  let initialKnowledgeBases: Api.KnowledgeBase[] = [];
   let initialError: string | null = null;
 
   try {

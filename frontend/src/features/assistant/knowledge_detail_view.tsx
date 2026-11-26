@@ -96,12 +96,12 @@ import {
   assistantRevokeKnowledgeSource,
   assistantStartIndexJob,
   assistantUpdateKnowledgeSource,
-} from '@/services/generated/assistant/knowledge';
+} from '@/services/generated/api/knowledge';
 
 export interface KnowledgeDetailViewProps {
   knowledgeBaseId: string;
-  initialBase: AssistantApi.KnowledgeBase | null;
-  initialSources: AssistantApi.KnowledgeSource[];
+  initialBase: Api.KnowledgeBase | null;
+  initialSources: Api.KnowledgeSource[];
   initialError?: string | null;
 }
 
@@ -111,29 +111,27 @@ export function KnowledgeDetailView({
   initialSources,
   initialError,
 }: KnowledgeDetailViewProps) {
-  const [base, setBase] = useState<AssistantApi.KnowledgeBase | null>(
-    initialBase,
-  );
-  const [sources, setSources] =
-    useState<AssistantApi.KnowledgeSource[]>(initialSources);
+  const [base, setBase] = useState<Api.KnowledgeBase | null>(initialBase);
+  const [sources, setSources] = useState<Api.KnowledgeSource[]>(initialSources);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError ?? null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [jobsBySource, setJobsBySource] = useState<
-    Record<string, AssistantApi.IndexJob>
+    Record<string, Api.IndexJob>
   >({});
   const [busySourceId, setBusySourceId] = useState<string | null>(null);
 
   // Step 1: Register new source dialog
   const [registerOpen, setRegisterOpen] = useState(false);
-  const [regKind, setRegKind] = useState<AssistantApi.SourceKind>('manual_doc');
+  const [regKind, setRegKind] = useState<Api.SourceKind>('manual_doc');
   const [regTitle, setRegTitle] = useState('');
   const [regSourceRef, setRegSourceRef] = useState('');
   const [regContent, setRegContent] = useState('');
   const [registering, setRegistering] = useState(false);
 
   // Step 1b: Update source version dialog
-  const [editTarget, setEditTarget] =
-    useState<AssistantApi.KnowledgeSource | null>(null);
+  const [editTarget, setEditTarget] = useState<Api.KnowledgeSource | null>(
+    null,
+  );
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [updatingSource, setUpdatingSource] = useState(false);
@@ -195,7 +193,7 @@ export function KnowledgeDetailView({
     }
   };
 
-  const handleOpenEditSource = (src: AssistantApi.KnowledgeSource) => {
+  const handleOpenEditSource = (src: Api.KnowledgeSource) => {
     setEditTarget(src);
     setEditTitle(src.title ?? '');
     setEditContent(src.content ?? '');
@@ -237,7 +235,7 @@ export function KnowledgeDetailView({
   };
 
   // Step 2: Trigger index job
-  const handleTriggerIndex = async (src: AssistantApi.KnowledgeSource) => {
+  const handleTriggerIndex = async (src: Api.KnowledgeSource) => {
     if (!src.id) {
       return;
     }
@@ -274,7 +272,7 @@ export function KnowledgeDetailView({
   };
 
   // Step 3: Publish ready version
-  const handlePublishSource = async (src: AssistantApi.KnowledgeSource) => {
+  const handlePublishSource = async (src: Api.KnowledgeSource) => {
     if (!src.id) {
       return;
     }
@@ -299,7 +297,7 @@ export function KnowledgeDetailView({
   };
 
   // Step 4: Revoke source immediately
-  const handleRevokeSource = async (src: AssistantApi.KnowledgeSource) => {
+  const handleRevokeSource = async (src: Api.KnowledgeSource) => {
     if (!src.id) {
       return;
     }
@@ -393,9 +391,7 @@ export function KnowledgeDetailView({
                     <FieldLabel htmlFor="src-reg-kind">来源类型</FieldLabel>
                     <Select
                       value={regKind}
-                      onValueChange={(val) =>
-                        setRegKind(val as AssistantApi.SourceKind)
-                      }
+                      onValueChange={(val) => setRegKind(val as Api.SourceKind)}
                       disabled={registering}
                     >
                       <SelectTrigger id="src-reg-kind" className="w-full">

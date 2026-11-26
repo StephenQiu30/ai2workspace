@@ -7,7 +7,7 @@ description: 在制作页面执行编剧、分镜和一致性校验，保留有�
 
 **Goal**　在制作页面执行编剧、分镜和一致性校验，保留有证据的候选、可恢复的运行记录与可核对的费用。
 
-**Architecture**　`assistant` 持有运行、步骤与费用账本。Temporal 调度 TS Worker，通过 AI 网关调用模型，Redis/SSE 推进度。`studio` 独立执行人工采纳。
+**Architecture**　`agent` 持有运行、步骤与费用账本。助手模块执行 Agent 步骤，通过 AI 网关调用模型，经 Redis/SSE 发出进度。按任务恢复需求使用 Temporal。`creation` 独立执行人工采纳。
 
 **Tech Stack**　Go / PostgreSQL、Temporal Go / TS SDK、Vercel AI SDK、独立 AI 网关、Redis / SSE、Next.js。
 
@@ -21,8 +21,8 @@ description: 在制作页面执行编剧、分镜和一致性校验，保留有�
 
 - 固定为编剧、分镜、一致性校验三步。媒体生成遵守同一准入、候选与费用规则。渲染产物规则由成片计划维护。正式稿、发布和交易只由对应用户接口操作。
 - 媒体生成供应商和 AI 网关产品未定，先使用接口桩。未知成本依据已确认的供应商事件追查。
-- 文中 `backend/internal/`、`worker/`、新测试和页面路径是规划目标。现有 `frontend/src/app/manage/ai-usage/page.tsx` 与旧助手的账务行为作为回归依据。后端 REST 契约从 Go DTO 和 Swaggo 生成，再更新 Umi 客户端。
-- 测试命令在目标工程建立后使用。真实付费、外部生产实例、数据迁移、提交和发布分别按实际授权执行。
+- 文中新增的业务代码、测试与页面路径是规划目标。现有 `frontend/src/app/manage/ai-usage/page.tsx` 与旧助手的账务行为作为回归依据。后端 REST 契约从 Go DTO 和 Swaggo 生成，再更新 Umi 客户端。
+- 测试命令在目标工程建立后使用。真实付费、外部生产实例、提交和发布分别按实际授权执行。
 
 ## Review Focus
 
@@ -52,16 +52,17 @@ description: 在制作页面执行编剧、分镜和一致性校验，保留有�
 新增
 
 ```text
-backend/internal/assistant/production_run.go
-backend/internal/assistant/production_budget.go
-worker/src/temporal/production_workflow.ts
-backend/migrations/00131_production_run_budget.sql
+backend/internal/agent/application/agent/production_run.go
+backend/internal/agent/application/usage/production_budget.go
+backend/internal/agent/application/agent/production_workflow.go
 ```
+
+在 `backend/schema.sql` 更新对应业务表。
 
 **Test**
 
 ```text
-backend/tests/production_agent_run_test.go
+backend/tests/agent/production_agent_run_test.go
 ```
 
 **Interfaces**　StartProductionRun(work_id, input_version_id, step, idempotency_key) → run_id 与准入状态。RetryStep(run_id, step_id) → 已确认可重试的 attempt_id。
@@ -85,23 +86,23 @@ backend/tests/production_agent_run_test.go
 新增
 
 ```text
-worker/src/agents/script.ts
-worker/src/agents/storyboard.ts
-worker/src/agents/continuity.ts
-worker/src/agents/gateway.ts
+backend/internal/agent/application/agent/script.go
+backend/internal/agent/application/agent/storyboard.go
+backend/internal/agent/application/agent/continuity.go
+backend/internal/agent/adapter/provider/production.go
 frontend/src/features/studio/production_candidates.tsx
 ```
 
 修改
 
 ```text
-worker/src/temporal/production_workflow.ts
+backend/internal/agent/application/agent/production_workflow.go
 ```
 
 **Test**
 
 ```text
-backend/tests/production_agent_candidates_test.go
+backend/tests/agent/production_agent_candidates_test.go
 ```
 
 **Interfaces**　固定候选结构包含场景对白、镜头提案、冲突或依据不足。记录 `input_version_id`、`config_version` 与 `Evidence[]`。调用 011 T-02 的 RecordCandidate，接受动作通过 ApplyCandidate 完成。
@@ -125,21 +126,22 @@ backend/tests/production_agent_candidates_test.go
 新增
 
 ```text
-backend/internal/assistant/run_events.go
+backend/internal/agent/adapter/http/assistant/run_events.go
 frontend/src/features/studio/production_run_drawer.tsx
-backend/migrations/00133_production_run_events.sql
 ```
+
+在 `backend/schema.sql` 更新对应业务表。
 
 修改
 
 ```text
-worker/src/temporal/production_workflow.ts
+backend/internal/agent/application/agent/production_workflow.go
 ```
 
 **Test**
 
 ```text
-backend/tests/production_agent_recovery_test.go
+backend/tests/agent/production_agent_recovery_test.go
 ```
 
 **Interfaces**　GetProductionRun(run_id) → 输入版、步骤、引用、费用状态。CancelProductionRun(run_id) → 取消状态。SSE 有 run_id、event_id 和 step_status，重连可取持久状态。
@@ -163,21 +165,22 @@ backend/tests/production_agent_recovery_test.go
 新增
 
 ```text
-backend/internal/assistant/production_usage.go
+backend/internal/agent/application/usage/production_usage.go
 frontend/src/app/manage/ai-usage/production/page.tsx
-backend/migrations/00134_production_usage.sql
 ```
+
+在 `backend/schema.sql` 更新对应业务表。
 
 修改
 
 ```text
-worker/src/agents/gateway.ts
+backend/internal/agent/adapter/provider/production.go
 ```
 
 **Test**
 
 ```text
-backend/tests/production_agent_usage_test.go
+backend/tests/agent/production_agent_usage_test.go
 ```
 
 **Interfaces**　ReconcileProductionUsage(attempt_id, provider_request_id, usage) → settled 或 pending_review。凭已确认结果结算或释放，未知保留核对记录。

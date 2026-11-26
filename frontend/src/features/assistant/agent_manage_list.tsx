@@ -81,12 +81,12 @@ import {
   assistantDisableAgent,
   assistantListAgents,
   assistantPublishAgent,
-} from '@/services/generated/assistant/agents';
+} from '@/services/generated/api/agents';
 
 export interface AgentManageListProps {
-  initialAgents: AssistantApi.Configuration[];
-  initialModels: AssistantApi.ModelInfo[];
-  initialKnowledgeBases: AssistantApi.KnowledgeBase[];
+  initialAgents: Api.Configuration[];
+  initialModels: Api.ModelInfo[];
+  initialKnowledgeBases: Api.KnowledgeBase[];
   initialError?: string | null;
 }
 
@@ -111,12 +111,9 @@ export function AgentManageList({
   initialKnowledgeBases,
   initialError,
 }: AgentManageListProps) {
-  const [agents, setAgents] =
-    useState<AssistantApi.Configuration[]>(initialAgents);
-  const [models] = useState<AssistantApi.ModelInfo[]>(initialModels);
-  const [knowledgeBases] = useState<AssistantApi.KnowledgeBase[]>(
-    initialKnowledgeBases,
-  );
+  const [agents, setAgents] = useState<Api.Configuration[]>(initialAgents);
+  const [models] = useState<Api.ModelInfo[]>(initialModels);
+  const [knowledgeBases] = useState<Api.KnowledgeBase[]>(initialKnowledgeBases);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError ?? null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [busyAgentId, setBusyAgentId] = useState<string | null>(null);
@@ -196,7 +193,7 @@ export function AgentManageList({
     }
   };
 
-  const handlePublish = async (agent: AssistantApi.Configuration) => {
+  const handlePublish = async (agent: Api.Configuration) => {
     if (!agent.id) {
       return;
     }
@@ -216,7 +213,7 @@ export function AgentManageList({
     }
   };
 
-  const handleDisable = async (agent: AssistantApi.Configuration) => {
+  const handleDisable = async (agent: Api.Configuration) => {
     if (!agent.id) {
       return;
     }

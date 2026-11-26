@@ -81,7 +81,7 @@ import {
   commerceGetPaymentStatus,
   commerceListOrderRefunds,
   commerceListPaymentAttempts,
-} from '@/services/generated/commerce/commerce';
+} from '@/services/generated/api/commerce';
 import {
   REFUND_EXCEPTION_OPTIONS,
   getOrderStatusMeta,
@@ -93,10 +93,10 @@ import {
 } from './checkout';
 
 export interface OrderDetailProps {
-  readonly order: CommerceApi.OrderResponse;
-  readonly initialRefund?: CommerceApi.RefundResponse | null;
-  readonly initialRefunds?: CommerceApi.RefundResponse[];
-  readonly initialAttempts?: CommerceApi.PaymentAttemptResponse[];
+  readonly order: Api.OrderResponse;
+  readonly initialRefund?: Api.RefundResponse | null;
+  readonly initialRefunds?: Api.RefundResponse[];
+  readonly initialAttempts?: Api.PaymentAttemptResponse[];
 }
 
 export function OrderDetail({
@@ -106,8 +106,8 @@ export function OrderDetail({
   initialAttempts = [],
 }: OrderDetailProps) {
   const router = useRouter();
-  const [order, setOrder] = useState<CommerceApi.OrderResponse>(initialOrder);
-  const [refunds, setRefunds] = useState<CommerceApi.RefundResponse[]>(() => {
+  const [order, setOrder] = useState<Api.OrderResponse>(initialOrder);
+  const [refunds, setRefunds] = useState<Api.RefundResponse[]>(() => {
     if (initialRefunds.length > 0) {
       return initialRefunds;
     }
@@ -117,7 +117,7 @@ export function OrderDetail({
     return [];
   });
   const [attempts, setAttempts] =
-    useState<CommerceApi.PaymentAttemptResponse[]>(initialAttempts);
+    useState<Api.PaymentAttemptResponse[]>(initialAttempts);
 
   // Payment & order actions
   const [selectedChannel, setSelectedChannel] = useState<string>('alipay_cny');
@@ -141,7 +141,7 @@ export function OrderDetail({
 
   // Cancel Refund AlertDialog state
   const [cancelRefundTarget, setCancelRefundTarget] =
-    useState<CommerceApi.RefundResponse | null>(null);
+    useState<Api.RefundResponse | null>(null);
   const [cancellingRefund, setCancellingRefund] = useState(false);
 
   const [errorBanner, setErrorBanner] = useState<string | null>(null);

@@ -11,7 +11,7 @@ import {
   assistantGetGovernanceSummary,
   assistantListModels,
   assistantListReconciliations,
-} from '@/services/generated/assistant/governance';
+} from '@/services/generated/api/governance';
 
 export const metadata: Metadata = {
   title: '模型与 AI 费用治理 · ai2workspace',
@@ -47,9 +47,9 @@ export default async function AiUsageManagePage() {
     );
   }
 
-  let initialSummary: AssistantApi.UsageSummary | null = null;
-  let initialModels: AssistantApi.ModelInfo[] = [];
-  let initialReconciliations: AssistantApi.ReconciliationItem[] = [];
+  let initialSummary: Api.UsageSummary | null = null;
+  let initialModels: Api.ModelInfo[] = [];
+  let initialReconciliations: Api.ReconciliationItem[] = [];
   let initialError: string | null = null;
 
   try {

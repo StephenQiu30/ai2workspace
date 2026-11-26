@@ -18,7 +18,7 @@ import {isAdmin} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {buildLoginHref, getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {commerceListRefunds} from '@/services/generated/commerce/commerce';
+import {commerceListRefunds} from '@/services/generated/api/commerce';
 
 export const metadata: Metadata = {
   title: '退款处理',
@@ -69,7 +69,7 @@ export default async function ManageRefundsPage() {
     );
   }
 
-  let initialRefunds: CommerceApi.RefundListResponse = {
+  let initialRefunds: Api.RefundListResponse = {
     items: [],
     page: 1,
     limit: 50,

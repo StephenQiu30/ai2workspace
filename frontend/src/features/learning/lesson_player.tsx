@@ -70,11 +70,11 @@ import {
 } from '@/features/course/course_status';
 import type {SessionUser} from '@/lib/auth/roles';
 import {buildLoginHref, formatDateTime, getErrorMessage} from '@/lib/format';
-import {learningAuthorizePlayback} from '@/services/generated/learning/media';
+import {learningAuthorizePlayback} from '@/services/generated/api/media';
 import {
   learningGetProgress,
   learningSaveProgress,
-} from '@/services/generated/learning/progress';
+} from '@/services/generated/api/progress';
 
 export interface LessonPlayerProps {
   readonly courseId: string;
@@ -84,8 +84,8 @@ export interface LessonPlayerProps {
   readonly lessonTitle: string;
   readonly lessonType?: string;
   readonly lessonContent?: string;
-  readonly course?: LearningApi.CourseResponse;
-  readonly discussions?: CommunityApi.PostResponse[];
+  readonly course?: Api.CourseResponse;
+  readonly discussions?: Api.PostResponse[];
   readonly user?: SessionUser | null;
 }
 

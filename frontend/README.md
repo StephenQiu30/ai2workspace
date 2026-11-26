@@ -10,7 +10,7 @@ pnpm openapi2ts
 pnpm dev --hostname 127.0.0.1
 ```
 
-原生开发先按[后端说明](../backend/README.md)为五个服务执行 `make generate SERVICE=<服务名>`，为原创 IP 单体试点执行 `make studio-generate`。默认访问 `http://127.0.0.1:3121`，Next.js 转发五个既有服务的请求至本地 3123～3127，转发 `/api/studio/` 至 3128。容器方式由 Traefik 提供统一入口。
+原生开发先按[后端说明](../backend/README.md)执行 `make generate` 并启动 Go 后端。默认访问 `http://127.0.0.1:3121`，Next.js 将同源 API 转发到本地 3123。
 
 ## 生成、检查与构建
 
@@ -25,11 +25,11 @@ pnpm build
 
 按 [Umi OpenAPI 官方独立接入方式](https://github.com/chenshuai2144/openapi2typescript#usage)，根配置为 `openapi2ts.config.ts`，`package.json` 使用 `"openapi2ts": "openapi2ts"`，由官方 CLI 自动读取配置并生成 `src/services/generated/`。生成代码忽略提交，禁止手改。
 
-`openapi2ts.config.ts` 读取五个既有 Go 服务与单体试点的 Swagger JSON。首次使用或接口更新时先由后端生成 Swagger，再生成前端调用并检查。Docker 构建通过官方 CLI 使用 schema 阶段的产物完成生成。
+`openapi2ts.config.ts` 读取后端统一生成的 Swagger JSON。首次使用或接口更新时先由后端生成 Swagger，再生成前端调用并检查。Docker 构建通过官方 CLI 使用 schema 阶段的产物完成生成。
 
 `src/lib/request/transport.ts` 提供通用 Axios 适配。`server.ts` 使用 `server-only` 保护内部配置，并按单次请求传递服务端地址及适用的登录会话。浏览器使用同源路径。
 
-`API_ORIGIN` 如设置，须是无凭据、路径、查询或片段的 HTTP(S) origin。原生开发默认按服务端口分发。根目录的 [Compose 配置](../docker-compose.yml) 由 Traefik 提供网关入口。正式部署的外部地址和依赖以相应环境配置与验收为准。
+`API_ORIGIN` 如设置，须是无凭据、路径、查询或片段的 HTTP(S) origin。原生开发默认使用 `http://127.0.0.1:3123`。容器构建与运行使用 `http://backend:3123`。正式部署的外部地址和依赖以相应环境配置与验收为准。
 
 手写业务文件使用 snake_case 与命名导出，Next.js 特殊入口及 CLI 组件保留官方约定；ESLint 和类型检查覆盖适用的 Google TS 要求，完整约束仍需设计复核。Prettier 独立运行，未整体关闭业务检查。
 

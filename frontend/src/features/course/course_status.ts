@@ -68,7 +68,7 @@ export function getDeliveryStateMeta(state?: string): CourseStatusMeta {
 
 export function getCourseCombinedStatusMeta(
   course: Pick<
-    LearningApi.CourseResponse,
+    Api.CourseResponse,
     'productionState' | 'saleState' | 'deliveryState'
   >,
 ): CourseStatusMeta {
@@ -86,12 +86,12 @@ export interface FlattenedLesson {
   sectionTitle: string;
   sectionIndex: number;
   lessonIndex: number;
-  lesson: LearningApi.Lesson;
+  lesson: Api.Lesson;
 }
 
 export function sortSectionsAndLessons(
-  sections?: LearningApi.Section[],
-): LearningApi.Section[] {
+  sections?: Api.Section[],
+): Api.Section[] {
   if (!Array.isArray(sections)) {
     return [];
   }
@@ -108,7 +108,7 @@ export function sortSectionsAndLessons(
 }
 
 export function flattenCourseLessons(
-  sections?: LearningApi.Section[],
+  sections?: Api.Section[],
 ): FlattenedLesson[] {
   const sorted = sortSectionsAndLessons(sections);
   const result: FlattenedLesson[] = [];
@@ -129,7 +129,7 @@ export function flattenCourseLessons(
 }
 
 export function countCourseLessons(
-  course: Pick<LearningApi.CourseResponse, 'lessonCount' | 'sections'>,
+  course: Pick<Api.CourseResponse, 'lessonCount' | 'sections'>,
 ): number {
   if (typeof course.lessonCount === 'number' && course.lessonCount >= 0) {
     return course.lessonCount;

@@ -17,7 +17,7 @@ import {NotificationsView} from '@/features/community/notifications_view';
 import {getServerSession} from '@/lib/auth/session';
 import {buildLoginHref, getErrorMessage} from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {communityListMyNotifications} from '@/services/generated/community/community';
+import {communityListMyNotifications} from '@/services/generated/api/community';
 
 export const metadata: Metadata = {
   title: '站内通知',
@@ -74,7 +74,7 @@ export default async function NotificationsPage() {
     );
   }
 
-  let initialNotifications: CommunityApi.Notification[] = [];
+  let initialNotifications: Api.Notification[] = [];
   let initialTotal = 0;
   let initialError: string | null = null;
 

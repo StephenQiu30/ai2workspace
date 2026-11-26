@@ -65,14 +65,14 @@ import {
   getCourseCategoryLabel,
   getErrorMessage,
 } from '@/lib/format';
-import {commerceCreateOrder} from '@/services/generated/commerce/commerce';
-import {learningJoinFreeCourse} from '@/services/generated/learning/courses';
+import {commerceCreateOrder} from '@/services/generated/api/commerce';
+import {learningJoinFreeCourse} from '@/services/generated/api/courses';
 
 export type CourseAccessSource = 'free' | 'purchased' | 'staff' | null;
 
 export interface CourseDetailClientProps {
-  readonly course: LearningApi.CourseResponse;
-  readonly price: CommerceApi.PriceResponse | null;
+  readonly course: Api.CourseResponse;
+  readonly price: Api.PriceResponse | null;
   readonly user: SessionUser | null;
   readonly hasAccess: boolean;
   readonly accessSource: CourseAccessSource;

@@ -17,8 +17,8 @@ import {CourseEditor} from '@/features/course/course_editor';
 import {canManageCourses} from '@/lib/auth/roles';
 import {getServerSession} from '@/lib/auth/session';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {commerceGetCoursePrice} from '@/services/generated/commerce/commerce';
-import {learningGetCourse} from '@/services/generated/learning/courses';
+import {commerceGetCoursePrice} from '@/services/generated/api/commerce';
+import {learningGetCourse} from '@/services/generated/api/courses';
 
 interface ManageCourseEditPageProps {
   readonly params: Promise<{course_id: string}>;

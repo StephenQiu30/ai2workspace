@@ -44,7 +44,7 @@ import {
   getCourseCategoryLabel,
 } from '@/lib/format';
 import {getServerRequestOptions} from '@/lib/request/server';
-import {learningListMyCourses} from '@/services/generated/learning/courses';
+import {learningListMyCourses} from '@/services/generated/api/courses';
 
 export const metadata: Metadata = {
   title: '我的学习',
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-function resolveResumeLesson(course: LearningApi.MyCourseResponse): {
+function resolveResumeLesson(course: Api.MyCourseResponse): {
   lessonId: string | null;
   lessonTitle: string | null;
   isResume: boolean;
@@ -120,7 +120,7 @@ export default async function MyLearningPage() {
     );
   }
 
-  let courses: LearningApi.MyCourseResponse[] = [];
+  let courses: Api.MyCourseResponse[] = [];
   let loadFailed = false;
 
   try {
