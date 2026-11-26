@@ -3,20 +3,22 @@
 | 项目 | 内容 |
 | --- | --- |
 | 文档 ID | `DES-ai2workspace-services` |
-| 定义状态 | 前后端工程基线已初始化；业务域拆分、认证和数据模型仍待设计，实际验证记录见知识库中的初始化计划 |
+| 定义状态 | 仓库已有业务前端和五个 Go 服务；原创 IP 首版设计待评审，真实依赖及部署状态查阅对应验收记录 |
 | 需求依据 | 2026-11-16 用户要求在根目录规划前后端，指定 Next.js 与 Go；随后明确 Go 微服务、Swagger 自动生成，以及 Next.js + TS + React + Tailwind CSS + shadcn/ui / Radix UI + Prettier + ESLint + Axios + Umi OpenAPI |
 | 规范依据 | 用户要求 Go 遵循 Google Go、前端遵循 Google TS，并据此规范设计文档与目录方案；具体规则及例外见[工程规范与目录设计](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计) |
-| 适用工程 | 本仓库根目录及后续的 `backend/`、`frontend/`、现有 `workspace/` |
+| 适用工程 | 仓库根目录及 `backend/`、`frontend/`、`workspace/` |
 
 本文件是仓库工程结构与服务边界的入口。具体业务的需求、PRD、设计和执行记录仍统一保存在 `workspace/content/`，按[项目文档与设计规范](./workspace/content/standards/001-项目文档与设计规范.md)关联，避免复制同一份定义。
+
+当前产品方向见[原创 IP 制作与共创 SaaS](./workspace/content/index.md#学屿原创-ip-制作与共创-saas)和[首版系统设计](./workspace/content/design/018-原创IP首版系统设计与验收总览.md)。课程、社区和通用问答阶段的文档保留其适用范围。制作域的逻辑划分与部署边界由首版设计评审确认。
 
 项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务按实际业务域命名，服务描述与本项目的职责及实现范围一致。
 
 ## 1. 现状与目标
 
-当前包含独立的 `workspace/` 知识库、`frontend/` Next.js 前端，以及 `backend/services/ai2workspace/` 初始化技术基线。**注意：微服务体系中不存在名为 `ai2workspace` 的微服务**，`ai2workspace` 为整个产品和仓库标识；现存 `services/ai2workspace/` 仅用于验证前后端、Swagger 与容器联调连通性，业务服务按业务域独立规划，首个业务服务上线后该占位基线予以归并。
+截至 2026-11-26 的仓库检查，业务代码位于 `frontend/` 和 `backend/services/`，知识库独立位于 `workspace/`。`ai2workspace` 是产品和仓库标识，初始化阶段的同名健康检查服务属于历史记录。
 
-项目中规划的真实微服务清单包括：
+当前仓库的业务微服务为：
 1. `identity`：账号、认证与访问控制微服务
 2. `learning`：课程与媒体学习微服务
 3. `commerce`：交易、退款与权益微服务
@@ -28,8 +30,8 @@
 | 模块 | 技术与职责 | 依赖边界 | 当前状态 |
 | --- | --- | --- | --- |
 | `workspace/` | Fumadocs 知识库；承载项目资料、模板和规范 | 构建、浏览不依赖业务前后端运行 | 已有实现 |
-| `frontend/` | Next.js 前端基线，显示服务连接状态 | 使用自动生成的调用代码，不直接访问数据库 | 已初始化 |
-| `backend/` | Go 微服务工程；按业务域独立维护各微服务 | 各微服务独立 module、镜像与 HTTP API | 真实服务待各域 PRD 实施 |
+| `frontend/` | Next.js 业务页面，包含社区、课程、账户、订单和后台管理 | 使用由 API 生成的调用代码，通过服务访问数据 | 仓库已有入口和实现代码 |
+| `backend/` | Go 微服务工程；按业务域独立维护各微服务 | 各微服务独立 module、镜像与 HTTP API | 五个服务各有业务入口、持久化及测试代码 |
 
 业务功能以实际需求和 PRD 为准。旧版 Workspace 的 Harness、角色调度、空间配置和任务运行系统不属于本次服务规划。
 
@@ -122,6 +124,8 @@ frontend/
 
 ### 渲染、交互与 Vercel / Google TS 设计规范
 
+业务前端的视觉、组件、响应式和营销页模板统一遵循 [DESIGN.md](./DESIGN.md)。知识库中的同一正文见[学屿品牌与界面设计规范](./workspace/content/design/010-学屿品牌与界面设计规范.md)。
+
 前端工程严格遵循 **Vercel React / Web Interface Guidelines 最佳实践**与 **Google TypeScript Style Guide**：
 
 1. **Vercel React / Next.js 最佳实践**：
@@ -143,7 +147,7 @@ frontend/
 
 按业务域拆分独立服务，每个服务有独立入口、依赖、数据所有权、镜像和发布生命周期。服务边界依据业务能力、事务范围及独立变更需求确定，不按数据表或 Controller / Service / DAO 技术层拆成微服务。
 
-当前微服务工程中，`ai2workspace` 仅作为初始化技术基线脚手架，用于验证健康检查、Swagger 与容器联调链路；**微服务体系中不存在 `ai2workspace` 这个业务微服务**。实际业务微服务划分为 `identity`、`learning`、`commerce`、`community`、`assistant` 共 5 个微服务。
+当前服务入口分别位于 `backend/services/identity`、`learning`、`commerce`、`community` 和 `assistant`。完整本地联调以根目录 [docker-compose.yml](./docker-compose.yml) 和 [Traefik 路由](./backend/traefik.yaml) 为准。
 
 Go 微服务严格遵循**简洁扁平、按业务特性拆包（Package by Feature）**的设计原则，**严禁深层目录嵌套与冗长文件命名过度包装**（拒绝 `delivery/http/...`、`usecase/...`、`domain/entities/...`、`infrastructure/...` 等多层嵌套深井，也拒绝 `*_controller.go`、`*_usecase.go`、`*_repository_impl.go` 等过度包装命名）。
 
@@ -272,7 +276,7 @@ Swaggo 按[官方说明](https://github.com/swaggo/swag)从 Go 注释生成 Swag
 | --- | --- | --- |
 | **frontend** | `3121` | 原生 `pnpm dev` / `pnpm start`；容器组合由 Traefik 在同一端口提供统一入口 |
 | **workspace** | `3122` | Fumadocs 知识库站点，`pnpm dev` 或构建后 `serve out --listen 3122` |
-| **identity** | `3123` | 账号、认证与访问控制微服务（取代初始化占位服务） |
+| **identity** | `3123` | 账号、认证与访问控制微服务 |
 | **learning** | `3124` | 课程与媒体学习微服务 |
 | **commerce** | `3125` | 交易、退款与权益微服务 |
 | **community** | `3126` | 社区互动与内容治理微服务 |
@@ -314,13 +318,13 @@ tests/
 
 ## 8. 落地顺序与交付条件
 
-以下是工程与业务后续推进顺序。用户已授权并完成本轮技术基线初始化，具体执行与验证记录位于 `workspace/content/plan/001-前后端工程初始化计划与验证.md`；业务 PRD、数据与认证不在本轮范围。具体任务在业务范围确定后通过[计划 Skill](./.agents/skills/workspace-plan/SKILL.md)拆解，不在本页重复维护任务状态。
+下表用于评审新增或改造的业务能力。初始化证据位于[工程初始化记录](./workspace/content/plan/001-前后端工程初始化计划与验证.md)。原创 IP 首版的具体任务，在需求、设计及 PRD 确认和实施获授权后通过[计划 Skill](./.agents/skills/workspace-plan/SKILL.md)拆解。
 
 | 顺序 | 交付内容 | 进入下一步的条件 |
 | --- | --- | --- |
-| 1 | 确定首个业务场景与 PRD，明确用户、范围、权限和验收 | 能说明一条完整的用户流程及可观察结果 |
+| 1 | 明确用户、范围、功能需求和非功能需求，评审 PRD | 能说明完整流程、质量约束和可观察结果 |
 | 2 | 按业务域确定服务清单、调用关系、数据归属和认证，完成前后端设计 | 每个服务的边界、接口和错误行为可供实施 |
-| 3 | 初始化前端及实际 Go 服务，接入 Gin / Swaggo、Traefik 与生成器 | 各服务独立构建；Go 源码能生成文档，再生成可编译的 Axios 调用代码 |
+| 3 | 核对现有入口，实施本次所需服务与前端变更 | 各服务独立构建；Go 源码能生成文档，再生成可编译的 Axios 调用代码 |
 | 4 | 完成一条页面到目标服务与必要存储的业务流程，并验证实际跨服务调用 | Swagger UI 可用，生成客户端真实调用成功，正常、失败与权限路径通过验证 |
 | 5 | 验证部署与交接 | 配置、产物、验收证据及恢复步骤可复核；上线另按实际授权执行 |
 
@@ -330,13 +334,13 @@ tests/
 | --- | --- | --- |
 | D-01 | Next.js + TS + React + Tailwind CSS + shadcn/ui / Radix UI + Prettier + ESLint + Axios + Umi OpenAPI；后端使用 Go | 用户明确指定；原文 `aixos` 按 Axios 处理，已初始化 |
 | D-02 | 三个模块位于根目录下，各自维护依赖与部署边界 | 本次工程设计；保持知识库已有独立能力 |
-| D-03 | Go 按业务域采用微服务，每个服务独立模块、数据所有权和部署生命周期 | 用户明确要求微服务，替代此前的单体设计建议；服务清单待 PRD 确定 |
+| D-03 | Go 按业务域采用微服务，每个服务独立模块、数据所有权和部署生命周期 | 用户明确要求微服务；现有五个服务与新制作域的候选边界分别记录 |
 | D-04 | Go 为业务与数据权威，Next.js 负责页面和必要适配 | 设计建议，避免两端维护重复业务规则 |
 | D-05 | Go 源码与注释 → Swaggo → Swagger UI / Umi OpenAPI → Axios 调用 | 用户要求文档与调用代码自动生成；选型已核对上游能力，健康检查已验证生成与工程集成；业务接口仍按需增加 |
 | D-06 | Gin、Traefik、Compose DNS、PostgreSQL / pgx、slog / OpenTelemetry | 本次技术选型；按上文职责接入，不增加无业务依据的基础设施 |
 | D-07 | Go 采用 Google Go，前端采用 Google TS；框架与生成代码仅保留明确范围的必要例外 | 用户要求按此标准规范文档与目录；规范已写入，工程检查已建立，具体范围见模块 README |
 | D-08 | 项目标识统一为 `ai2workspace`，测试代码采用独立目录 | 用户本次明确要求，测试目录和执行边界按本文件定义 |
 
-尚需在对应业务设计中确定：首个业务场景、实际服务清单与调用关系、认证供应方和授权模型、数据模型与文件存储需求、前端视觉主题、兼容版本组合、生产平台及有依据的质量指标。当前已完成技术初始化及对应验证，正式业务 PRD、业务验收和生产发布仍未完成。初始化证据保存在对应计划，不将技术检查等同业务交付。
+原创 IP 首版待评审的事项包括制作域部署边界、素材和媒体服务、真实支付环境、兼容迁移和质量目标。业务前端视觉规范见 [DESIGN.md](./DESIGN.md)。业务交付以对应 PRD、验收记录和发布记录为准。
 
 业务范围、单机故障容忍度与生产高可用要求仍待确认，后续服务边界和部署设计以相应决定为依据。
