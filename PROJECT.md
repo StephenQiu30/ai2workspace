@@ -1,6 +1,8 @@
 # ai2workspace 工程设计
 
-学屿的业务前端、Go 后端和知识库分别位于 `frontend/`、`backend/` 和 `workspace/`。原创 IP 的产品范围和技术选型见[系统设计](./workspace/content/design/018-原创IP首版系统设计与验收总览.md)和[架构设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md)。开发规范见[工程规范](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计)，界面规范见 [DESIGN.md](./DESIGN.md)。
+学屿的业务前端、Go 后端和知识库分别位于 `frontend/`、`backend/` 和 `workspace/`。原创 IP 的产品范围见[系统设计与联合验收](./workspace/content/design/018-原创IP首版系统设计与验收总览.md)。开发规范见[工程规范](./workspace/content/01-项目文档与设计规范.md#工程规范与目录设计)，界面规范见 [DESIGN.md](./DESIGN.md)。
+
+项目总架构、业务域关系与首版交接见 [学屿项目总体设计](./workspace/ARCHITECTURE.md)。
 
 ## 后端
 
@@ -38,7 +40,7 @@ backend/
 └── go.mod
 ```
 
-文件分工、跨域依赖和测试导入边界见[单体模块的目录与依赖](./workspace/content/standards/001-项目文档与设计规范.md#单体模块的目录与依赖)。
+文件分工、跨域依赖和测试导入边界见[单体模块的目录与依赖](./workspace/content/01-项目文档与设计规范.md#单体模块的目录与依赖)。
 
 ### 数据和 API
 

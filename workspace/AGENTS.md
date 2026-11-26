@@ -11,8 +11,8 @@ This site is built with [Fumadocs](https://fumadocs.dev) on Next.js. The APIs an
 
 ## 本模块约定
 
-- 当前只提供知识库网站，正文位于 `content/`。
-- 使用、编写、检查与部署见 [知识库使用说明](./content/index.md)。
+- 项目总体架构统一维护在本目录的 [ARCHITECTURE.md](./ARCHITECTURE.md)。专题正文位于 `content/`，从[文档导航](./content/00-文档导航.md)进入。
+- 使用、编写、检查与部署见 [README.md](./README.md)。
 - `.local/` 中的本机资料不读取、不入库、不发布；检查源码时排除此目录。
 
 <!-- BEGIN:nextjs-agent-rules -->

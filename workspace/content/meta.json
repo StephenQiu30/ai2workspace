@@ -1,13 +1,13 @@
 {
   "pages": [
-    "index",
+    "00-文档导航",
+    "01-项目文档与设计规范",
     "requirement",
     "design",
     "prd",
     "plan",
     "research",
-    "template",
-    "standards",
+    "templates",
     "..."
   ]
 }

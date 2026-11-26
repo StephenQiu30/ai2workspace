@@ -10,6 +10,7 @@ import {
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
+import { Link } from 'fumadocs-core/link';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
 
@@ -20,6 +21,9 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   const MDX = page.data.body;
   const markdownUrl = `/llms.mdx${page.url}.md`;
+  const DocLink = createRelativeLink(source, page, ({ href, ...props }) =>
+    href?.startsWith('/design/') ? <a href={href} {...props} /> : <Link href={href} {...props} />,
+  );
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
@@ -29,15 +33,12 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover
           markdownUrl={markdownUrl}
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/workspace/content/${encodeURI(page.path)}`}
+          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/workspace/${encodeURI(page.path)}`}
         />
       </div>
       <DocsBody>
         <MDX
-          components={getMDXComponents({
-            // this allows you to link to other pages with relative file paths
-            a: createRelativeLink(source, page),
-          })}
+          components={getMDXComponents({ a: DocLink })}
         />
       </DocsBody>
     </DocsPage>

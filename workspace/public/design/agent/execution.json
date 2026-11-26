@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "学屿 Agent 执行流程",
+    "subtitle": "首版设计 · 先生成并校验剧本，再用人工确认的版本生成分镜",
+    "locale": "zh-CN",
+    "feedback_links": false,
+    "quality_profile": "standard",
+    "output": "execution.html"
+  },
+  "lanes": [
+    {"id": "creation", "label": "制作工作台 / Creation"},
+    {"id": "agent", "label": "父 Agent 与子 Agent"},
+    {"id": "rag", "label": "RAG / 权限"},
+    {"id": "eval", "label": "Evals / 隔离回归"}
+  ],
+  "mainPath": ["submit", "parent", "script-rag", "script", "check-rag", "check", "review", "board-rag", "board", "summary"],
+  "nodes": [
+    {"id": "submit", "lane": "creation", "col": 0, "type": "frontend", "label": "提交制作任务", "sublabel": "作品、版本、幂等键"},
+    {"id": "parent", "lane": "agent", "col": 1, "type": "backend", "label": "父 Agent 登记", "sublabel": "权限、流程版本、预算"},
+    {"id": "script-rag", "lane": "rag", "col": 2, "type": "security", "label": "检索授权设定", "sublabel": "过滤范围、复核权限"},
+    {"id": "script", "lane": "agent", "col": 2, "type": "backend", "label": "编剧子 Agent", "sublabel": "剧本候选与引用"},
+    {"id": "check-rag", "lane": "rag", "col": 3, "type": "security", "label": "检索校验证据", "sublabel": "来源版本和定位"},
+    {"id": "check", "lane": "agent", "col": 3, "type": "backend", "label": "校验子 Agent", "sublabel": "冲突或证据不足"},
+    {"id": "review", "lane": "creation", "col": 4, "type": "security", "label": "人工采纳", "sublabel": "权限复核、冻结剧本"},
+    {"id": "board-rag", "lane": "rag", "col": 4, "type": "security", "label": "读剧本与素材", "sublabel": "冻结版本、当前授权"},
+    {"id": "board", "lane": "agent", "col": 4, "type": "backend", "label": "分镜与后置校验", "sublabel": "分镜子 Agent → 校验子 Agent"},
+    {"id": "summary", "lane": "agent", "col": 5, "type": "database", "label": "父 Agent 汇总", "sublabel": "结果、状态、引用、用量"},
+    {"id": "samples", "lane": "eval", "col": 0, "type": "database", "label": "固定评测样本", "sublabel": "数据与评分规则版本"},
+    {"id": "report", "lane": "eval", "col": 5, "type": "backend", "label": "Evals 逐样本判分", "sublabel": "编排、RAG、候选、费用"}
+  ],
+  "edges": [
+    {"id": "request", "from": "submit", "to": "parent", "variant": "emphasis"},
+    {"id": "delegate-script", "from": "parent", "to": "script-rag", "label": "委派编剧", "variant": "emphasis"},
+    {"id": "script-context", "from": "script-rag", "to": "script", "label": "授权片段", "variant": "security"},
+    {"id": "delegate-check", "from": "script", "to": "check-rag", "label": "父 Agent 调度", "variant": "emphasis"},
+    {"id": "check-context", "from": "check-rag", "to": "check", "label": "证据引用", "variant": "security"},
+    {"id": "wait-for-review", "from": "check", "to": "review", "label": "交接候选", "variant": "emphasis"},
+    {"id": "approved", "from": "review", "to": "board-rag", "label": "仅采纳后", "variant": "security"},
+    {"id": "board-context", "from": "board-rag", "to": "board", "label": "授权素材", "variant": "security"},
+    {"id": "aggregate", "from": "board", "to": "summary", "variant": "emphasis"},
+    {"id": "eval-replay", "from": "samples", "to": "parent", "label": "隔离回放", "variant": "dashed"},
+    {"id": "eval-evidence", "from": "summary", "to": "report", "label": "样本轨迹", "variant": "dashed"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "运行与恢复", "items": ["实际调用前预占预算。拒绝采纳则结束。明确失败可重试原子运行，未知费用先核对。"]},
+    {"dot": "emerald", "title": "整链评测", "items": ["回放同一父子用例；校验幂等、调度顺序、权限和引用，再比对候选质量、恢复行为和尝试用量。"]}
+  ]
+}

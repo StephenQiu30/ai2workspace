@@ -11,7 +11,7 @@ description: 在制作页面执行编剧、分镜和一致性校验，保留有�
 
 **Tech Stack**　Go / PostgreSQL、Temporal Go / TS SDK、Vercel AI SDK、独立 AI 网关、Redis / SSE、Next.js。
 
-**Spec**　[需求](../requirement/013-制作Agent与任务编排需求记录.md) · [专题设计](../design/014-制作Agent与任务编排设计.md) · [专题 PRD](../prd/012-制作Agent与任务编排产品需求.md) · [系统设计与联合验收](../design/018-原创IP首版系统设计与验收总览.md) · [技术选型与架构重设计](../design/019-原创IP技术选型与架构重设计.md)
+**Spec**　[需求](../requirement/013-制作Agent与任务编排需求记录.md) · [专题设计](../design/014-制作Agent与任务编排设计.md) · [专题 PRD](../prd/012-制作Agent与任务编排产品需求.md) · [系统设计与联合验收](../design/018-原创IP首版系统设计与验收总览.md) · [项目总体设计](../../ARCHITECTURE.md#7-选型与验证)
 
 | 计划 ID | 专题 | 定义与执行状态 |
 | --- | --- | --- |
@@ -208,4 +208,4 @@ backend/tests/agent/production_agent_usage_test.go
 
 ## 交付与交接
 
-计划由 `workspace-plan` 与 `superpowers:writing-plans` 编写，已保存供评审。实施、业务验收与发布均待执行。共享依赖和联合验收顺序见[专题索引](../index.md#学屿原创-ip-制作与共创-saas)。
+计划由 `workspace-plan` 与 `superpowers:writing-plans` 编写，已保存供评审。实施、业务验收与发布均待执行。共享依赖和联合验收顺序见[专题索引](../00-文档导航.md#学屿原创-ip-制作与共创-saas)。

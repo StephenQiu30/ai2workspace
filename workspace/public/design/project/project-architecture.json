@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "学屿项目总体架构",
+    "subtitle": "当前工程基线 · 业务应用与知识库各自构建",
+    "locale": "zh-CN",
+    "output": "project-architecture.html",
+    "quality_profile": "standard",
+    "feedback_links": false
+  },
+  "layout": {"mode": "auto"},
+  "components": [
+    {"id": "browser", "type": "external", "label": "浏览器", "sublabel": "业务用户与文档读者"},
+    {"id": "frontend", "type": "frontend", "label": "业务前端", "sublabel": "Next.js · 3121"},
+    {"id": "workspace", "type": "frontend", "label": "独立知识库", "sublabel": "Fumadocs · 3122"},
+    {"id": "backend", "type": "backend", "label": "Go 模块化单体", "sublabel": "Gin · 3123 · 六个业务域"},
+    {"id": "postgres", "type": "database", "label": "PostgreSQL", "sublabel": "共享连接池 · 一份 SQL"}
+  ],
+  "connections": [
+    {"id": "business", "from": "browser", "to": "frontend", "label": "访问业务页面", "variant": "emphasis"},
+    {"id": "docs", "from": "browser", "to": "workspace", "label": "浏览和搜索文档"},
+    {"id": "api", "from": "frontend", "to": "backend", "label": "同源 API 转发", "variant": "emphasis"},
+    {"id": "data", "from": "backend", "to": "postgres", "label": "业务读写", "variant": "emphasis"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "业务 API", "items": ["Go DTO 与 Swaggo 生成一份 Swagger，再生成前端 API 客户端。"]},
+    {"dot": "emerald", "title": "知识库", "items": ["从文档和静态资源生成页面与搜索索引，可以独立部署。"]}
+  ]
+}

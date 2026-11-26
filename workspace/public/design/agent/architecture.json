@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "学屿 Agent 架构",
+    "subtitle": "首版设计 · 父子 Agent 与 RAG 在 Go 单体内协作，Evals 使用隔离样本验证",
+    "locale": "zh-CN",
+    "feedback_links": false,
+    "quality_profile": "standard",
+    "output": "architecture.html"
+  },
+  "layout": {"mode": "auto"},
+  "components": [
+    {"id": "workbench", "type": "frontend", "label": "制作工作台", "sublabel": "提交任务、人工采纳"},
+    {"id": "creation", "type": "backend", "label": "Creation 制作域", "sublabel": "授权、冻结版本、采纳", "explanation": "维护工作区角色、源资料授权和正式版本。人工采纳时复核当前权限和目标版本，创建草稿。"},
+    {"id": "parent", "type": "backend", "label": "父 Agent", "sublabel": "固定流程、预算、恢复", "explanation": "持有流程版本、运行状态和执行上限。按步骤调度子 Agent，汇总结果；等待制作域确认剧本后再调度分镜。"},
+    {"id": "children", "type": "backend", "label": "子 Agent", "sublabel": "编剧、校验、分镜", "explanation": "每个子 Agent 有独立版本和输入输出契约，返回结构化结果及来源引用。父运行只下发该子任务需要的权限和资料范围。"},
+    {"id": "rag", "type": "security", "label": "授权 RAG", "sublabel": "范围过滤、来源复核", "explanation": "按工作区、作品和用途过滤，发送给模型前复核当前权限。输出带来源 ID、版本和定位的片段。"},
+    {"id": "calls", "type": "backend", "label": "费用与模型适配", "sublabel": "预算预占、尝试与用量", "explanation": "成功取得尝试执行权并预占后调用模型。按尝试入账，父运行汇总。结果或用量未知进入核对。"},
+    {"id": "database", "type": "database", "label": "PostgreSQL", "sublabel": "运行、结果、引用和账务"},
+    {"id": "evals", "type": "backend", "label": "Evals", "sublabel": "固定样本与隔离回放", "explanation": "使用相同编排用例与隔离数据执行样本；根据轨迹、引用、候选和账务输出判分，保留逐样本报告。"}
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "Go 单体 · 制作与 Agent 模块", "wraps": ["creation", "parent", "children", "rag", "calls"], "pad": 20}
+  ],
+  "connections": [
+    {"id": "submit", "from": "workbench", "to": "parent", "label": "发起制作", "variant": "emphasis"},
+    {"id": "dispatch", "from": "parent", "to": "children", "label": "按步骤委派", "variant": "emphasis"},
+    {"id": "evidence", "from": "children", "to": "rag", "label": "检索证据", "variant": "security"},
+    {"id": "policy", "from": "rag", "to": "creation", "label": "复核授权", "variant": "security"},
+    {"id": "model", "from": "children", "to": "calls", "label": "预算准入"},
+    {"id": "handoff", "from": "parent", "to": "creation", "label": "交接候选引用"},
+    {"id": "persist", "from": "parent", "to": "database", "label": "记录父子运行"},
+    {"id": "replay", "from": "evals", "to": "parent", "label": "隔离回放", "variant": "dashed"},
+    {"id": "evaluate", "from": "database", "to": "evals", "label": "评测样本记录", "variant": "dashed"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "制作和 Agent 的交接", "items": ["Agent 保存生成结果与证据。Creation 登记候选引用，只有人工确认后才写入制作草稿。"]},
+    {"dot": "emerald", "title": "评测依据", "items": ["关联父子配置、样本、模型、来源与评分规则版本；同时检查调度、越权检索、引用、候选和费用。"]}
+  ]
+}
