@@ -3,14 +3,14 @@
 | 项目 | 内容 |
 | --- | --- |
 | 文档 ID | `DES-ai2workspace-services` |
-| 定义状态 | 仓库已有业务前端和五个 Go 服务；原创 IP 首版设计待评审，真实依赖及部署状态查阅对应验收记录 |
+| 定义状态 | 仓库现状为业务前端与五个既有 Go 微服务；原创 IP 技术选型与架构重设计已确认为「Go 模块化单体 + Node/TS Worker」（见 [019-原创IP技术选型与架构重设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md)），工程重构待拆解执行计划 |
 | 需求依据 | 2026-11-16 用户要求在根目录规划前后端，指定 Next.js 与 Go；随后明确 Go 微服务、Swagger 自动生成，以及 Next.js + TS + React + Tailwind CSS + shadcn/ui / Radix UI + Prettier + ESLint + Axios + Umi OpenAPI |
 | 规范依据 | 用户要求 Go 遵循 Google Go、前端遵循 Google TS，并据此规范设计文档与目录方案；具体规则及例外见[工程规范与目录设计](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计) |
 | 适用工程 | 仓库根目录及 `backend/`、`frontend/`、`workspace/` |
 
 本文件是仓库工程结构与服务边界的入口。具体业务的需求、PRD、设计和执行记录仍统一保存在 `workspace/content/`，按[项目文档与设计规范](./workspace/content/standards/001-项目文档与设计规范.md)关联，避免复制同一份定义。
 
-当前产品方向见[原创 IP 制作与共创 SaaS](./workspace/content/index.md#学屿原创-ip-制作与共创-saas)和[首版系统设计](./workspace/content/design/018-原创IP首版系统设计与验收总览.md)。课程、社区和通用问答阶段的文档保留其适用范围。制作域的逻辑划分与部署边界由首版设计评审确认。
+当前产品方向见[原创 IP 制作与共创 SaaS](./workspace/content/index.md#学屿原创-ip-制作与共创-saas)、[首版系统设计](./workspace/content/design/018-原创IP首版系统设计与验收总览.md)及[技术选型与架构重设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md)。课程、社区和通用问答阶段的文档保留其适用范围。最新技术选型已确认向 **Go 模块化单体（分 Schema）+ Node/TS Worker（Remotion / Vercel AI SDK / Yjs CRDT）+ Temporal + Milvus + 腾讯云 COS + Redis/SSE + 独立 AI 网关 + K8s** 演进；以下章节记录当前仓库已落地现状，重构实施前不将其混同为已完成代码。
 
 项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务按实际业务域命名，服务描述与本项目的职责及实现范围一致。
 
@@ -65,7 +65,7 @@ Go 包、手写 TypeScript 文件、框架入口与生成文件分别遵循[统�
 
 ### 技术选型
 
-用户指定的技术作为约束；其余是本文件提出的工程选型，已初始化依赖以各模块锁文件为准；尚无适用业务需求的持久化和链路导出方案仍未接入，不把选型记录视为已实现。
+用户指定的技术作为约束；下表记录当前仓库既有工程基线选型，已初始化依赖以各模块锁文件为准。面向原创 IP 首版的**最新已确认重构技术选型**（Go 模块化单体 + GORM、Node/TS Worker [Remotion / Vercel AI SDK / Yjs CRDT]、Temporal、Milvus、腾讯云 COS 短链验证、Redis + SSE、独立 AI 网关、K8s + Prometheus/Grafana/Loki/Tempo）统一见 [019-原创IP技术选型与架构重设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md)，尚未落地到业务代码前不标记为已实现。
 
 | 领域 | 采用方案 | 选择依据与适用边界 |
 | --- | --- | --- |
