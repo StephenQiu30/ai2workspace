@@ -5,7 +5,7 @@ description: "使用 pm-execution:create-prd 创建或评审项目 PRD，并适�
 
 # 项目产品 PRD
 
-先读仓库根 [AGENTS.md](../../../AGENTS.md)、[项目规范](../../../workspace/content/01-项目文档与设计规范.md)，以及实际需求与确认记录、已有设计与调研。
+先读仓库根 [AGENTS.md](../../../AGENTS.md)、[项目规范](../../../workspace/content/03-项目文档与设计规范.md)，以及实际需求与确认记录、已有设计与调研。
 
 在宿主当前可用技能中查找并实际读取 `pm-execution:create-prd`，按其当前说明开展 PRD 创建或评审；项目入口不复制上游方法。找不到或无法读取时，说明缺少该能力，只整理已有依据与缺口，不宣称已使用插件完成 PRD。
 

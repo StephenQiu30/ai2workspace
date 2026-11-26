@@ -11,7 +11,7 @@ This site is built with [Fumadocs](https://fumadocs.dev) on Next.js. The APIs an
 
 ## 本模块约定
 
-- 项目总体架构统一维护在本目录的 [ARCHITECTURE.md](./ARCHITECTURE.md)。专题正文位于 `content/`，从[文档导航](./content/00-文档导航.md)进入。
+- 总体架构与工程入口在本目录按编号维护。[项目总体设计](./01-项目总体设计.md) · [项目工程说明](./02-项目工程说明.md)。专题正文位于 `content/`，从[文档导航](./content/00-文档导航.md)进入。
 - 使用、编写、检查与部署见 [README.md](./README.md)。
 - `.local/` 中的本机资料不读取、不入库、不发布；检查源码时排除此目录。
 

@@ -1,6 +1,6 @@
 # ai2workspace 前端
 
-使用 Next.js、React、TypeScript strict、Tailwind CSS 和通过官方 CLI 引入的 shadcn/ui Radix 组件。现有页面包括社区、课程、账号、订单和运营后台。原创 IP 首版设计见[知识库现行专题](../workspace/content/index.md#学屿原创-ip-制作与共创-saas)。
+使用 Next.js、React、TypeScript strict、Tailwind CSS 和通过官方 CLI 引入的 shadcn/ui Radix 组件。现有页面包括社区、课程、账号、订单和运营后台。原创 IP 首版设计见[知识库现行专题](../workspace/content/00-文档导航.md#学屿原创-ip-制作与共创-saas)。
 
 使用 Node.js 24.19.0、pnpm 12.4.2，在本目录执行：
 
@@ -33,4 +33,4 @@ pnpm build
 
 手写业务文件使用 snake_case 与命名导出，Next.js 特殊入口及 CLI 组件保留官方约定；ESLint 和类型检查覆盖适用的 Google TS 要求，完整约束仍需设计复核。Prettier 独立运行，未整体关闭业务检查。
 
-前端测试位于本模块的 `tests/`。跨模块验收按[项目工程规范](../PROJECT.md#独立测试目录)执行。
+前端测试位于本模块的 `tests/`。跨模块验收按[项目工程规范](../workspace/02-项目工程说明.md#独立测试目录)执行。

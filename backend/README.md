@@ -1,6 +1,6 @@
 # ai2workspace backend
 
-单一 Go 应用。入口位于 `cmd/ai2workspace/`，业务实现与测试目录见[工程目录](../PROJECT.md#目录)。
+单一 Go 应用。入口位于 `cmd/ai2workspace/`，业务实现与测试目录见[工程目录](../workspace/02-项目工程说明.md#目录)。
 
 ## 本地启动
 

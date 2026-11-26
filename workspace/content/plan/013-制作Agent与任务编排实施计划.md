@@ -11,7 +11,7 @@ description: 在制作页面执行编剧、分镜和一致性校验，保留有�
 
 **Tech Stack**　Go / PostgreSQL、Temporal Go / TS SDK、Vercel AI SDK、独立 AI 网关、Redis / SSE、Next.js。
 
-**Spec**　[需求](../requirement/013-制作Agent与任务编排需求记录.md) · [专题设计](../design/014-制作Agent与任务编排设计.md) · [专题 PRD](../prd/012-制作Agent与任务编排产品需求.md) · [系统设计与联合验收](../design/018-原创IP首版系统设计与验收总览.md) · [项目总体设计](../../ARCHITECTURE.md#7-选型与验证)
+**Spec**　[需求](../requirement/013-制作Agent与任务编排需求记录.md) · [专题设计](../design/014-制作Agent与任务编排设计.md) · [专题 PRD](../prd/012-制作Agent与任务编排产品需求.md) · [系统设计与联合验收](../design/018-原创IP首版系统设计与验收总览.md) · [项目总体设计](../../01-项目总体设计.md#7-选型与验证)
 
 | 计划 ID | 专题 | 定义与执行状态 |
 | --- | --- | --- |

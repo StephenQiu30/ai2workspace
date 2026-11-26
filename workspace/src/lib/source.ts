@@ -6,7 +6,7 @@ import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 const docs = defineDocs({
   dir: '.',
   docs: {
-    files: ['ARCHITECTURE.md', 'content/**/*.md', 'content/**/*.mdx'],
+    files: ['01-项目总体设计.md', '02-项目工程说明.md', 'content/**/*.md', 'content/**/*.mdx'],
     schema: pageSchema,
     postprocess: {
       includeProcessedMarkdown: true,
@@ -23,7 +23,8 @@ export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
   slugs(file, next) {
-    if (file.path === 'ARCHITECTURE.md') return ['architecture'];
+    if (file.path === '01-项目总体设计.md') return ['architecture'];
+    if (file.path === '02-项目工程说明.md') return ['project'];
     if (file.path === 'content/00-文档导航.md') return [];
     return next().slice(1);
   },
