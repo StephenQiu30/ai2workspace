@@ -20,6 +20,10 @@ http:
       rule: PathPrefix(`/api/assistant/`) || PathPrefix(`/swagger/assistant/`)
       priority: 100
       service: assistant
+    studio:
+      rule: PathPrefix(`/api/studio/`) || PathPrefix(`/swagger/studio/`)
+      priority: 100
+      service: studio
     frontend:
       rule: PathPrefix(`/`)
       service: frontend
@@ -44,6 +48,10 @@ http:
       loadBalancer:
         servers:
           - url: http://assistant:3127
+    studio:
+      loadBalancer:
+        servers:
+          - url: http://studio:3128
     frontend:
       loadBalancer:
         servers:

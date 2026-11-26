@@ -6,6 +6,7 @@ const LOCAL_SERVICE_PORTS: Record<string, number> = {
   commerce: 3125,
   community: 3126,
   assistant: 3127,
+  studio: 3128,
 };
 
 const nextConfig: NextConfig = {

@@ -1,0 +1,32 @@
+{
+  "name": "ai2workspace-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.4.2",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src",
+    "start": "node dist/temporal/worker.js",
+    "types:check": "tsc --noEmit",
+    "format:check": "prettier --check src"
+  },
+  "dependencies": {
+    "@temporalio/worker": "1.26.0",
+    "@temporalio/workflow": "1.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "eslint": "^9",
+    "prettier": "3.10.1",
+    "typescript": "^5",
+    "typescript-eslint": "8.72.2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "bracketSpacing": false
+  }
+}

@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 文档 ID | `DES-ai2workspace-services` |
-| 定义状态 | 仓库现状为业务前端与五个既有 Go 微服务；原创 IP 技术选型与架构重设计已确认为「Go 模块化单体 + Node/TS Worker」（见 [019-原创IP技术选型与架构重设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md)），工程重构待拆解执行计划 |
+| 定义状态 | 业务前端与五个既有 Go 微服务继续提供现行业务。原创 IP 已建立 Go 模块化单体试点和 TypeScript Temporal Worker 启动入口，目标架构见 [019-原创IP技术选型与架构重设计](./workspace/content/design/019-原创IP技术选型与架构重设计.md) |
 | 需求依据 | 2026-11-16 用户要求在根目录规划前后端，指定 Next.js 与 Go；随后明确 Go 微服务、Swagger 自动生成，以及 Next.js + TS + React + Tailwind CSS + shadcn/ui / Radix UI + Prettier + ESLint + Axios + Umi OpenAPI |
 | 规范依据 | 用户要求 Go 遵循 Google Go、前端遵循 Google TS，并据此规范设计文档与目录方案；具体规则及例外见[工程规范与目录设计](./workspace/content/standards/001-项目文档与设计规范.md#工程规范与目录设计) |
 | 适用工程 | 仓库根目录及 `backend/`、`frontend/`、`workspace/` |
@@ -15,6 +15,8 @@
 项目与产品标识统一为 `ai2workspace`，网站标题、元信息、模块说明和部署标识保持一致。`workspace`、`frontend`、`backend` 是本项目模块名；具体业务服务按实际业务域命名，服务描述与本项目的职责及实现范围一致。
 
 ## 1. 现状与目标
+
+原创 IP 初始化使用 `backend/` 根 Go module，当前包含身份 Schema、试点工作区授权接口和单体 Swagger。独立的 `worker/` 提供 Temporal 执行入口。五个既有服务继续使用各自的数据库和 API，试点通过现有 identity 会话获取账号 ID。启动与集成检查见 [后端](./backend/README.md)与 [Worker](./worker/README.md)。
 
 截至 2026-11-26 的仓库检查，业务代码位于 `frontend/` 和 `backend/services/`，知识库独立位于 `workspace/`。`ai2workspace` 是产品和仓库标识，初始化阶段的同名健康检查服务属于历史记录。
 
@@ -45,15 +47,16 @@ ai2workspace/
 ├── PROJECT.md                工程设计与服务边界的唯一入口
 ├── README.md                 项目导航与启动入口
 ├── .agents/skills/           项目文档 Skills
-├── backend/                  Go 微服务工程
+├── backend/                  Go 单体试点与现有微服务
 ├── frontend/                 Next.js 前端
+├── worker/                   Node.js / TypeScript Temporal Worker
 ├── tests/                    独立契约与端到端测试
 └── workspace/                已有知识库模块
     ├── content/              知识正文与项目资料
     └── src/                  知识库网站工程
 ```
 
-前端与知识库各自保留 `package.json` 和锁文件。后端每个业务服务拥有自己的 Go module，位于 `backend/services/<服务名>/go.mod`；`backend/go.work` 仅用于本地多模块开发，由 Go 工具维护。发布时单独校验每个服务的依赖完整性，不依赖本地 workspace 替换其他服务源码。
+前端、Worker 与知识库各自保留 `package.json` 和锁文件。单体试点使用 `backend/go.mod`，既有业务服务使用各自的 `backend/services/<服务名>/go.mod`。`backend/go.work` 用于本地多模块开发，发布时独立检查各 module。
 
 模块之间通过接口和文档链接协作，不跨服务导入内部源码或共享业务模型。根目录无需增加统一运行框架或 monorepo 构建工具；不预建 `core`、通用业务 SDK 或框架封装。
 
@@ -281,6 +284,7 @@ Swaggo 按[官方说明](https://github.com/swaggo/swag)从 Go 注释生成 Swag
 | **commerce** | `3125` | 交易、退款与权益微服务 |
 | **community** | `3126` | 社区互动与内容治理微服务 |
 | **assistant** | `3127` | 通用 Agent、知识库与 AI 治理微服务 |
+| **studio** | `3128` | 原创 IP 单体试点，Compose 的 `studio` profile 或独立启动 |
 
 原生前端和容器统一入口共用 3121，按需选择一种启动方式。前端容器内部监听 3121，各 Go 微服务内外使用各自独立端口（3123～3127）；API 和 Swagger 可通过统一入口或对应后端端口直接访问。端口仅在启动配置中指定，业务组件通过同源路径或服务端配置访问 API。部署环境可使用不同的网络映射，本表规定本项目本地运行端口。
 

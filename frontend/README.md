@@ -10,7 +10,7 @@ pnpm openapi2ts
 pnpm dev --hostname 127.0.0.1
 ```
 
-原生开发先按[后端说明](../backend/README.md)为五个服务执行 `make generate SERVICE=<服务名>` 并启动相应服务，再运行上述命令。默认访问 `http://127.0.0.1:3121`，Next.js 按服务名将请求转发至本地 3123～3127。容器方式从仓库根目录启动，由 Traefik 提供同一端口的统一入口。
+原生开发先按[后端说明](../backend/README.md)为五个服务执行 `make generate SERVICE=<服务名>`，为原创 IP 单体试点执行 `make studio-generate`。默认访问 `http://127.0.0.1:3121`，Next.js 转发五个既有服务的请求至本地 3123～3127，转发 `/api/studio/` 至 3128。容器方式由 Traefik 提供统一入口。
 
 ## 生成、检查与构建
 
@@ -25,7 +25,7 @@ pnpm build
 
 按 [Umi OpenAPI 官方独立接入方式](https://github.com/chenshuai2144/openapi2typescript#usage)，根配置为 `openapi2ts.config.ts`，`package.json` 使用 `"openapi2ts": "openapi2ts"`，由官方 CLI 自动读取配置并生成 `src/services/generated/`。生成代码忽略提交，禁止手改。
 
-`openapi2ts.config.ts` 分别读取五个 Go 服务的 `api/swagger.json`。接口生成与 dev、build、类型检查分开。首次使用或接口更新时先由后端生成 Swagger，再生成前端调用并检查。Docker 构建通过官方 CLI 使用 schema 阶段的产物完成生成。
+`openapi2ts.config.ts` 读取五个既有 Go 服务与单体试点的 Swagger JSON。首次使用或接口更新时先由后端生成 Swagger，再生成前端调用并检查。Docker 构建通过官方 CLI 使用 schema 阶段的产物完成生成。
 
 `src/lib/request/transport.ts` 提供通用 Axios 适配。`server.ts` 使用 `server-only` 保护内部配置，并按单次请求传递服务端地址及适用的登录会话。浏览器使用同源路径。
 

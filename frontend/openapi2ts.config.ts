@@ -52,6 +52,16 @@ const configs: GenerateServiceProps[] = [
     requestOptionsType: 'RequestOptions',
     declareType: 'interface',
   },
+  {
+    schemaPath: resolve('../backend/api/swagger.json'),
+    serversPath: './src/services/generated',
+    projectName: 'studio',
+    namespace: 'StudioApi',
+    requestImportStatement:
+      "import {request, type RequestOptions} from '@/lib/request/transport'",
+    requestOptionsType: 'RequestOptions',
+    declareType: 'interface',
+  },
 ];
 
 export default configs;

@@ -20,4 +20,5 @@ next-env.d.ts
 backend/services/*/api/
 backend/services/*/internal/apidocs/
 backend/services/*/server
+backend/api/
 frontend/src/services/generated/

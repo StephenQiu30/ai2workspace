@@ -149,6 +149,60 @@ services:
       retries: 10
       start_period: 3s
 
+  studio-db:
+    image: postgres:18.1-alpine
+    profiles: [studio]
+    environment:
+      POSTGRES_USER: studio
+      POSTGRES_PASSWORD: studio-local
+      POSTGRES_DB: studio
+    volumes:
+      - studio-data:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:${STUDIO_DB_PORT:-54329}:5432"
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U studio -d studio]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  studio-migrate:
+    image: ghcr.io/pressly/goose:v3.30.0
+    profiles: [studio]
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: postgres://studio:studio-local@studio-db:5432/studio?sslmode=disable
+    command: [-env=none, -dir, /migrations, up]
+    volumes:
+      - ./backend/migrations:/migrations:ro
+    depends_on:
+      studio-db:
+        condition: service_healthy
+
+  studio:
+    profiles: [studio]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      GIN_MODE: release
+      STUDIO_HTTP_ADDR: :3128
+      STUDIO_DATABASE_URL: postgres://studio:studio-local@studio-db:5432/studio?sslmode=disable
+      STUDIO_IDENTITY_ORIGIN: http://identity:3123
+      STUDIO_SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+    depends_on:
+      studio-migrate:
+        condition: service_completed_successfully
+      identity:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3128:3128"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3128/api/studio/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   frontend:
     container_name: ai2workspace-frontend
     build:
@@ -187,3 +241,6 @@ services:
       timeout: 3s
       retries: 10
       start_period: 3s
+
+volumes:
+  studio-data:
