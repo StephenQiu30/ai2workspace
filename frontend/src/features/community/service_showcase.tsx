@@ -35,7 +35,7 @@ export function ServiceShowcase({
     ? `/community/${current.id}`
     : error
       ? '/topics/services'
-      : '/?compose=services#community-composer';
+      : '/community?compose=services#community-composer';
 
   return (
     <Layout

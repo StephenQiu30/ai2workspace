@@ -207,7 +207,7 @@ export function NotificationsView({
               </Button>
             ) : (
               <Button variant="secondary" size="sm" asChild>
-                <Link href="/">前往社区首页</Link>
+                <Link href="/community">前往社区首页</Link>
               </Button>
             )}
           </EmptyContent>

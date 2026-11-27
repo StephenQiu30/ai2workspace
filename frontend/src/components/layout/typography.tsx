@@ -22,7 +22,7 @@ export function Heading({
   });
 }
 
-type TextElement = 'span' | 'p' | 'time' | 'strong' | 'code';
+type TextElement = 'span' | 'p' | 'time' | 'strong' | 'code' | 'figcaption';
 
 const textStyles = {
   meta: 'text-xs leading-5 text-muted-foreground',

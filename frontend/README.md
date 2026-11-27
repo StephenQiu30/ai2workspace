@@ -1,6 +1,6 @@
 # ai2workspace 前端
 
-使用 Next.js、React、TypeScript strict、Tailwind CSS 和通过官方 CLI 引入的 shadcn/ui Radix 组件。现有页面包括社区、课程、账号、订单和运营后台。原创 IP 首版设计见[知识库现行专题](../workspace/content/00-文档导航.md#学屿原创-ip-制作与共创-saas)。
+使用 Next.js、React、TypeScript strict、Tailwind CSS 和通过官方 CLI 引入的 shadcn/ui Radix 组件。业务首页为原创 IP 孵化中心，社区入口为 `/community`。原创 IP 首版设计见[知识库现行专题](../workspace/content/00-文档导航.md#学屿原创-ip-制作与共创-saas)。
 
 使用 Node.js 24.19.0、pnpm 12.4.2，在本目录执行：
 
@@ -11,6 +11,12 @@ pnpm dev --hostname 127.0.0.1
 ```
 
 原生开发先按[后端说明](../backend/README.md)执行 `make generate` 并启动 Go 后端。默认访问 `http://127.0.0.1:3121`，Next.js 将同源 API 转发到本地 3123。
+
+## 原创 IP 页面
+
+- `/` 展示首发 IP 概念和制作拆解示例。正式样片发布前展示准备状态。
+- `/dashboard` 沿用现有会话与工作区访问接口。可用 `/dashboard?workspace=<工作区 ID>` 打开指定工作区，也可用服务端 `STUDIO_WORKSPACE_ID` 设置默认工作区。
+- `/dashboard/preview` 展示可交互的示例项目、任务与审片面板。正式工作台的项目数据待制作接口接入。
 
 ## 生成、检查与构建
 

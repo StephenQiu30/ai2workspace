@@ -131,8 +131,23 @@ function getSessionLabel(session: Api.Session): string {
   return session.courseId ? '课程上下文会话' : '学屿助手会话';
 }
 
-export function FloatingAssistant({initialUser}: FloatingAssistantProps) {
+export function FloatingAssistant(props: FloatingAssistantProps) {
   const pathname = usePathname() || '/';
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/works/') ||
+    pathname === '/dashboard' ||
+    pathname.startsWith('/dashboard/')
+  ) {
+    return null;
+  }
+  return <LearningAssistant {...props} pathname={pathname} />;
+}
+
+function LearningAssistant({
+  initialUser,
+  pathname,
+}: FloatingAssistantProps & {pathname: string}) {
   const {open, setOpen, courseContext, setCourseContext} =
     useAssistantContext();
 

@@ -1,5 +1,4 @@
 import {Layout} from '@/components/layout/layout';
-import Link from 'next/link';
 import type {ReactNode} from 'react';
 import {Content} from '@/components/layout/content';
 import {Footer} from '@/components/layout/site_footer';
@@ -20,7 +19,9 @@ export function BasicLayout({
         asChild
         className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50"
       >
-        <Link href="#main-content">跳至正文</Link>
+        <Layout as="a" href="#main-content">
+          跳至正文
+        </Layout>
       </Button>
       <Navbar initialUser={user} />
       <Content>{children}</Content>

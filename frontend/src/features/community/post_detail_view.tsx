@@ -848,7 +848,7 @@ export function PostDetailView({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">社区首页</Link>
+              <Link href="/community">社区首页</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

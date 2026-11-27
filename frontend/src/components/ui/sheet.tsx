@@ -72,7 +72,7 @@ function SheetContent({
             <Button
               variant="ghost"
               className="absolute top-4 right-4"
-              size="icon-sm"
+              size="icon-lg"
             >
               <XIcon />
               <span className="sr-only">关闭</span>
@@ -106,13 +106,17 @@ function SheetFooter({className, ...props}: React.ComponentProps<'div'>) {
 
 function SheetTitle({
   className,
+  size = 'default',
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+}: React.ComponentProps<typeof SheetPrimitive.Title> & {
+  size?: 'default' | 'lg';
+}) {
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
       className={cn(
-        'font-heading text-lg/7 font-medium text-foreground',
+        'font-heading text-foreground',
+        size === 'lg' ? 'text-2xl/8 font-semibold' : 'text-lg/7 font-medium',
         className,
       )}
       {...props}

@@ -81,7 +81,7 @@ export function TopicDetailView({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">社区首页</Link>
+              <Link href="/community">社区首页</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -118,7 +118,7 @@ export function TopicDetailView({
             在本话题发起讨论
           </Button>
           <Button variant="secondary" asChild>
-            <Link href="/">返回首页</Link>
+            <Link href="/community">返回社区首页</Link>
           </Button>
         </Layout>
       </Layout>
@@ -152,7 +152,7 @@ export function TopicDetailView({
               </EmptyHeader>
               <EmptyContent className="flex-row justify-center gap-2">
                 <Button variant="secondary" size="sm" asChild>
-                  <Link href="/">浏览全部讨论</Link>
+                  <Link href="/community">浏览全部讨论</Link>
                 </Button>
                 <Button
                   type="button"

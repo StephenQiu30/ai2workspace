@@ -5,13 +5,16 @@ type LayoutElement =
   | 'div'
   | 'section'
   | 'article'
+  | 'figure'
   | 'aside'
   | 'header'
   | 'footer'
   | 'main'
   | 'nav'
+  | 'a'
   | 'form'
   | 'ul'
+  | 'ol'
   | 'li';
 
 const flows = {

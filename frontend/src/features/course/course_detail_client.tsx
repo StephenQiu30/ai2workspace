@@ -416,7 +416,7 @@ export function CourseDetailClient({
           <Button variant="secondary" asChild>
             <Link
               href={{
-                pathname: '/',
+                pathname: '/community',
                 query: {compose: 'course-qa', course: course.title},
                 hash: 'community-composer',
               }}

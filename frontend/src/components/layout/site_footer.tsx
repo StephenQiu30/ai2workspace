@@ -4,16 +4,14 @@ import {LearnisLogo} from '@/components/brand/learnis_logo';
 import {Button} from '@/components/ui/button';
 
 const FOOTER_LINKS = [
-  {href: '/', label: '社区'},
+  {href: '/community', label: '社区'},
   {href: '/courses', label: '课程'},
-  {href: '/learning', label: '我的学习'},
-  {href: '/orders', label: '订单与退款'},
   {href: '/account', label: '账号'},
 ];
 
 export function Footer() {
   return (
-    <Layout as="footer" className="bg-background">
+    <Layout as="footer" className="border-t border-border bg-card">
       <Layout
         flow="stack"
         className="layout-container gap-2 pt-4 pb-6 text-sm text-muted-foreground md:min-h-[84px] md:flex-row md:items-center md:justify-between md:gap-7 md:py-5"
@@ -30,7 +28,7 @@ export function Footer() {
               key={href}
               asChild
               variant="link"
-              className="min-h-11 px-0 font-normal"
+              className="min-h-11 min-w-11 px-0 font-normal"
             >
               <Link href={href}>{label}</Link>
             </Button>

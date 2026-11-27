@@ -7,13 +7,15 @@ import Link from 'next/link';
 import {usePathname, useRouter} from 'next/navigation';
 import {
   BellIcon,
+  ClapperboardIcon,
+  GraduationCapIcon,
   LogOutIcon,
   MenuIcon,
-  ReceiptTextIcon,
   Settings2Icon,
   UserIcon,
 } from 'lucide-react';
 import {toast} from 'sonner';
+import {cn} from 'cn';
 import {LearnisLogo} from '@/components/brand/learnis_logo';
 import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
@@ -57,9 +59,13 @@ interface NavbarProps {
 const PRIMARY_NAV = [
   {
     href: '/',
+    label: '作品',
+    match: (p: string) => p === '/' || p.startsWith('/works/'),
+  },
+  {
+    href: '/community',
     label: '社区',
     match: (p: string) =>
-      p === '/' ||
       p.startsWith('/community') ||
       (p.startsWith('/topics') && p !== '/topics/services'),
   },
@@ -73,20 +79,13 @@ const PRIMARY_NAV = [
     label: '线上服务',
     match: (p: string) => p === '/topics/services',
   },
-  {
-    href: '/learning',
-    label: '我的学习',
-    match: (p: string) => p.startsWith('/learning') || p.startsWith('/learn/'),
-  },
 ] as const;
 
 function PrimaryNavigation({
   pathname,
-  user,
   onNavigate,
 }: {
   pathname: string;
-  user: SessionUser | null;
   onNavigate?: () => void;
 }) {
   const mobile = Boolean(onNavigate);
@@ -113,18 +112,13 @@ function PrimaryNavigation({
               <NavigationMenuLink
                 asChild
                 active={active}
-                className={
-                  mobile
-                    ? 'min-h-11 justify-center px-3'
-                    : 'min-h-10 justify-center px-3.5'
-                }
+                className={cn(
+                  'min-h-11 justify-center',
+                  mobile ? 'px-3' : 'px-3.5',
+                )}
               >
                 <Link
-                  href={
-                    item.href === '/learning' && !user
-                      ? buildLoginHref('/learning')
-                      : item.href
-                  }
+                  href={item.href}
                   aria-current={active ? 'page' : undefined}
                   onNavigate={onNavigate}
                 >
@@ -139,10 +133,9 @@ function PrimaryNavigation({
   );
 }
 
-export function Navbar({initialUser}: NavbarProps) {
+export function Navbar({initialUser: user}: NavbarProps) {
   const pathname = usePathname() || '/';
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(initialUser);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -155,7 +148,6 @@ export function Navbar({initialUser}: NavbarProps) {
     setLoggingOut(true);
     try {
       await identityLogout();
-      setUser(null);
       setMobileOpen(false);
       toast.success('已安全退出登录');
       router.push('/');
@@ -170,21 +162,21 @@ export function Navbar({initialUser}: NavbarProps) {
   return (
     <Layout
       as="header"
-      className="layout-container sticky top-0 z-40 bg-background/95 backdrop-blur-xs"
+      className="sticky top-0 z-40 bg-card/95 backdrop-blur-xs shadow-[0_1px_0_var(--border)]"
     >
       <Layout
         flow="row"
-        className="h-16 w-full items-center gap-4 md:h-[68px] md:gap-6"
+        className="layout-container h-16 items-center gap-4 md:h-[68px] md:gap-6"
       >
         <Link
           href="/"
           aria-label="学屿首页"
-          className="inline-flex w-fit items-center rounded-md py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 w-fit shrink-0 items-center rounded-md py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <LearnisLogo variant="lockup" markSize={28} />
         </Link>
 
-        <PrimaryNavigation pathname={pathname} user={user} />
+        <PrimaryNavigation pathname={pathname} />
 
         <Layout flow="row" className="ml-auto items-center gap-2">
           {user ? (
@@ -193,12 +185,13 @@ export function Navbar({initialUser}: NavbarProps) {
                 variant={
                   pathname.startsWith('/notifications') ? 'secondary' : 'ghost'
                 }
-                size="icon"
+                size="icon-lg"
+                className="hidden md:inline-flex"
                 asChild
                 aria-label="站内通知"
               >
                 <Link href="/notifications">
-                  <BellIcon />
+                  <BellIcon aria-hidden />
                 </Link>
               </Button>
 
@@ -206,11 +199,12 @@ export function Navbar({initialUser}: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-lg"
+                    className="hidden md:inline-flex"
                     aria-label={`打开 ${user.nickname} 的账号菜单`}
                   >
                     <Avatar className="size-9">
-                      <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
+                      <AvatarFallback className="bg-accent text-xs font-medium text-accent-foreground">
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
@@ -233,9 +227,15 @@ export function Navbar({initialUser}: NavbarProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/orders">
-                        <ReceiptTextIcon />
-                        我的订单与售后
+                      <Link href="/dashboard">
+                        <ClapperboardIcon aria-hidden />
+                        制作工作台
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/learning">
+                        <GraduationCapIcon aria-hidden />
+                        我的学习
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
@@ -267,16 +267,13 @@ export function Navbar({initialUser}: NavbarProps) {
                               <Link href="/manage/accounts">账号管理</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                              <Link href="/manage/refunds">退款处理</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
                               <Link href="/manage/reports">内容举报</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href="/manage/agents">Agent 管理</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                              <Link href="/manage/ai-usage">模型与费用</Link>
+                              <Link href="/manage/ai-usage">模型用量</Link>
                             </DropdownMenuItem>
                           </>
                         ) : null}
@@ -302,15 +299,11 @@ export function Navbar({initialUser}: NavbarProps) {
             </>
           ) : (
             <Layout className="hidden items-center gap-2 md:flex">
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" size="lg" asChild>
                 <Link href={buildLoginHref(pathname)}>登录</Link>
               </Button>
-              <Button asChild>
-                <Link
-                  href={`${buildLoginHref(pathname)}${buildLoginHref(pathname).includes('?') ? '&' : '?'}mode=register`}
-                >
-                  注册账号
-                </Link>
+              <Button variant="outline" size="lg" asChild>
+                <Link href="/dashboard">制作工作台</Link>
               </Button>
             </Layout>
           )}
@@ -323,10 +316,13 @@ export function Navbar({initialUser}: NavbarProps) {
                 className="md:hidden"
                 aria-label="打开导航菜单"
               >
-                <MenuIcon />
+                <MenuIcon aria-hidden />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80">
+            <SheetContent
+              side="left"
+              className="w-80 overflow-y-auto overscroll-contain pb-4"
+            >
               <SheetHeader>
                 <SheetTitle>
                   <LearnisLogo variant="lockup" markSize={24} />
@@ -335,7 +331,6 @@ export function Navbar({initialUser}: NavbarProps) {
               <Layout flow="stack" className="gap-1 px-4">
                 <PrimaryNavigation
                   pathname={pathname}
-                  user={user}
                   onNavigate={() => setMobileOpen(false)}
                 />
                 {user ? (
@@ -358,7 +353,7 @@ export function Navbar({initialUser}: NavbarProps) {
                         variant="ghost"
                         className="min-h-11 justify-start"
                       >
-                        <Link href="/orders">我的订单</Link>
+                        <Link href="/dashboard">制作工作台</Link>
                       </Button>
                     </SheetClose>
                     <SheetClose asChild>
@@ -368,6 +363,15 @@ export function Navbar({initialUser}: NavbarProps) {
                         className="min-h-11 justify-start"
                       >
                         <Link href="/notifications">站内通知</Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="min-h-11 justify-start"
+                      >
+                        <Link href="/learning">我的学习</Link>
                       </Button>
                     </SheetClose>
                     {hasAnyManageAccess ? (
@@ -414,15 +418,6 @@ export function Navbar({initialUser}: NavbarProps) {
                                 variant="ghost"
                                 className="min-h-11 justify-start"
                               >
-                                <Link href="/manage/refunds">退款处理</Link>
-                              </Button>
-                            </SheetClose>
-                            <SheetClose asChild>
-                              <Button
-                                asChild
-                                variant="ghost"
-                                className="min-h-11 justify-start"
-                              >
                                 <Link href="/manage/reports">内容举报</Link>
                               </Button>
                             </SheetClose>
@@ -441,7 +436,7 @@ export function Navbar({initialUser}: NavbarProps) {
                                 variant="ghost"
                                 className="min-h-11 justify-start"
                               >
-                                <Link href="/manage/ai-usage">模型与费用</Link>
+                                <Link href="/manage/ai-usage">模型用量</Link>
                               </Button>
                             </SheetClose>
                           </>
@@ -468,7 +463,7 @@ export function Navbar({initialUser}: NavbarProps) {
                     </SheetClose>
                     <SheetClose asChild>
                       <Button variant="secondary" asChild className="w-full">
-                        <Link href="/account?mode=register">注册新账号</Link>
+                        <Link href="/dashboard">制作工作台</Link>
                       </Button>
                     </SheetClose>
                   </Layout>

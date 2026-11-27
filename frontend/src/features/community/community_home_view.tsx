@@ -48,7 +48,6 @@ import {
 import {PostComposerSheet} from './post_composer_sheet';
 
 export interface CommunityHomeViewProps {
-  basePath: '/' | '/community';
   user: SessionUser | null;
   activeTopic: string;
   page: number;
@@ -67,11 +66,7 @@ export interface CommunityHomeViewProps {
   courseTitle?: string;
 }
 
-function buildFilterHref(
-  basePath: '/' | '/community',
-  topic: string,
-  page: number,
-): string {
+function buildFilterHref(topic: string, page: number): string {
   const params = new URLSearchParams();
   if (topic && topic !== 'all') {
     params.set('topic', topic);
@@ -80,7 +75,7 @@ function buildFilterHref(
     params.set('page', String(page));
   }
   const query = params.toString();
-  return query ? `${basePath}?${query}` : basePath;
+  return query ? `/community?${query}` : '/community';
 }
 
 function formatCourseUnitCount(course: HomeCourseItem): string {
@@ -135,7 +130,6 @@ function computeProgressMetrics(item: Api.MyCourseResponse): {
 }
 
 export function CommunityHomeView({
-  basePath,
   user,
   activeTopic,
   page,
@@ -156,7 +150,7 @@ export function CommunityHomeView({
   const router = useRouter();
   const [composerOpen, setComposerOpen] = useState(Boolean(composeTopic));
 
-  const currentPath = buildFilterHref(basePath, activeTopic, page);
+  const currentPath = buildFilterHref(activeTopic, page);
 
   function openComposer() {
     setComposerOpen(true);
@@ -169,7 +163,7 @@ export function CommunityHomeView({
     if (!nextTopic) {
       return;
     }
-    router.push(buildFilterHref(basePath, nextTopic, 1));
+    router.push(buildFilterHref(nextTopic, 1));
   }
 
   return (
@@ -198,7 +192,6 @@ export function CommunityHomeView({
           onSuccess={(post) => {
             router.push(
               buildFilterHref(
-                basePath,
                 activeTopic !== 'all' && post.topic ? post.topic : 'all',
                 1,
               ),
@@ -290,7 +283,7 @@ export function CommunityHomeView({
               <EmptyContent className="flex-row justify-center gap-2">
                 {activeTopic !== 'all' ? (
                   <Button variant="secondary" size="sm" asChild>
-                    <Link href={basePath}>查看全部话题</Link>
+                    <Link href="/community">查看全部话题</Link>
                   </Button>
                 ) : null}
                 <Button type="button" size="sm" onClick={openComposer}>
@@ -308,7 +301,7 @@ export function CommunityHomeView({
                 totalItems={postsTotal}
                 pageSize={pageSize}
                 buildPageHref={(nextPage) =>
-                  buildFilterHref(basePath, activeTopic, nextPage)
+                  buildFilterHref(activeTopic, nextPage)
                 }
               />
             </Layout>

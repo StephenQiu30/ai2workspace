@@ -7,7 +7,7 @@ export function Content({children}: {children: ReactNode}) {
       as="main"
       id="main-content"
       tabIndex={-1}
-      className="layout-container min-w-0 flex-1 pt-4 pb-12 md:pt-6 md:pb-16"
+      className="layout-container min-w-0 flex-1 pt-4 pb-12 md:pt-6 md:pb-16 has-[>[data-full-width]]:w-full has-[>[data-full-width]]:py-0"
     >
       {children}
     </Layout>

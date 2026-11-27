@@ -142,7 +142,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/">社区首页</Link>
+                  <Link href="/community">社区首页</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
@@ -168,7 +168,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2">
                   <Button asChild>
-                    <Link href="/">返回社区首页</Link>
+                    <Link href="/community">返回社区首页</Link>
                   </Button>
                   <Button variant="secondary" asChild>
                     <Link href="/courses">浏览精选课程</Link>
@@ -190,7 +190,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
         </Alert>
         <Layout>
           <Button variant="secondary" asChild>
-            <Link href="/">返回社区首页</Link>
+            <Link href="/community">返回社区首页</Link>
           </Button>
         </Layout>
       </Layout>
@@ -211,7 +211,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">社区首页</Link>
+                <Link href="/community">社区首页</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -241,7 +241,7 @@ export default async function PostDetailPage({params}: PostDetailPageProps) {
               </EmptyHeader>
               <EmptyContent className="flex-row justify-center gap-2">
                 <Button asChild>
-                  <Link href="/">返回社区首页</Link>
+                  <Link href="/community">返回社区首页</Link>
                 </Button>
                 <Button variant="secondary" asChild>
                   <Link href="/courses">浏览精选课程</Link>

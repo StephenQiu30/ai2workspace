@@ -46,14 +46,23 @@ function CardHeader({className, ...props}: React.ComponentProps<'div'>) {
 
 function CardTitle({
   as: Title = 'div',
+  size = 'default',
   className,
   ...props
-}: React.HTMLAttributes<HTMLElement> & {as?: 'div' | 'h1' | 'h2' | 'h3'}) {
+}: React.HTMLAttributes<HTMLElement> & {
+  as?: 'div' | 'h1' | 'h2' | 'h3';
+  size?: 'default' | 'section' | 'feature';
+}) {
   return (
     <Title
       data-slot="card-title"
       className={cn(
-        'font-heading text-base/6 font-medium text-foreground group-data-[size=sm]/card:text-sm',
+        'font-heading text-foreground',
+        {
+          default: 'text-base/6 font-medium group-data-[size=sm]/card:text-sm',
+          section: 'text-xl font-semibold md:text-2xl',
+          feature: 'text-base font-semibold lg:text-xl',
+        }[size],
         className,
       )}
       {...props}

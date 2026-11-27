@@ -4,7 +4,7 @@ import {cn} from 'cn';
 import {Slot} from 'radix-ui';
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-colors duration-120 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-invalid:bg-destructive-surface [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-colors duration-120 cursor-pointer outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-invalid:bg-destructive-surface [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ const buttonVariants = cva(
         ghost: 'text-foreground hover:bg-secondary aria-expanded:bg-secondary',
         destructive:
           'bg-destructive text-primary-foreground hover:bg-destructive/85',
-        link: 'text-foreground underline underline-offset-4 hover:decoration-2',
+        link: 'text-primary underline underline-offset-4 hover:decoration-2',
       },
       size: {
         default:

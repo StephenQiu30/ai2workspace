@@ -54,7 +54,7 @@ export default async function ManageAccountsPage() {
               <EmptyContent>
                 {user ? (
                   <Button asChild variant="secondary">
-                    <Link href="/">返回社区首页</Link>
+                    <Link href="/community">返回社区首页</Link>
                   </Button>
                 ) : (
                   <Button asChild>

@@ -1,9 +1,11 @@
 import type {Metadata} from 'next';
-import {redirect} from 'next/navigation';
+import {loadHomePageData} from '@/features/community/community_data';
+import {CommunityHomeView} from '@/features/community/community_home_view';
+import {getServerSession} from '@/lib/auth/session';
 
 export const metadata: Metadata = {
   title: '讨论社区',
-  description: '浏览全部公开讨论话题、独立摘要与精选课程。',
+  description: '学习 AI 短漫剧制作和其他创作课程，参与作品讨论。',
 };
 
 export const dynamic = 'force-dynamic';
@@ -20,11 +22,45 @@ interface CommunityPageProps {
 export default async function CommunityPage({
   searchParams,
 }: CommunityPageProps) {
-  const {topic, page, compose, course} = await searchParams;
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries({topic, page, compose, course})) {
-    const first = Array.isArray(value) ? value[0] : value;
-    if (first) query.set(key, first);
-  }
-  redirect(query.size ? '/?' + query.toString() : '/');
+  const [resolvedParams, user] = await Promise.all([
+    searchParams,
+    getServerSession(),
+  ]);
+  const data = await loadHomePageData({
+    topic: resolvedParams.topic,
+    page: resolvedParams.page,
+    user,
+  });
+
+  return (
+    <CommunityHomeView
+      key={JSON.stringify([resolvedParams.compose, resolvedParams.course])}
+      composeTopic={
+        ['general', 'services', 'course-qa'].includes(
+          resolvedParams.compose ?? '',
+        )
+          ? resolvedParams.compose
+          : undefined
+      }
+      courseTitle={
+        typeof resolvedParams.course === 'string'
+          ? resolvedParams.course.slice(0, 90)
+          : undefined
+      }
+      user={user}
+      activeTopic={data.activeTopic}
+      page={data.page}
+      pageSize={data.pageSize}
+      courses={data.courses}
+      coursesError={data.coursesError}
+      services={data.services}
+      servicesError={data.servicesError}
+      posts={data.posts}
+      postsTotal={data.postsTotal}
+      postsError={data.postsError}
+      topics={data.topics}
+      myCourses={data.myCourses}
+      myCoursesError={data.myCoursesError}
+    />
+  );
 }
